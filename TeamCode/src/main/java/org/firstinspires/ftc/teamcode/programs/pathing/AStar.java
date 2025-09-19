@@ -1,4 +1,3 @@
-// AStar.java
 package org.firstinspires.ftc.teamcode.programs.pathing;
 
 import java.util.*;
@@ -55,13 +54,13 @@ public class AStar {
 
     private static double h(int x,int y,int gx,int gy){
         double dx = gx - x, dy = gy - y;
-        double distCm = Math.hypot(dx,dy) * Field.CELL;
-        return distCm / Field.MAX_SPEED_CM_S;
+        double distIn = Math.hypot(dx,dy) * Field.CELL;
+        return distIn / Field.MAX_SPEED_IN_S;
     }
 
     private static List<int[]> reconstruct(GridNode[][] parent, GridNode end){
         LinkedList<int[]> path = new LinkedList<>();
-        for(GridNode n = end; n != null; n = parent[n.y][n.x]){
+        for(GridNode n = end; n != null; n = parent[n.y][n.x]) {
             path.addFirst(new int[]{n.x, n.y});
         }
         return path;

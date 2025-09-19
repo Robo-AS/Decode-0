@@ -12,13 +12,13 @@ public class CostMap {
 
     public boolean in(int x,int y){ return x>=0 && x<Field.NX && y>=0 && y<Field.NY; }
 
-    public static int toGX(double xcm){ return (int)Math.round((xcm + Field.HALF) / Field.CELL); }
-    public static int toGY(double ycm){ return (int)Math.round((ycm + Field.HALF) / Field.CELL); }
-    public static double toXcm(int gx){ return gx*Field.CELL - Field.HALF; }
-    public static double toYcm(int gy){ return gy*Field.CELL - Field.HALF; }
+    public static int toGX(double xin){ return (int)Math.round((xin + Field.HALF) / Field.CELL); }
+    public static int toGY(double yin){ return (int)Math.round((yin + Field.HALF) / Field.CELL); }
+    public static double toXin(int gx){ return gx*Field.CELL - Field.HALF; }
+    public static double toYin(int gy){ return gy*Field.CELL - Field.HALF; }
 
-    /** Block a rectangle given center+size in cm */
-    public void blockRectCm(double cx,double cy,double w,double h){
+    /** Block a rectangle given center+size in inches */
+    public void blockRectIn(double cx,double cy,double w,double h){
         int x0 = toGX(cx - w/2), x1 = toGX(cx + w/2);
         int y0 = toGY(cy - h/2), y1 = toGY(cy + h/2);
         for(int y=y0;y<=y1;y++){
