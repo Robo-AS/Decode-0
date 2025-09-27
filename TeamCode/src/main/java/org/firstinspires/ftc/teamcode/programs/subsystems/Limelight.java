@@ -2,8 +2,11 @@ package org.firstinspires.ftc.teamcode.programs.subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,14 +18,21 @@ public class Limelight extends SubsystemBase {
     public double greenTx  = 0.0;
     public double greenTy  = 0.0;
 
+    public double tagTx = 0.0;
+    public double tagTy = 0.0;
+    public int tagId = -1, currentPipeline = 0;
+
     public List<Artifact> artifactList = new ArrayList<>();
+    private final double cameraHeightM = 0.30;
 
     public void useAprilTagPipeline() {
         limelight.pipelineSwitch(1);
+        currentPipeline = 1;
     }
 
     public void useArtifactPipeline() {
         limelight.pipelineSwitch(0);
+        currentPipeline = 0;
     }
 
     public void initializeHardware(final HardwareMap hardwareMap){
@@ -50,8 +60,11 @@ public class Limelight extends SubsystemBase {
         artifactList.clear();
         purpleTx = 0.0;
         purpleTy = 0.0;
-        greenTx = 0.0;
-        greenTy = 0.0;
+        greenTx  = 0.0;
+        greenTy  = 0.0;
+        tagId = -1;
+        tagTx = 0.0;
+        tagTy = 0.0;
 
         double[] pythonOutputs = result.getPythonOutput();
         if (pythonOutputs != null && pythonOutputs.length >= 4) {
@@ -62,7 +75,6 @@ public class Limelight extends SubsystemBase {
         }
 
         if (pythonOutputs != null && pythonOutputs.length >= 8) {
-            // artifact : color tx ty width height
             int totalArtifacts = pythonOutputs.length / 5;
             for (int i = 0; i < totalArtifacts; i++) {
                 int idx = i * 5;
@@ -72,15 +84,52 @@ public class Limelight extends SubsystemBase {
                 double w = pythonOutputs[idx + 3];
                 double h = pythonOutputs[idx + 4];
 
-                Artifact artifact = new Artifact(type == 0 ? "purple" : "green", cx, cy, w, h);
-                artifactList.add(artifact);
+                if (w > 0 && h > 0) {
+                    artifactList.add(new Artifact(type == 0 ? "purple" : "green", cx, cy, w, h));
+                }
             }
+        }
+
+        if (!result.getFiducialResults().isEmpty()) {
+            LLResultTypes.FiducialResult tag = result.getFiducialResults().get(0);
+            tagId = tag.getFiducialId();
+            tagTx = tag.getTargetXDegreesNoCrosshair();
+            tagTy = tag.getTargetYDegreesNoCrosshair();
+        }
+
+        if(currentPipeline == 0) {
+            Robot.getInstance().telemetry.addData("number of artifacts", artifactList.size());
+            Robot.getInstance().telemetry.update();
+        } else if(currentPipeline == 1){
+            Robot.getInstance().telemetry.addData("AprilTag id ", tagId);
+            Robot.getInstance().telemetry.update();
         }
     }
 
     public boolean hasTargets() {
         return !(purpleTx == 0 && purpleTy == 0 && greenTx == 0 && greenTy == 0);
     }
+
+    public double getTagXMeters(double tagHeight) {
+        double dz = tagHeight - cameraHeightM;
+        double pitchRad = Math.toRadians(tagTy);
+        double horizDist = dz / Math.tan(pitchRad);
+        double yawRad = Math.toRadians(tagTx);
+        return horizDist * Math.cos(yawRad);
+    }
+
+    public double getTagYMeters(double tagHeight) {
+        double dz = tagHeight - cameraHeightM;
+        double pitchRad = Math.toRadians(tagTy);
+        double horizDist = dz / Math.tan(pitchRad);
+        double yawRad = Math.toRadians(tagTx);
+        return horizDist * Math.sin(yawRad);
+    }
+
+    public double getTagZMeters(double tagHeight) {
+        return tagHeight;
+    }
+
     public static class Artifact {
         public final String type;
         public final double cx, cy, width, height;

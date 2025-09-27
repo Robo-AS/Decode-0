@@ -17,10 +17,10 @@ public class Mecanum  {
     }
 
     public void drive(double strafe, double forward, double turn) {
-        double fl = forward + strafe + turn;
-        double fr = forward - strafe - turn;
-        double bl = forward - strafe + turn;
-        double br = forward + strafe - turn;
+        double fl = forward - strafe - turn;
+        double fr = forward + strafe + turn;
+        double bl = forward + strafe - turn;
+        double br = forward - strafe + turn;
 
         double max = Math.max(1.0, Math.max(Math.abs(fl),
                 Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
@@ -30,5 +30,6 @@ public class Mecanum  {
         leftRear.setPower(bl / max);
         rightRear.setPower(br / max);
     }
+
 }
 
