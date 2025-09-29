@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.programs.opmodes.auto;
+package org.firstinspires.ftc.teamcode.programs.opmodes.auto.pedro;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -20,21 +20,24 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.commandbase.auto.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "Bottom Blue Auto")
-public class firstUpperBlueAuto extends LinearOpMode {
+@Autonomous(name = "Bottom Blue w Gate Auto")
+public class firstBottomBlueAutoWithGate extends LinearOpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
     private double loopTime = 0;
     private final ElapsedTime time = new ElapsedTime();
 
-    public static Pose startPose = new Pose(56.000, 135.400, Math.toRadians(90));
-    public static Pose outtakePreload = new Pose(32.626, 110.690);
-    public static Pose outtake1 = new Pose(51.758, 91.730);
-    public static Pose outtake2 =  new Pose(64.740, 79.089);
+    public static Pose startPose = new Pose(56, 8, Math.toRadians(90));
+    public static Pose outtake = new Pose(56.000, 18.000);
 
-    public static Pose intake1 = new Pose(45.000, 84.500);
-    public static Pose intake2 = new Pose(45.000, 59.000);
+    public static Pose openGate = new Pose(17.000, 71.744);
+    public static Pose gateControl = new Pose(66.278, 78.064);
 
+    public static Pose leaveGateControl = new Pose(45.609, 76.185);
+    public static Pose leaveGate = new Pose(54.320, 56.370);
+
+    public static Pose intake1 = new Pose(42.000, 35.000);
+    public static Pose intake2 = new Pose(42.000, 60.000);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -48,39 +51,49 @@ public class firstUpperBlueAuto extends LinearOpMode {
         ));
         robot.initialize();
 
-        PathBuilder builder = new PathBuilder(follower, new PathConstraints(30, 30));
+        PathBuilder builder = new PathBuilder(follower, new PathConstraints(0, 0));
 
         PathChain launchPreload = builder
-                .addPath(
-                        new BezierLine(startPose, outtakePreload)
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(315))
+                .addPath(new BezierLine(startPose, outtake))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(270))
+                .build();
+
+        PathChain gate = builder
+                .addPath(new BezierCurve(outtake, gateControl, openGate))
+                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
+                .build();
+
+        PathChain goToIntake = builder
+                .addPath(new BezierCurve(openGate, leaveGateControl, leaveGate))
+                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
                 .build();
 
         PathChain get1 = builder
-                .addPath(
-                        new BezierLine(outtakePreload, intake1)
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
+                .addPath(new BezierLine(leaveGate, intake1))
+                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
                 .build();
 
         PathChain throw1 = builder
-                .addPath(new BezierLine(intake1, outtake1))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+                .addPath(new BezierLine(intake1, outtake))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
                 .build();
 
         PathChain get2 = builder
-                .addPath(new BezierLine(outtake1, intake2))
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
+                .addPath(new BezierLine(outtake, intake2))
+                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
                 .build();
 
         PathChain throw2 = builder
-                .addPath(new BezierLine(intake2, outtake2))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+                .addPath(new BezierLine(intake2, outtake))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
                 .build();
 
         SequentialCommandGroup autoSequence = new SequentialCommandGroup(
                 new FollowPathCommand(follower, launchPreload, true),
+                new WaitCommand(500),
+                new FollowPathCommand(follower, gate, false),
+                new WaitCommand(500),
+                new FollowPathCommand(follower, goToIntake, false),
                 new WaitCommand(500),
                 new FollowPathCommand(follower, get1, false),
                 new WaitCommand(500),
@@ -100,7 +113,6 @@ public class firstUpperBlueAuto extends LinearOpMode {
         while (opModeIsActive()) {
             follower.update();
             CommandScheduler.getInstance().run();
-
             robot.getInstanceLimelight().loop();
 
             double loop = System.nanoTime();

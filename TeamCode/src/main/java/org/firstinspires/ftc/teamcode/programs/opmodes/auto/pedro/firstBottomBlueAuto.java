@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.programs.opmodes.auto;
+package org.firstinspires.ftc.teamcode.programs.opmodes.auto.pedro;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathBuilder;
@@ -20,8 +19,8 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.commandbase.auto.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "Bottom Blue w Gate Auto")
-public class firstBottomBlueAutoWithGate extends LinearOpMode {
+@Autonomous(name = "Bottom Blue Auto")
+public class firstBottomBlueAuto extends LinearOpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
     private double loopTime = 0;
@@ -30,14 +29,9 @@ public class firstBottomBlueAutoWithGate extends LinearOpMode {
     public static Pose startPose = new Pose(56, 8, Math.toRadians(90));
     public static Pose outtake = new Pose(56.000, 18.000);
 
-    public static Pose openGate = new Pose(17.000, 71.744);
-    public static Pose gateControl = new Pose(66.278, 78.064);
-
-    public static Pose leaveGateControl = new Pose(45.609, 76.185);
-    public static Pose leaveGate = new Pose(54.320, 56.370);
-
     public static Pose intake1 = new Pose(42.000, 35.000);
     public static Pose intake2 = new Pose(42.000, 60.000);
+
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -58,18 +52,8 @@ public class firstBottomBlueAutoWithGate extends LinearOpMode {
                 .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(270))
                 .build();
 
-        PathChain gate = builder
-                .addPath(new BezierCurve(outtake, gateControl, openGate))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
-                .build();
-
-        PathChain goToIntake = builder
-                .addPath(new BezierCurve(openGate, leaveGateControl, leaveGate))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
-                .build();
-
         PathChain get1 = builder
-                .addPath(new BezierLine(leaveGate, intake1))
+                .addPath(new BezierLine(outtake, intake1))
                 .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
                 .build();
 
@@ -91,10 +75,6 @@ public class firstBottomBlueAutoWithGate extends LinearOpMode {
         SequentialCommandGroup autoSequence = new SequentialCommandGroup(
                 new FollowPathCommand(follower, launchPreload, true),
                 new WaitCommand(500),
-                new FollowPathCommand(follower, gate, false),
-                new WaitCommand(500),
-                new FollowPathCommand(follower, goToIntake, false),
-                new WaitCommand(500),
                 new FollowPathCommand(follower, get1, false),
                 new WaitCommand(500),
                 new FollowPathCommand(follower, throw1, false),
@@ -113,6 +93,7 @@ public class firstBottomBlueAutoWithGate extends LinearOpMode {
         while (opModeIsActive()) {
             follower.update();
             CommandScheduler.getInstance().run();
+
             robot.getInstanceLimelight().loop();
 
             double loop = System.nanoTime();

@@ -110,25 +110,6 @@ public class Limelight extends SubsystemBase {
         return !(purpleTx == 0 && purpleTy == 0 && greenTx == 0 && greenTy == 0);
     }
 
-    public double getTagXMeters(double tagHeight) {
-        double dz = tagHeight - cameraHeightM;
-        double pitchRad = Math.toRadians(tagTy);
-        double horizDist = dz / Math.tan(pitchRad);
-        double yawRad = Math.toRadians(tagTx);
-        return horizDist * Math.cos(yawRad);
-    }
-
-    public double getTagYMeters(double tagHeight) {
-        double dz = tagHeight - cameraHeightM;
-        double pitchRad = Math.toRadians(tagTy);
-        double horizDist = dz / Math.tan(pitchRad);
-        double yawRad = Math.toRadians(tagTx);
-        return horizDist * Math.sin(yawRad);
-    }
-
-    public double getTagZMeters(double tagHeight) {
-        return tagHeight;
-    }
 
     public static class Artifact {
         public final String type;
