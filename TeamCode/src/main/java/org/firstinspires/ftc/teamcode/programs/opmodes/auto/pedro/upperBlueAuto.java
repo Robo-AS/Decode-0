@@ -19,18 +19,20 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.commandbase.auto.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "Bottom Blue Auto")
-public class firstBottomBlueAuto extends LinearOpMode {
+@Autonomous(name = "Upper Blue Auto")
+public class upperBlueAuto extends LinearOpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
     private double loopTime = 0;
     private final ElapsedTime time = new ElapsedTime();
 
-    public static Pose startPose = new Pose(56, 8, Math.toRadians(90));
-    public static Pose outtake = new Pose(56.000, 18.000);
+    public static Pose startPose = new Pose(56.000, 135.400, Math.toRadians(90));
+    public static Pose outtakePreload = new Pose(32.626, 110.690);
+    public static Pose outtake1 = new Pose(51.758, 91.730);
+    public static Pose outtake2 =  new Pose(64.740, 79.089);
 
-    public static Pose intake1 = new Pose(42.000, 35.000);
-    public static Pose intake2 = new Pose(42.000, 60.000);
+    public static Pose intake1 = new Pose(45.000, 84.500);
+    public static Pose intake2 = new Pose(45.000, 59.000);
 
 
     @Override
@@ -45,31 +47,35 @@ public class firstBottomBlueAuto extends LinearOpMode {
         ));
         robot.initialize();
 
-        PathBuilder builder = new PathBuilder(follower, new PathConstraints(0, 0));
+        PathBuilder builder = new PathBuilder(follower, new PathConstraints(30, 30));
 
         PathChain launchPreload = builder
-                .addPath(new BezierLine(startPose, outtake))
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(270))
+                .addPath(
+                        new BezierLine(startPose, outtakePreload)
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(315))
                 .build();
 
         PathChain get1 = builder
-                .addPath(new BezierLine(outtake, intake1))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+                .addPath(
+                        new BezierLine(outtakePreload, intake1)
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
                 .build();
 
         PathChain throw1 = builder
-                .addPath(new BezierLine(intake1, outtake))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
+                .addPath(new BezierLine(intake1, outtake1))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
                 .build();
 
         PathChain get2 = builder
-                .addPath(new BezierLine(outtake, intake2))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+                .addPath(new BezierLine(outtake1, intake2))
+                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
                 .build();
 
         PathChain throw2 = builder
-                .addPath(new BezierLine(intake2, outtake))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
+                .addPath(new BezierLine(intake2, outtake2))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
                 .build();
 
         SequentialCommandGroup autoSequence = new SequentialCommandGroup(

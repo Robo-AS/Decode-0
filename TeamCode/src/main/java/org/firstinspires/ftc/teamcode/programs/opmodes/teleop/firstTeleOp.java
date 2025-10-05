@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
+import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -13,12 +14,15 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
+import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
 @TeleOp(name = "Drive", group = "OpModes")
 public class firstTeleOp extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
+    double exponentialJoystickCoord_X_TURN, exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y;
+    public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
 
     @Override
     public void initialize() {
@@ -34,21 +38,26 @@ public class firstTeleOp extends CommandOpMode {
     public void run() {
         CommandScheduler.getInstance().run();
 
-        double forward = -gamepadEx.getLeftY();
-        double strafe = gamepadEx.getLeftX();
-        double turn = gamepadEx.getRightX();
+        exponentialJoystickCoord_X_TURN = (Math.pow(gamepad1.right_stick_x, 3) + liniarCoefTerm * gamepad1.right_stick_x) * constantTerm;
+        exponentialJoystickCoord_X_FORWARD = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
+        exponentialJoystickCoord_Y = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
+
+        double turnSpeed =  -exponentialJoystickCoord_X_TURN;
+        PoseRR drive = new PoseRR(-exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y, turnSpeed);
+        robot.mecanum.set(drive, 0);
 
         robot.pinpoint.update();
-        robot.mecanum.drive(strafe, forward, turn);
         robot.limelight.loop();
         robot.turret.loop(20);
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
-                new SequentialCommandGroup(
-                        new startIntake(),
-                        new WaitCommand(2000),
-                        new stopIntake()
+        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .whileHeld(
+                        new RunCommand(
+                                () -> Robot.getInstance().intake.setPower(Math.abs(gamepadEx.getLeftY()))
+                        )
                 )
-        );
+                .whenReleased(
+                        new stopIntake()
+                );
     }
 }

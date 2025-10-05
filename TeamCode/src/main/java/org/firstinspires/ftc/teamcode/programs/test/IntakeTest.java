@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
+import com.arcrobotics.ftclib.command.InstantCommand;
+import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -29,6 +31,17 @@ public class IntakeTest extends CommandOpMode {
 
         robot.initializeHardware(hardwareMap, (MultipleTelemetry) telemetry);
         robot.initialize();
+
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .whileHeld(
+                        new RunCommand(
+                                () -> Robot.getInstance().intake.setPower(Math.abs(gamepadEx.getLeftY()))
+                        )
+                )
+                .whenReleased(
+                        new stopIntake()
+                );
     }
 
     @Override
@@ -36,13 +49,5 @@ public class IntakeTest extends CommandOpMode {
         CommandScheduler.getInstance().run();
 
         Robot.getInstance().getInstanceLimelight().loop();
-
-        gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
-            new SequentialCommandGroup(
-                    new startIntake(),
-                    new WaitCommand(2000),
-                    new stopIntake()
-            )
-        );
     }
 }
