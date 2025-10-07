@@ -14,9 +14,9 @@ public class CompositePath {
         }
     }
 
-    private final List<ParametricPath> segments = new ArrayList<ParametricPath>();
-    private static final List<SampleU> table = new ArrayList<SampleU>();
-    private static double totalLength = 0;
+    private final List<ParametricPath> segments = new ArrayList<>();
+    private final List<SampleU> table = new ArrayList<>();  // <-- instance (NOT static)
+    private double totalLength = 0.0;                        // <-- instance (NOT static)
 
     public void add(ParametricPath seg){ segments.add(seg); }
 
@@ -81,10 +81,7 @@ public class CompositePath {
         return new PathSample(s, pos, tan, kappa);
     }
 
-    public Vector2d pointAtS(double s)
-    {
-        return sampleS(s).pos;
-    }
+    public Vector2d pointAtS(double s){ return sampleS(s).pos; }
 
     private PathSample toPathSample(SampleU su){
         Vector2d dp = su.dp;

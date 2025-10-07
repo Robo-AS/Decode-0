@@ -34,11 +34,11 @@ public class GoBildaPinpointLocalizer {
     // ---- config (can be set before or after init; setters apply immediately if initialized) ----
     private GoBildaPinpointDriver.GoBildaOdometryPods preset = GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
     private Double customTicksPerMM = null;   // if set, overrides preset
-    private double xOffsetMM = -84;           // pod X offset from robot center (mm). Left=+
-    private double yOffsetMM = -168;          // pod Y offset from robot center (mm). Forward=+
-    private GoBildaPinpointDriver.EncoderDirection dirX = GoBildaPinpointDriver.EncoderDirection.FORWARD;
+    private double xOffsetMM = -100;           // pod X offset from robot center (mm). Left=+
+    private double yOffsetMM = 160;          // pod Y offset from robot center (mm). Forward=+
+    private GoBildaPinpointDriver.EncoderDirection dirX = GoBildaPinpointDriver.EncoderDirection.REVERSED;
     private GoBildaPinpointDriver.EncoderDirection dirY = GoBildaPinpointDriver.EncoderDirection.FORWARD;
-    private Double yawScalar = null;          // optional fine scale for gyro
+    private Double yawScalar = -1.0;          // optional fine scale for gyro
 
     // ---- bulk decimation (I2C load control) ----
     private int bulkEveryN = 1; // 1 = bulk every loop, 2 = bulk every other loop, etc.

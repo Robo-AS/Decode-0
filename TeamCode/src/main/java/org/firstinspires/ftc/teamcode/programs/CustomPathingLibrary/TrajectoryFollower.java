@@ -26,12 +26,20 @@ public class TrajectoryFollower {
     // Optional cross-track → heading coupling (rad/s per inch), helps “point into” the path when off it
     private double kEyToW = 0.0;     // try small values like 0.1–0.3 rad/(s·in)
 
-    private Trajectory traj = null;
+    public Trajectory traj = null;
     private double t0 = 0.0;
     private double lastT = 0.0;
 
     // Keep last Frenet errors for D term (if you want explicit D; PIDF already computes internally from meas)
     private double lastElong = 0.0, lastElat = 0.0, lastEh = 0.0;
+    // extras at top of class
+    private static final double END_S_EPS = 0.5;       // in
+    private static final double END_POS_EPS = 0.75;    // in
+    private static final double END_HEADING_EPS = Math.toRadians(3.0); // rad
+
+    // Cache end state when we load a trajectory
+    public Trajectory.State endState = null;
+
 
     public TrajectoryFollower(PoseSupplier supplier, MecanumDrive drive){
         this.poseSupplier = supplier;
@@ -69,10 +77,31 @@ public class TrajectoryFollower {
         pidLong.reset(); pidLat.reset(); pidH.reset();
         sX.reset(0.0); sY.reset(0.0); sW.reset(0.0);
         lastElong = lastElat = lastEh = 0.0;
+        // cache end state for finish checks
+        if (t != null) endState = t.allStates().get(t.allStates().size()-1);
     }
 
     public boolean isFinished(double nowSec){
-        return traj==null || (nowSec - t0) >= traj.duration();
+        if (traj == null) return true;
+
+        // 1) time-based
+        if ((nowSec - t0) >= traj.duration()) return true;
+
+        // 2) end-of-path proximity (helps if robot crawls or stalls)
+        Trajectory.State ref = traj.sample(nowSec - t0);
+        if (endState != null) {
+            boolean nearEndS = (endState.s - ref.s) <= END_S_EPS;
+            Pose2d cur = poseSupplier.getPose();
+            double dx = endState.pose.x - cur.x;
+            double dy = endState.pose.y - cur.y;
+            double posErr = Math.hypot(dx, dy);
+            double hErr = normalize(endState.pose.heading - cur.heading);
+
+            if (nearEndS && posErr < END_POS_EPS && Math.abs(hErr) < END_HEADING_EPS) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void cancel(){

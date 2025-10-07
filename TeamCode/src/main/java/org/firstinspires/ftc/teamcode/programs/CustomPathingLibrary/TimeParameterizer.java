@@ -3,19 +3,20 @@ package org.firstinspires.ftc.teamcode.programs.CustomPathingLibrary;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Jerk-limited S-curve time parameterization over a CompositePath. */
+/** Jerk/accel-limited time parameterization over a CompositePath with angular caps. */
 public class TimeParameterizer {
 
     public static class TrajSample {
-        public final double t, s, v, a;     // time, arclength, vel, accel
-        public final Pose2d pose;           // x,y,heading (heading from tangent)
-        public final Vector2d tangent;
-        public final double curvature;
-        public final double omega;
-        public final double alpha;
+        public final double t, s, v, a;     // time, arclength, vel, accel (along-track)
+        public final Pose2d pose;           // x,y,heading (tangent or custom)
+        public final Vector2d tangent;      // unit tangent
+        public final double curvature;      // kappa
+        public final double omega;          // heading rate (rad/s)
+        public final double alpha;          // heading accel (rad/s^2)
 
-
-        public TrajSample(double t, double s, double v, double a, Pose2d pose, Vector2d tangent, double curvature, double omega, double alpha) {
+        public TrajSample(double t, double s, double v, double a,
+                          Pose2d pose, Vector2d tangent, double curvature,
+                          double omega, double alpha) {
             this.t = t;
             this.s = s;
             this.v = v;
@@ -28,210 +29,186 @@ public class TimeParameterizer {
         }
     }
 
-    /**
-     * Build a time-parameterized trajectory sampling the path at ds, enforcing constraints.
-     */
-    public static List<TrajSample> parameterize(CompositePath path, TrajectoryConstraints c, double ds, HeadingProfile headingProfileOrNull) {
-        int N = (int) Math.max(2, Math.ceil(path.length() / ds));
-        final double totalS = path.length();
-        double[] s = new double[N];
-        double[] v = new double[N];
-        double[] a = new double[N];
-        double[] k = new double[N];
-        Vector2d[] tan = new Vector2d[N];
+    public static List<TrajSample> parameterize(CompositePath path,
+                                                TrajectoryConstraints c,
+                                                double ds,
+                                                HeadingProfile headingProfileOrNull) {
+
+        final double Lpath = path.length();
+        final int N = Math.max(2, (int) Math.ceil(Lpath / ds));
+
+        // path samples
+        double[] s     = new double[N];
         Vector2d[] pos = new Vector2d[N];
+        Vector2d[] tan = new Vector2d[N];
+        double[] kappa = new double[N];
         double[] theta = new double[N];
 
-        double L =(DriveConstants.TRACKWIDTH_IN+DriveConstants.WHEELBASE_IN)*0.5;
+        // kinematics
+        double[] v = new double[N];
+        double[] a = new double[N];
 
-        // initial pass: curvature-based vmax
+        // mecanum wheel-speed feasibility helper
+        final double L = 0.5 * (DriveConstants.TRACKWIDTH_IN + DriveConstants.WHEELBASE_IN);
+
+        // geometry pass
         for (int i = 0; i < N; i++) {
-            double si = (double) i / (N - 1) * path.length();
+            double si = ((double) i / (N - 1)) * Lpath;
             PathSample ps = path.sampleS(si);
             s[i] = si;
-            k[i] = ps.curvature;
-            tan[i] = ps.tangent;
             pos[i] = ps.pos;
-            double vmax = c.maxVel;
+            tan[i] = ps.tangent;
+            kappa[i] = ps.curvature;
+
             if (headingProfileOrNull != null) {
                 theta[i] = headingProfileOrNull.headingAt(si);
             } else {
-                theta[i] = Math.atan2(ps.tangent.y, ps.tangent.x); //tangent heading
+                theta[i] = Math.atan2(tan[i].y, tan[i].x);
             }
 
-            // 1) centripetal a_lat cap: v <= sqrt(a_lat_max / |k|)
-            if (Math.abs(k[i]) > 1e-9) {
-                double vCentr = Math.sqrt(Math.max(0.0, c.maxCentripetal / Math.abs(k[i])));
-                vmax = Math.min(vmax, vCentr);
+            double vmax = c.maxVel;
 
-                // 2) angular velocity feasibility: omega = v*kappa <= maxAngVel
-                double vOmega = c.maxAngVel / Math.abs(k[i]);
-                vmax = Math.min(vmax, vOmega);
-
-                // 3) wheel speed feasibility for mecanum (vx=v, vy≈0, omega=v*kappa)
-                // |wheel| ≈ | v ± L*omega | = v * |1 ± L*kappa|  → v <= Vw_max / (1 + L*|k|)
-                double vWheel = DriveConstants.MAX_WHEEL_SPEED_IN_S / (1.0 + L*Math.abs(k[i]));
-                vmax = Math.min(vmax, vWheel);
+            if (Math.abs(kappa[i]) > 1e-9) {
+                // centripetal a_lat limit
+                vmax = Math.min(vmax, Math.sqrt(Math.max(0.0, c.maxCentripetal / Math.abs(kappa[i]))));
+                // angular velocity feasibility (tangent heading): omega = v * kappa
+                vmax = Math.min(vmax, c.maxAngVel / Math.abs(kappa[i]));
+                // wheel speed bound for mecanum
+                vmax = Math.min(vmax, DriveConstants.MAX_WHEEL_SPEED_IN_S / (1.0 + L * Math.abs(kappa[i])));
             }
+
             v[i] = vmax;
             a[i] = 0.0;
         }
 
-        //unwrap theta to avoid 2pi jumps
+        // unwrap theta for derivatives
         for (int i = 1; i < N; i++) {
             double d = theta[i] - theta[i - 1];
-            while (d <= -Math.PI) {
-                theta[i] += 2 * Math.PI;
-                d += 2 * Math.PI;
-            }
-            while (d > Math.PI) {
-                theta[i] -= 2 * Math.PI;
-                d -= 2 * Math.PI;
-            }
+            while (d <= -Math.PI) { theta[i] += 2.0 * Math.PI; d += 2.0 * Math.PI; }
+            while (d >   Math.PI) { theta[i] -= 2.0 * Math.PI; d -= 2.0 * Math.PI; }
         }
 
-        //numerical w.r.ts: theta_s, theta_ss
+        // theta_s and theta_ss
         double[] thS = new double[N];
         double[] thSS = new double[N];
+
         for (int i = 0; i < N; i++) {
             if (i == 0) {
-                double ds1 = Math.max(1e-9, s[i + 1] - s[i]);
-                thS[i] = (theta[i + 1] - theta[i]) / ds1;
+                thS[i] = (theta[i + 1] - theta[i]) / Math.max(1e-9, s[i + 1] - s[i]);
             } else if (i == N - 1) {
-                double ds1 = Math.max(1e-9, s[i] - s[i - 1]);
-                thS[i] = (theta[i] - theta[i - 1]) / ds1;
+                thS[i] = (theta[i] - theta[i - 1]) / Math.max(1e-9, s[i] - s[i - 1]);
             } else {
-                double dsL = Math.max(1e-9, s[i] - s[i - 1]);
-                double dsR = Math.max(1e-9, s[i + 1] - s[i]);
-                double dL = (theta[i] - theta[i - 1]) / dsL;
-                double dR = (theta[i + 1] - theta[i]) / dsR;
-                thS[i] = 0.5 * (dL + dR);
+                double dl = (theta[i] - theta[i - 1]) / Math.max(1e-9, s[i] - s[i - 1]);
+                double dr = (theta[i + 1] - theta[i]) / Math.max(1e-9, s[i + 1] - s[i]);
+                thS[i] = 0.5 * (dl + dr);
+            }
+        }
+        for (int i = 1; i < N - 1; i++) {
+            double dl = (theta[i] - theta[i - 1]) / Math.max(1e-9, s[i] - s[i - 1]);
+            double dr = (theta[i + 1] - theta[i]) / Math.max(1e-9, s[i + 1] - s[i]);
+            thSS[i] = (dr - dl) / Math.max(1e-9, s[i + 1] - s[i - 1]);
+        }
+        thSS[0] = thSS[1];
+        thSS[N - 1] = thSS[N - 2];
+
+        // additional omega cap from heading slope: |theta_s| * v <= omega_max
+        for (int i = 0; i < N; i++) {
+            if (Math.abs(thS[i]) > 1e-9) {
+                v[i] = Math.min(v[i], c.maxAngVel / Math.abs(thS[i]));
             }
         }
 
-        // 2) curvature-limited vmax (linear) + ANGULAR ω limit: |theta_s|*v ≤ maxAngVel
-        for (int i = 0; i < N; i++) {
-            double vmaxCurve = (Math.abs(k[i]) < 1e-9)
-                    ? c.maxVel
-                    : Math.min(c.maxVel, Math.sqrt(Math.max(0.0, c.maxCentripetal / Math.abs(k[i]))));
-
-            double vmaxAng = (Math.abs(thS[i]) < 1e-9)
-                    ? c.maxVel
-                    : (c.maxAngVel / Math.abs(thS[i])); // v ≤ ωmax / |θ_s|
-
-            v[i] = Math.min(vmaxCurve, vmaxAng);
-            a[i] = 0.0;
-        }
-
-        // 3) forward pass (jerk-limited linear accel) with angular α constraint merged
+        // forward pass (accel)
         v[0] = 0.0;
         a[0] = 0.0;
-
-
         for (int i = 1; i < N; i++) {
-
             double ds_i = s[i] - s[i - 1];
-            if (ds_i < 1e-9) continue;
+            if (ds_i <= 0) continue;
 
-            double vPrev = Math.max(1e-6, v[i - 1]);
-            double dt_est = ds_i / vPrev;
-            double aMaxStep = c.maxJerk * dt_est;
+            double vPrev = Math.max(1e-3, v[i - 1]);
+            double dtEst = ds_i / vPrev;
+            double aStep = c.maxJerk * dtEst;
+            double aMax = Math.min(c.maxAccel, a[i - 1] + aStep);
 
-            // linear accel candidate
-            double aCand = Math.min(c.maxAccel, a[i - 1] + aMaxStep);
-
-            // Approximate alpha = a*kappa (ignore curvature slope term for robustness)
-            double alphaEst = a[i] * k[i];
-            if (Math.abs(alphaEst) > c.maxAngAccel) {
-                // reduce a[i] so that |alpha| == maxAngAccel
-                double aCap = c.maxAngAccel / Math.max(1e-9, Math.abs(k[i]));
-                a[i] = Math.copySign(Math.min(Math.abs(a[i]), aCap), a[i]);
-                // re-compute feasible v with reduced a
-                double vCand = Math.sqrt(Math.max(0.0, v[i-1]*v[i-1] + 2.0 * a[i] * (s[i]-s[i-1])));
-                v[i] = Math.min(v[i], vCand);
-            }
-
-            // angular accel constraint: |alpha| = |theta_ss * v^2 + theta_s * a| ≤ maxAngAccel
-            // Solve for a: |theta_s| * a ≤ maxAngAccel - |theta_ss| * v^2
+            // angular accel cap: |theta_ss * v^2 + theta_s * a| <= maxAngAccel
             double rhs = c.maxAngAccel - Math.abs(thSS[i]) * (v[i - 1] * v[i - 1]);
             if (rhs < 0) rhs = 0;
             if (Math.abs(thS[i]) > 1e-9) {
-                double aMaxFromAng = rhs / Math.abs(thS[i]);
-                aCand = Math.min(aCand, aMaxFromAng);
+                aMax = Math.min(aMax, rhs / Math.abs(thS[i]));
             }
 
-            // kinematics v^2 = v0^2 + 2*a*ds
-            double vCand = Math.sqrt(Math.max(0.0, v[i - 1] * v[i - 1] + 2.0 * aCand * ds_i));
-            v[i] = Math.min(v[i], vCand);
-            a[i] = aCand;
+            // curvature-based alpha ~ a*|kappa|
+            if (Math.abs(kappa[i]) > 1e-9) {
+                aMax = Math.min(aMax, c.maxAngAccel / Math.abs(kappa[i]));
+            }
+
+            double vBound = Math.sqrt(Math.max(0.0, v[i - 1] * v[i - 1] + 2.0 * aMax * ds_i));
+            v[i] = Math.min(v[i], vBound);
+            a[i] = aMax;
         }
 
-        // 4) backward pass (jerk-limited linear decel) with angular α constraint
+        // backward pass (use positive decel magnitude)
         v[N - 1] = 0.0;
         a[N - 1] = 0.0;
         for (int i = N - 2; i >= 0; i--) {
             double ds_i = s[i + 1] - s[i];
-            if (ds_i < 1e-9) continue;
+            if (ds_i <= 0) continue;
 
-            double vNext = Math.max(1e-6, v[i + 1]);
-            double dt_est = ds_i / vNext;
-            double aMaxStep = c.maxJerk * dt_est;
+            double vNext = Math.max(1e-3, v[i + 1]);
+            double dtEst = ds_i / vNext;
+            double aStep = c.maxJerk * dtEst;
+            double aDecel = Math.min(c.maxDecel, a[i + 1] + aStep); // positive magnitude
 
-            // decel candidate (negative)
-            double aCand = Math.max(-c.maxDecel, a[i + 1] - aMaxStep);
-
-            // After computing v[i] and a[i] in the backward pass
-            double alphaEst = a[i] * k[i]; // a[i] will be negative on decel sections
-            double alphaCap = c.maxAngDecel;
-            if (Math.abs(alphaEst) > alphaCap) {
-                double aCap = alphaCap / Math.max(1e-9, Math.abs(k[i]));
-                // on decel, a[i] is negative; clamp toward -aCap
-                a[i] = Math.max(-aCap, a[i]);
-                double vCand = Math.sqrt(Math.max(0.0, v[i+1]*v[i+1] + 2.0 * a[i] * (s[i] - s[i+1])));
-                v[i] = Math.min(v[i], vCand);
+            if (Math.abs(kappa[i]) > 1e-9) {
+                aDecel = Math.min(aDecel, c.maxAngDecel / Math.abs(kappa[i]));
             }
-
 
             double rhs = c.maxAngAccel - Math.abs(thSS[i]) * (v[i + 1] * v[i + 1]);
             if (rhs < 0) rhs = 0;
             if (Math.abs(thS[i]) > 1e-9) {
-                double aMaxFromAng = rhs / Math.abs(thS[i]);
-                // aCand is negative, so limit magnitude accordingly
-                if (aCand < -aMaxFromAng) aCand = -aMaxFromAng;
+                aDecel = Math.min(aDecel, rhs / Math.abs(thS[i]));
             }
 
-            double vCand = Math.sqrt(Math.max(0.0, v[i + 1] * v[i + 1] + 2.0 * aCand * ds_i));
-            v[i] = Math.min(v[i], vCand);
-            a[i] = aCand;
+            double vBound = Math.sqrt(Math.max(0.0, v[i + 1] * v[i + 1] + 2.0 * aDecel * ds_i));
+            v[i] = Math.min(v[i], vBound);
         }
 
-        // 5) integrate time, compute omega/alpha feedforward
+        // avoid tiny zeros which make dt huge
+        for (int i = 0; i < N; i++) {
+            if (v[i] < 1e-3) v[i] = 1e-3;
+        }
+
+        // recompute along-track acceleration from v profile
+        a[0] = (v[1] * v[1] - v[0] * v[0]) / Math.max(1e-9, 2.0 * (s[1] - s[0]));
+        for (int i = 1; i < N; i++) {
+            double ds_i = Math.max(1e-9, s[i] - s[i - 1]);
+            a[i] = (v[i] * v[i] - v[i - 1] * v[i - 1]) / (2.0 * ds_i);
+        }
+
+        // time integration
         List<TrajSample> out = new ArrayList<>(N);
         double t = 0.0;
-        double omega = thS[0] * v[0];
-        double alpha = thSS[0] * v[0] * v[0] + thS[0] * a[0];
-        Pose2d pose0 = new Pose2d(pos[0].x, pos[0].y, theta[0]);
-        out.add(new TrajSample(t, s[0], v[0], a[0], pose0, tan[0], k[0], omega, alpha));
+
+        double omega0 = thS[0] * v[0];
+        double alpha0 = thSS[0] * v[0] * v[0] + thS[0] * a[0];
+        out.add(new TrajSample(0.0, s[0], v[0], a[0],
+                new Pose2d(pos[0].x, pos[0].y, theta[0]),
+                tan[0], kappa[0], omega0, alpha0));
 
         for (int i = 1; i < N; i++) {
             double ds_i = s[i] - s[i - 1];
-            double vmid = Math.max(1e-6, 0.5 * (v[i] + v[i - 1]));
-            double dt = ds_i / vmid;
+            double vAvg = Math.max(1e-3, 0.5 * (v[i] + v[i - 1]));
+            double dt = ds_i / vAvg;
             t += dt;
 
-            omega = thS[i] * v[i];
-            alpha = thSS[i] * v[i] * v[i] + thS[i] * a[i];
-            Pose2d pose = new Pose2d(pos[i].x, pos[i].y, theta[i]);
-            out.add(new TrajSample(t, s[i], v[i], a[i], pose, tan[i], k[i], omega, alpha));
+            double omega = thS[i] * v[i];
+            double alpha = thSS[i] * v[i] * v[i] + thS[i] * a[i];
+
+            out.add(new TrajSample(t, s[i], v[i], a[i],
+                    new Pose2d(pos[i].x, pos[i].y, theta[i]),
+                    tan[i], kappa[i], omega, alpha));
         }
+
         return out;
-    }
-
-
-    private static TrajSample toSample(int i, double t, double[] s, double[] v, double[] a,
-                                       Vector2d[] pos, Vector2d[] tan, double[] k, double omega, double alpha) {
-        double heading = Math.atan2(tan[i].y, tan[i].x);
-        Pose2d pose = new Pose2d(pos[i].x, pos[i].y, heading);
-        return new TrajSample(t, s[i], v[i], a[i], pose, tan[i], k[i], omega, alpha);
     }
 }

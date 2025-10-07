@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.programs.utils.TeleOpConstants.ROBO
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -12,7 +13,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MecanumDrive {
-    public DcMotorEx LeftFront, RightFront, LeftRear, RightRear;
+    public DcMotorEx LeftFront;
+    public DcMotorEx RightFront;
+    public DcMotorEx LeftRear;
+    public DcMotorEx RightRear;
     private List <DcMotorEx> motors;
     double reverse = 1.0;
     public static double powerReduction = 20;
@@ -29,6 +33,10 @@ public class MecanumDrive {
             motor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             motor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         }
+        RightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        RightRear.setDirection(DcMotorSimple.Direction.FORWARD);
+        LeftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        LeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
     }
     public void teleop(GamepadEx gamepad, Telemetry telemetry) {
         double x = -gamepad.getLeftX();
@@ -71,10 +79,10 @@ public class MecanumDrive {
 
     public void setPowers(double lf, double rf, double lb, double rb)
     {
-        LeftFront.setPower(clip(lf/powerReduction));
-        RightFront.setPower(clip(rf/powerReduction));
-        LeftRear.setPower(clip(lb/powerReduction));
-        RightRear.setPower(clip(rb/powerReduction));
+        LeftFront.setPower(lf);
+        RightFront.setPower(rf);
+        LeftRear.setPower(lb);
+        RightRear.setPower(rb);
     }
     public double addons(double value) {
         if (Math.abs(value) < CONTROLLER_DEADZONE) return 0;

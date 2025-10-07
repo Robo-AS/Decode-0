@@ -22,16 +22,16 @@ public final class DriveConstants {
 
     // Maximum angular jerk (rad/s^3) if you want jerk-limited turn profiles
     public static final double MAX_ANG_JERK_RAD_S3 = 10.0;  // tune later
-    public static final double MAX_ANG_DECCEL_RAD_S2 = 2.0;
+    public static final double MAX_ANG_DECCEL_RAD_S2 = 2.0 * Math.PI;
 
 
     // Wheel
-    public static double MAX_WHEEL_SPEED_IN_S = 90.0; // = MAX_RPM / 60 * Wheel_Circumference
+    public static double MAX_WHEEL_SPEED_IN_S = 70; // = MAX_RPM / 60 * Wheel_Circumference
 
     // PIDF gains
-    public static double KP_X=0.08, KI_X=0.0, KD_X=0.003, KF_X=0.0;
-    public static double KP_Y=0.08, KI_Y=0.0, KD_Y=0.003, KF_Y=0.0;
-    public static double KP_H=2.8,  KI_H=0.0, KD_H=0.02,  KF_H=0.0;
+    public static double KP_X=1, KI_X=0.0, KD_X=0.003, KF_X=1;
+    public static double KP_Y=1, KI_Y=0.0, KD_Y=0.003, KF_Y=1;
+    public static double KP_H=2.8,  KI_H=0.0, KD_H=0.02,  KF_H=1;
 
     // Derivative filter
     public static double LOOP_HZ    = 50.0;
