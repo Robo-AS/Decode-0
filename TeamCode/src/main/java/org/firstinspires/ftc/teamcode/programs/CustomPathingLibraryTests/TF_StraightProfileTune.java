@@ -40,7 +40,7 @@ public class TF_StraightProfileTune extends LinearOpMode {
                 .line(new Vector2d(start.x, start.y), new Vector2d(goal.x, goal.y));
 
 
-         Trajectory traj = tb.buildWithHeading(lim, DS, new FixedStartEndHeading(start.heading, goal.heading, 10));
+         Trajectory traj = tb.buildWithHeading(lim, DS, new FixedStartEndHeading(start.heading, goal.heading, 10), null);
 
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);
 

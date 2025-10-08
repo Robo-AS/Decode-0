@@ -25,7 +25,7 @@ public class TF_StrafeProfileTune extends LinearOpMode {
 
         Trajectory traj = new TrajectoryBuilder()
                 .line(new Vector2d(start.x, start.y), new Vector2d(goal.x, goal.y))
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
 
 
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);

@@ -11,7 +11,7 @@ import Pinpoint_Blocks_Driver.GoBildaPinpointDriver;
 public class TF_StraightBackForth extends LinearOpMode {
 
     // Use DriveConstants in real code; kept local for a quick test
-    public static double MAX_VEL = 30, MAX_ACC = 20, MAX_JERK = 200, MAX_DECEL = 20, MAX_CENTRIPETAL = 80, DS = 0.5;
+    public static double MAX_VEL = 60, MAX_ACC = 40, MAX_JERK = 200, MAX_DECEL = 20, MAX_CENTRIPETAL = 80, DS = 0.5;
 
     @Override
     public void runOpMode() {
@@ -39,24 +39,31 @@ public class TF_StraightBackForth extends LinearOpMode {
         // A -> B, tangent heading
         Trajectory t1 = new TrajectoryBuilder()
                 .line(A, B)
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
+
+        // Store its end heading for continuity
+        double seed12 = t1.allStates().get(t1.allStates().size()-1).pose.heading;
+
 
         // In-place 180 face back toward A using a fixed heading profile across a 1-inch "stub"
         double hA = Math.atan2(0, 1);            // 0 rad
-        double hB = hA + Math.PI;                // +π rad (180°)
+        double hB = hA - (Math.PI/4);                // +π rad (180°)
         Trajectory t2 = new TrajectoryBuilder()
                 .line(B, new Vector2d(B.x + 12, B.y)) // tiny segment just to carry heading profile
-                .buildWithHeading(lim, DS, new FixedStartEndHeading(hA, hB, 1.0));
+                .buildWithHeading(lim, DS, new FixedStartEndHeading(hA, hB, 1.0), seed12);
+
+        double seed23 = t2.allStates().get(t2.allStates().size()-1).pose.heading;
+
 
         // B -> A, tangent heading (which is already pointing back)
         Trajectory t3 = new TrajectoryBuilder()
                 .line(B, A)
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
 
         // Turn back to original heading on a 1-inch stub at A
         Trajectory t4 = new TrajectoryBuilder()
                 .line(A, new Vector2d(A.x + 12, A.y))
-                .buildWithHeading(lim, DS, new FixedStartEndHeading(hB, hA, 1.0));
+                .buildWithHeading(lim, DS, new FixedStartEndHeading(hB, hA, 1.0), null);
 
         Trajectory[] seq = new Trajectory[]{t1, t2, t3, t4};
         int idx = 0;
@@ -86,18 +93,18 @@ public class TF_StraightBackForth extends LinearOpMode {
             follower.update(now);
 
             if (stage == 1 && follower.isFinished(now)) {
-                follower.setTrajectory(t2, now);
+                follower.setTrajectory(t3, now+100);
                 stage = 2;
             }
+//            else if (stage == 2 && follower.isFinished(now)) {
+//                follower.setTrajectory(t3, now);
+//                stage = 3;
+//            }
+//            else if (stage == 3 && follower.isFinished(now)) {
+//                follower.setTrajectory(t4, now);
+//                stage = 4;
+//            }
             else if (stage == 2 && follower.isFinished(now)) {
-                follower.setTrajectory(t3, now);
-                stage = 3;
-            }
-            else if (stage == 3 && follower.isFinished(now)) {
-                follower.setTrajectory(t4, now);
-                stage = 4;
-            }
-            else if (stage == 4 && follower.isFinished(now)) {
                 // Done
                 drive.setPowers(0,0,0,0);
                 break;

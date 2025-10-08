@@ -22,11 +22,11 @@ public class Localization_FieldCoordinateCheck extends LinearOpMode {
 
         Trajectory out = new TrajectoryBuilder()
                 .line(new Vector2d(X0,Y0), new Vector2d(X1,Y1))
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
 
         Trajectory back = new TrajectoryBuilder()
                 .line(new Vector2d(X1,Y1), new Vector2d(X0,Y0))
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
 
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);
 

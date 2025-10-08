@@ -32,10 +32,11 @@ public class TimeParameterizer {
     public static List<TrajSample> parameterize(CompositePath path,
                                                 TrajectoryConstraints c,
                                                 double ds,
-                                                HeadingProfile headingProfileOrNull) {
+                                                HeadingProfile headingProfileOrNull, Double unwrapSeedOrNull) {
 
         final double Lpath = path.length();
-        final int N = Math.max(2, (int) Math.ceil(Lpath / ds));
+        final double dsUse = Math.max(1e-3, ds);
+        final int N = Math.max(2, (int) Math.ceil(Lpath / dsUse));
 
         // path samples
         double[] s     = new double[N];
@@ -63,7 +64,7 @@ public class TimeParameterizer {
             if (headingProfileOrNull != null) {
                 theta[i] = headingProfileOrNull.headingAt(si);
             } else {
-                theta[i] = Math.atan2(tan[i].y, tan[i].x);
+                theta[i] = Math.atan2(tan[i].y, tan[i].x); // tangent heading
             }
 
             double vmax = c.maxVel;
@@ -71,7 +72,7 @@ public class TimeParameterizer {
             if (Math.abs(kappa[i]) > 1e-9) {
                 // centripetal a_lat limit
                 vmax = Math.min(vmax, Math.sqrt(Math.max(0.0, c.maxCentripetal / Math.abs(kappa[i]))));
-                // angular velocity feasibility (tangent heading): omega = v * kappa
+                // angular velocity feasibility (from curvature): omega = v * kappa
                 vmax = Math.min(vmax, c.maxAngVel / Math.abs(kappa[i]));
                 // wheel speed bound for mecanum
                 vmax = Math.min(vmax, DriveConstants.MAX_WHEEL_SPEED_IN_S / (1.0 + L * Math.abs(kappa[i])));
@@ -79,6 +80,15 @@ public class TimeParameterizer {
 
             v[i] = vmax;
             a[i] = 0.0;
+        }
+
+        if (unwrapSeedOrNull != null) {
+            theta[0] = HeadingUtil.unwrapToNear(theta[0], unwrapSeedOrNull);
+        } else {
+            theta[0] = HeadingUtil.wrap(theta[0]);
+        }
+        for (int i = 1; i < N; i++) {
+            theta[i] = HeadingUtil.unwrapToNear(theta[i], theta[i-1]);
         }
 
         // unwrap theta for derivatives
@@ -111,10 +121,14 @@ public class TimeParameterizer {
         thSS[0] = thSS[1];
         thSS[N - 1] = thSS[N - 2];
 
-        // additional omega cap from heading slope: |theta_s| * v <= omega_max
-        for (int i = 0; i < N; i++) {
-            if (Math.abs(thS[i]) > 1e-9) {
-                v[i] = Math.min(v[i], c.maxAngVel / Math.abs(thS[i]));
+        // IMPORTANT: apply the heading-slope ω cap ONLY when using a custom heading profile.
+        // When heading == tangent, the curvature ω cap already enforces the same thing,
+        // and double-capping makes v artificially tiny → huge durations.
+        if (headingProfileOrNull != null) {
+            for (int i = 0; i < N; i++) {
+                if (Math.abs(thS[i]) > 1e-9) {
+                    v[i] = Math.min(v[i], c.maxAngVel / Math.abs(thS[i]));
+                }
             }
         }
 

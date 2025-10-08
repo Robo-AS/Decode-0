@@ -20,7 +20,7 @@ public class TF_VelocityTrackingTune extends LinearOpMode {
         TrajectoryConstraints lim = new TrajectoryConstraints(CMD_MAX_VEL, MAX_ACC, MAX_DECEL, MAX_JERK, MAX_CENTRIPETAL);
         Trajectory traj = new TrajectoryBuilder()
                 .line(new Vector2d(X0,Y0), new Vector2d(X1,Y1))
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
 
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);
 

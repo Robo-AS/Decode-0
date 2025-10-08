@@ -36,14 +36,14 @@ public class TF_TurnProfileTune extends LinearOpMode {
 
         Trajectory traj = new TrajectoryBuilder()
                 .line(new Vector2d(start.x, start.y), new Vector2d(end.x, end.y))
-                .buildWithHeading(lim, DS, (s)->0 ); // we’ll override heading below
+                .buildWithHeading(lim, DS, (s)->0 , null); // we’ll override heading below
 
         // Rebuild with a heading profile based on s (use total length)
         double totalS = new CompositePath().length(); // if unavailable, just reuse builder’s internal length
         FixedStartEndHeading prof = new FixedStartEndHeading(start.heading, Math.toRadians(H1_DEG));
         traj = new TrajectoryBuilder()
                 .line(new Vector2d(start.x, start.y), new Vector2d(end.x, end.y))
-                .buildWithHeading(lim, DS, s -> prof.headingAtS(s, 1.0));
+                .buildWithHeading(lim, DS, s -> prof.headingAtS(s, 1.0), null);
 
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);
 

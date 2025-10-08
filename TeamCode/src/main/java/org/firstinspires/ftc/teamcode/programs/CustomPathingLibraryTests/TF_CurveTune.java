@@ -20,7 +20,7 @@ public class TF_CurveTune extends LinearOpMode {
         TrajectoryConstraints lim = new TrajectoryConstraints(MAX_VEL, MAX_ACC, MAX_DECEL, MAX_JERK, MAX_CENTRIPETAL);
         Trajectory traj = new TrajectoryBuilder()
                 .bezier(new Vector2d(X0,Y0), new Vector2d(X1,Y1), new Vector2d(X2,Y2), new Vector2d(X3,Y3))
-                .buildTangentHeading(lim, DS);
+                .buildTangentHeading(lim, DS, null);
 
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);
 
