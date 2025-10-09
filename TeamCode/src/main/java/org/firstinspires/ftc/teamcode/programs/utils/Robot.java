@@ -24,6 +24,7 @@ public class Robot {
     public Limelight limelight = null;
     public Turret turret = null;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
+    public DcMotorEx leftLauncher, rightLauncher;
     public Servo servoX, servoY;
     public IMU imu;
     public List<DcMotorEx> motors;
@@ -77,6 +78,13 @@ public class Robot {
         servoY.setDirection(Servo.Direction.REVERSE);
 
         turret = new Turret();
+
+        //launcher
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
+
+     //   leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+     //   rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
 
         //imu
         imu = hardwareMap.get(IMU.class, "imu");
