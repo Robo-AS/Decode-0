@@ -49,7 +49,7 @@ public class TF_TurnProfileTune extends LinearOpMode {
 
         waitForStart();
         double t0 = getRuntime(), last = t0;
-        follower.setTrajectory(traj, t0);
+        follower.setTrajectory(traj, t0, true);
 
         while (opModeIsActive() && !follower.isFinished(getRuntime())) {
             double now = getRuntime(), dt = Math.max(1e-3, now - last); last = now;

@@ -11,7 +11,7 @@ import Pinpoint_Blocks_Driver.GoBildaPinpointDriver;
 public class TF_StraightBackForth extends LinearOpMode {
 
     // Use DriveConstants in real code; kept local for a quick test
-    public static double MAX_VEL = 60, MAX_ACC = 40, MAX_JERK = 200, MAX_DECEL = 20, MAX_CENTRIPETAL = 80, DS = 0.5;
+    public static double MAX_VEL = 60, MAX_ACC = 60, MAX_JERK = 200, MAX_DECEL = 20, MAX_CENTRIPETAL = 80, DS = 0.5;
 
     @Override
     public void runOpMode() {
@@ -27,7 +27,7 @@ public class TF_StraightBackForth extends LinearOpMode {
 
         TrajectoryFollower follower = new TrajectoryFollower(localizer::getPose, drive);
         follower.setAlphaFeedforward(0.08);
-        follower.setCrossTrackToHeadingGain(0.2);
+        follower.setCrossTrackToHeadingGain(0);
 
         TrajectoryConstraints lim = new TrajectoryConstraints(
                 MAX_VEL, MAX_ACC, MAX_DECEL, MAX_JERK, MAX_CENTRIPETAL
@@ -47,7 +47,11 @@ public class TF_StraightBackForth extends LinearOpMode {
 
         // In-place 180 face back toward A using a fixed heading profile across a 1-inch "stub"
         double hA = Math.atan2(0, 1);            // 0 rad
-        double hB = hA - (Math.PI/4);                // +π rad (180°)
+        double hB = hA - (Math.PI/4);
+
+        double h1=0.0;
+        double h2=90;
+        // +π rad (180°)
         Trajectory t2 = new TrajectoryBuilder()
                 .line(B, new Vector2d(B.x + 12, B.y)) // tiny segment just to carry heading profile
                 .buildWithHeading(lim, DS, new FixedStartEndHeading(hA, hB, 1.0), seed12);
@@ -58,7 +62,7 @@ public class TF_StraightBackForth extends LinearOpMode {
         // B -> A, tangent heading (which is already pointing back)
         Trajectory t3 = new TrajectoryBuilder()
                 .line(B, A)
-                .buildTangentHeading(lim, DS, null);
+                .buildWithHeading(lim, DS, new FixedStartEndHeading(h1, h1, 1.0), 0.0);
 
         // Turn back to original heading on a 1-inch stub at A
         Trajectory t4 = new TrajectoryBuilder()
@@ -67,6 +71,7 @@ public class TF_StraightBackForth extends LinearOpMode {
 
         Trajectory[] seq = new Trajectory[]{t1, t2, t3, t4};
         int idx = 0;
+
 
         // Sync start pose to the first trajectory
         Trajectory.State s0 = t1.sample(0);
@@ -78,7 +83,7 @@ public class TF_StraightBackForth extends LinearOpMode {
         double now = getRuntime();
         double lastNow = now;
         int stage = 1;
-        follower.setTrajectory(t1, now);
+        follower.setTrajectory(t1, now, false);
 
 
         while (opModeIsActive()) {
@@ -93,7 +98,8 @@ public class TF_StraightBackForth extends LinearOpMode {
             follower.update(now);
 
             if (stage == 1 && follower.isFinished(now)) {
-                follower.setTrajectory(t3, now+100);
+                follower.cancel();
+                follower.setTrajectory(t3, now, false);
                 stage = 2;
             }
 //            else if (stage == 2 && follower.isFinished(now)) {
@@ -106,6 +112,7 @@ public class TF_StraightBackForth extends LinearOpMode {
 //            }
             else if (stage == 2 && follower.isFinished(now)) {
                 // Done
+                follower.cancel();
                 drive.setPowers(0,0,0,0);
                 break;
             }

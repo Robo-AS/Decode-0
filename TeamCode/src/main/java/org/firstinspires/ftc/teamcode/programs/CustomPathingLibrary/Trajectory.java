@@ -95,6 +95,25 @@ public class Trajectory {
         da = normalize(da);
         return normalize(a + da*u);
     }
+
+    public double closestTimeTo(Pose2d p){
+        if (states.isEmpty()) return 0.0;
+        double bestDist2 = Double.POSITIVE_INFINITY;
+        double bestT = 0.0;
+
+        // linear scan is fine (your trajectories are short); optimize later if needed
+        for (State s : states){
+            double dx = s.pose.x - p.x;
+            double dy = s.pose.y - p.y;
+            double d2 = dx*dx + dy*dy;
+            if (d2 < bestDist2){
+                bestDist2 = d2;
+                bestT = s.t;
+            }
+        }
+        return bestT;
+    }
+
     private static double normalize(double x){
         while (x <= -Math.PI) x += 2*Math.PI;
         while (x >   Math.PI) x -= 2*Math.PI;

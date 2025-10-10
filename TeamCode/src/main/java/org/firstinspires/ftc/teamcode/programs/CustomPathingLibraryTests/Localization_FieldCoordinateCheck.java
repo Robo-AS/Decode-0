@@ -33,7 +33,7 @@ public class Localization_FieldCoordinateCheck extends LinearOpMode {
         waitForStart();
         double last = getRuntime();
 
-        follower.setTrajectory(out, getRuntime());
+        follower.setTrajectory(out, getRuntime(), true);
         while(opModeIsActive() && !follower.isFinished(getRuntime())){
             double now=getRuntime(), dt=Math.max(1e-3, now-last); last=now;
             loc.update(dt); follower.update(now);
@@ -41,7 +41,7 @@ public class Localization_FieldCoordinateCheck extends LinearOpMode {
             Pose2d p=loc.getPose(); telemetry.addData("pose","x=%.1f y=%.1f h=%.1f°", p.x,p.y,Math.toDegrees(p.heading));
             telemetry.update();
         }
-        follower.setTrajectory(back, getRuntime());
+        follower.setTrajectory(back, getRuntime(), true);
         while(opModeIsActive() && !follower.isFinished(getRuntime())){
             double now=getRuntime(), dt=Math.max(1e-3, now-last); last=now;
             loc.update(dt); follower.update(now);

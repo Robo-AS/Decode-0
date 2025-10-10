@@ -29,9 +29,12 @@ public final class DriveConstants {
     public static double MAX_WHEEL_SPEED_IN_S = 70; // = MAX_RPM / 60 * Wheel_Circumference
 
     // PIDF gains
-    public static double KP_X=1, KI_X=0.001, KD_X=0.01, KF_X=2;
-    public static double KP_Y=1, KI_Y=0.001, KD_Y=0.1, KF_Y=2;
-    public static double KP_H=0.1,  KI_H=0.05, KD_H=0.2,  KF_H=2;
+    public static double KP_X=3, KI_X=0.003, KD_X=0.01, KF_X=0;
+    public static double KP_Y=1, KI_Y=0, KD_Y=0.2, KF_Y=0;
+    public static double KP_H=0.05,  KI_H=0, KD_H=0.2,  KF_H=0;
+
+    public static double KS_POWER = 0.06; //Static Friction Compensation
+    public static double POWER_DEADBAND = 0.02;
 
     // Derivative filter
     public static double LOOP_HZ    = 50.0;

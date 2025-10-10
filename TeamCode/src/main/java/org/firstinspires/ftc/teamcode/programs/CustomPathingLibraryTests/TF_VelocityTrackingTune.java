@@ -25,7 +25,7 @@ public class TF_VelocityTrackingTune extends LinearOpMode {
         TrajectoryFollower follower = new TrajectoryFollower(loc::getPose, drive);
 
         waitForStart();
-        double t0=getRuntime(), last=t0; follower.setTrajectory(traj, t0);
+        double t0=getRuntime(), last=t0; follower.setTrajectory(traj, t0, true);
         while (opModeIsActive() && !follower.isFinished(getRuntime())) {
             double now=getRuntime(), dt=Math.max(1e-3, now-last); last=now;
             loc.update(dt); follower.update(now);
