@@ -11,7 +11,7 @@ import Pinpoint_Blocks_Driver.GoBildaPinpointDriver;
 public class TF_StraightBackForth extends LinearOpMode {
 
     // Use DriveConstants in real code; kept local for a quick test
-    public static double MAX_VEL = 60, MAX_ACC = 60, MAX_JERK = 200, MAX_DECEL = 20, MAX_CENTRIPETAL = 80, DS = 0.5;
+    public static double MAX_VEL = 60, MAX_ACC = 60, MAX_JERK = 200, MAX_DECEL = 30, MAX_CENTRIPETAL = 80, DS = 0.5;
 
     @Override
     public void runOpMode() {
@@ -21,7 +21,7 @@ public class TF_StraightBackForth extends LinearOpMode {
                 new GoBildaPinpointLocalizer("pinpoint")
                         .setPodOffsetsMM(-100, 160) // X left+, Y forward+
                         .setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED,
-                                GoBildaPinpointDriver.EncoderDirection.FORWARD);
+                                GoBildaPinpointDriver.EncoderDirection.REVERSED);
         localizer.init(hardwareMap);
         localizer.resetPosAndIMU(); // still robot → gyro bias set
 
@@ -62,7 +62,7 @@ public class TF_StraightBackForth extends LinearOpMode {
         // B -> A, tangent heading (which is already pointing back)
         Trajectory t3 = new TrajectoryBuilder()
                 .line(B, A)
-                .buildWithHeading(lim, DS, new FixedStartEndHeading(h1, h1, 1.0), 0.0);
+                .buildWithHeading(lim, DS, new FixedStartEndHeading(h1, h2, 1.0), 0.0);
 
         // Turn back to original heading on a 1-inch stub at A
         Trajectory t4 = new TrajectoryBuilder()
@@ -102,14 +102,6 @@ public class TF_StraightBackForth extends LinearOpMode {
                 follower.setTrajectory(t3, now, false);
                 stage = 2;
             }
-//            else if (stage == 2 && follower.isFinished(now)) {
-//                follower.setTrajectory(t3, now);
-//                stage = 3;
-//            }
-//            else if (stage == 3 && follower.isFinished(now)) {
-//                follower.setTrajectory(t4, now);
-//                stage = 4;
-//            }
             else if (stage == 2 && follower.isFinished(now)) {
                 // Done
                 follower.cancel();

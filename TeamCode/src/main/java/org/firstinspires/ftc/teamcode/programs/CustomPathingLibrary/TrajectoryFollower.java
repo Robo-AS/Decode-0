@@ -110,126 +110,31 @@ public class TrajectoryFollower {
     }
 
     public void update(double nowSec){
-        // --- time step ---
+        // time step
         double dt = Math.max(1e-3, nowSec - lastT);
         lastT = nowSec;
 
-        // If we’re in terminal settle mode, we continue even if traj==null.
-        boolean trackingActive = (traj != null);
-
-        // ===== 1) NORMAL TRAJECTORY TRACKING =====
-        if (!inSettle && trackingActive) {
-            double t = nowSec - t0;
-            Trajectory.State ref = traj.sample(t);
-            Pose2d cur = poseSupplier.getPose();
-
-            // Frenet frame at REFERENCE pose (tangent/normal)
-            double ch_r = Math.cos(ref.pose.heading), sh_r = Math.sin(ref.pose.heading);
-            double tx = ch_r,  ty = sh_r;   // tangent  t̂
-            double nx = -sh_r, ny = ch_r;   // normal   n̂
-
-            // Position error in WORLD
-            double dx = ref.pose.x - cur.x;
-            double dy = ref.pose.y - cur.y;
-
-            // Decompose into along/cross track errors
-            double e_long = dx*tx + dy*ty;
-            double e_lat  = dx*nx + dy*ny;
-
-            // Heading error (shortest)
-            double eh = normalize(ref.pose.heading) - normalize(cur.heading);
-            eh = normalize(eh);
-
-            // Feedforward for heading: ω + kFF*α
-            double wFF = ref.omega + kFFAlpha * ref.alpha;
-
-            // PIDF on Frenet axes (long FF=ref.v, lat FF=0)
-            double vLongCmd = pidLong.update(0.0, -e_long, ref.v, dt);
-            double vLatCmd  = pidLat .update(0.0, -e_lat,  0.0,   dt);
-
-            // Heading PIDF + optional cross-track → heading coupling
-            double wCmd     = pidH   .update(0.0, -eh,     wFF,   dt) + kEyToW * e_lat;
-
-            // Desired WORLD velocity command from Frenet components
-            double vx_world_cmd = vLongCmd * tx + vLatCmd * nx;
-            double vy_world_cmd = vLongCmd * ty + vLatCmd * ny;
-
-            // Rotate WORLD → ROBOT (use CURRENT robot heading)
-            double ch = Math.cos(cur.heading), sh = Math.sin(cur.heading);
-            double vxCmd =  ch*vx_world_cmd + sh*vy_world_cmd;
-            double vyCmd = -sh*vx_world_cmd + ch*vy_world_cmd;
-
-            // Slew & clamp
-            vxCmd = sX.filter(vxCmd, dt);
-            vyCmd = sY.filter(vyCmd, dt);
-            wCmd  = sW.filter(wCmd,  dt);
-
-            double vMag = Math.hypot(vxCmd, vyCmd);
-            if (vMag > DriveConstants.MAX_VEL_IN_S) {
-                double sc = DriveConstants.MAX_VEL_IN_S / vMag;
-                vxCmd *= sc; vyCmd *= sc;
-            }
-            if (Math.abs(wCmd) > DriveConstants.MAX_ANG_VEL_RAD_S) {
-                wCmd = Math.copySign(DriveConstants.MAX_ANG_VEL_RAD_S, wCmd);
-            }
-
-            // --- Translation-first allocator (handles heading coexistence cleanly) ---
-            double[] pw = new double[4];
-            MecanumKinematics.toWheelPowersPrioritized(
-                    vxCmd, vyCmd, wCmd,
-                    DriveConstants.TRACKWIDTH_IN, DriveConstants.WHEELBASE_IN,
-                    DriveConstants.MAX_WHEEL_SPEED_IN_S, pw);
-
-            // Apply to motors (LF, RF, LB, RB)
-            drive.setPowers(pw[0], pw[1], pw[2], pw[3]);
-
-            // Decide when to enter precise terminal settle
-            boolean timeDone = (t >= traj.duration() - 1e-3);
-            boolean nearEndWindow = false;
-            if (endState != null) {
-                double ex = endState.pose.x - cur.x;
-                double ey = endState.pose.y - cur.y;
-                double posErr = Math.hypot(ex, ey);
-                double hErr = normalize(endState.pose.heading - cur.heading);
-                nearEndWindow = (posErr < 0.7) && (Math.abs(hErr) < Math.toRadians(5.0));
-            }
-            if (timeDone || nearEndWindow) {
-                // Switch into terminal settle on the exact final pose
-                inSettle = true;
-                settleTimer = 0.0;
-                terminalTarget = (endState != null) ? endState.pose : ref.pose;
-            }
-            return; // end normal tracking
-        }
-
-        // ===== 2) TERMINAL SETTLE (precise stop) =====
+        // ===== settle mode? =====
         if (inSettle && terminalTarget != null) {
             Pose2d cur = poseSupplier.getPose();
 
-            // World-frame error to the exact final pose
             double dx = terminalTarget.x - cur.x;
             double dy = terminalTarget.y - cur.y;
             double eh = normalize(terminalTarget.heading - cur.heading);
 
-            // Convert position error to ROBOT frame for crisp low-speed control
             double ch = Math.cos(cur.heading), sh = Math.sin(cur.heading);
             double ex_r =  ch*dx + sh*dy;
             double ey_r = -sh*dx + ch*dy;
 
-            // Small gains (tune on carpet). Keep them modest to avoid oscillation.
-            double kpx = 2.0, kpy = 2.0;                   // in  -> in/s
-            double kph = 4.0;                               // rad -> rad/s
-
+            double kpx = 2.0, kpy = 2.0, kph = 4.0;
             double vxCmd = clamp(kpx * ex_r, -6.0, 6.0);
             double vyCmd = clamp(kpy * ey_r, -6.0, 6.0);
             double wCmd  = clamp(kph * eh,   -Math.toRadians(120), Math.toRadians(120));
 
-            // Reuse slew rate limiters for smooth settling
             vxCmd = sX.filter(vxCmd, dt);
             vyCmd = sY.filter(vyCmd, dt);
             wCmd  = sW.filter(wCmd,  dt);
 
-            // Allocate with translation-first (keeps heading from “fighting” translation)
             double[] pw = new double[4];
             MecanumKinematics.toWheelPowersPrioritized(
                     vxCmd, vyCmd, wCmd,
@@ -237,26 +142,99 @@ public class TrajectoryFollower {
                     DriveConstants.MAX_WHEEL_SPEED_IN_S, pw);
             drive.setPowers(pw[0], pw[1], pw[2], pw[3]);
 
-            // Tight settle window + hold time
-            boolean posOK  = Math.hypot(dx, dy) < SETTLE_POS_TOL;      // e.g., 0.30 in
-            boolean headOK = Math.abs(eh) < SETTLE_HEAD_TOL;           // e.g., 2.0°
+            boolean posOK  = Math.hypot(dx, dy) < SETTLE_POS_TOL;
+            boolean headOK = Math.abs(eh) < SETTLE_HEAD_TOL;
             if (posOK && headOK) {
                 settleTimer += dt;
                 if (settleTimer >= SETTLE_HOLD_TIME) {
-                    // We are truly there; stop and latch done
                     drive.setPowers(0,0,0,0);
-                    traj = null;
-                    inSettle = false;
-                    return;
+                    traj = null; inSettle=false;
                 }
-            } else {
-                settleTimer = 0.0;
-            }
-            return; // end settle step
+            } else settleTimer = 0.0;
+            return;
         }
 
-        // ===== 3) NO TRAJECTORY & NOT SETTLING: ensure motors are idle =====
-        drive.setPowers(0,0,0,0);
+        // ===== no traj =====
+        if (traj == null) { drive.setPowers(0,0,0,0); return; }
+
+        // ===== normal tracking =====
+        double t = nowSec - t0;
+        Trajectory.State ref = traj.sample(t);
+        Pose2d cur = poseSupplier.getPose();
+
+        // Frenet frame from PATH TANGENT (not heading)
+        double tx = ref.tangent.x, ty = ref.tangent.y;
+        double nrm = Math.hypot(tx,ty);
+        if (nrm < 1e-6) { tx = Math.cos(ref.pose.heading); ty = Math.sin(ref.pose.heading); }
+        else { tx/=nrm; ty/=nrm; }
+        double nx = -ty, ny = tx;
+
+        // position error (world)
+        double dx = ref.pose.x - cur.x;
+        double dy = ref.pose.y - cur.y;
+
+        // decompose
+        double e_long = dx*tx + dy*ty;
+        double e_lat  = dx*nx + dy*ny;
+
+        // heading error (shortest)
+        double eh = normalize(ref.pose.heading) - normalize(cur.heading);
+        eh = normalize(eh);
+
+        // feedforward
+        double wFF = ref.omega + kFFAlpha * ref.alpha;
+
+        // PIDF (long FF=ref.v, lat FF=0)
+        double vLongCmd = pidLong.update(0.0, -e_long, ref.v, dt);
+        double vLatCmd  = pidLat .update(0.0, -e_lat,  0.0,   dt);
+        double wCmd     = pidH   .update(0.0, -eh,     wFF,   dt) + kEyToW * e_lat;
+
+        // world velocity from Frenet
+        double vx_world_cmd = vLongCmd * tx + vLatCmd * nx;
+        double vy_world_cmd = vLongCmd * ty + vLatCmd * ny;
+
+        // world -> robot
+        double ch = Math.cos(cur.heading), sh = Math.sin(cur.heading);
+        double vxCmd =  ch*vx_world_cmd + sh*vy_world_cmd;
+        double vyCmd = -sh*vx_world_cmd + ch*vy_world_cmd;
+
+        // slew & clamp
+        vxCmd = sX.filter(vxCmd, dt);
+        vyCmd = sY.filter(vyCmd, dt);
+        wCmd  = sW.filter(wCmd,  dt);
+
+        double vMag = Math.hypot(vxCmd, vyCmd);
+        if (vMag > DriveConstants.MAX_VEL_IN_S) {
+            double sc = DriveConstants.MAX_VEL_IN_S / vMag;
+            vxCmd *= sc; vyCmd *= sc;
+        }
+        if (Math.abs(wCmd) > DriveConstants.MAX_ANG_VEL_RAD_S) {
+            wCmd = Math.copySign(DriveConstants.MAX_ANG_VEL_RAD_S, wCmd);
+        }
+
+        // translation-first allocator (prevents ω from stealing XY)
+        double[] pw = new double[4];
+        MecanumKinematics.toWheelPowersPrioritized(
+                vxCmd, vyCmd, wCmd,
+                DriveConstants.TRACKWIDTH_IN, DriveConstants.WHEELBASE_IN,
+                DriveConstants.MAX_WHEEL_SPEED_IN_S, pw);
+        drive.setPowers(pw[0], pw[1], pw[2], pw[3]);
+
+        // enter precise settle near the end
+        boolean timeDone = (t >= traj.duration() - 1e-3);
+        boolean nearEndWindow = false;
+        if (endState != null) {
+            double ex = endState.pose.x - cur.x;
+            double ey = endState.pose.y - cur.y;
+            double posErr = Math.hypot(ex, ey);
+            double hErr = normalize(endState.pose.heading - cur.heading);
+            nearEndWindow = (posErr < 0.7) && (Math.abs(hErr) < Math.toRadians(5.0));
+        }
+        if (timeDone || nearEndWindow) {
+            inSettle = true;
+            settleTimer = 0.0;
+            terminalTarget = (endState != null) ? endState.pose : ref.pose;
+        }
     }
 
     // --- helpers & telemetry hooks ---

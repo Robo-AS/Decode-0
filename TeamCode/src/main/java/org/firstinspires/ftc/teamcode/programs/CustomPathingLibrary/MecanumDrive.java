@@ -7,16 +7,20 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.ServiceConfigurationError;
 
 public class MecanumDrive {
     public DcMotorEx LeftFront;
     public DcMotorEx RightFront;
     public DcMotorEx LeftRear;
     public DcMotorEx RightRear;
+    public Servo servo;
     private List <DcMotorEx> motors;
     double reverse = 1.0;
     public static double powerReduction = 20;
@@ -26,6 +30,7 @@ public class MecanumDrive {
         LeftRear = hardwareMap.get(DcMotorEx.class, "LeftRear");
         RightRear = hardwareMap.get(DcMotorEx.class, "RightRear");
         RightFront = hardwareMap.get(DcMotorEx.class, "RightFront");
+        servo = hardwareMap.get(Servo.class, "Servo");
 
         motors = Arrays.asList(LeftFront, LeftRear, RightRear, RightFront);
         for (DcMotorEx motor : motors) {

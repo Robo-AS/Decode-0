@@ -21,10 +21,14 @@ public class CompositePath {
 
     public void add(ParametricPath seg){ segments.add(seg); }
 
-    /** Legacy: keep for compatibility. */
+    /** Legacy: keep for compatibility. Uses a rough ds from samplesPerSegment. */
     public void build(int samplesPerSegment){
-        double approxDs = 0.5; // ~0.5 in default; you can tune
-        buildByDs(approxDs);
+        double ds = 0.5;
+        if (samplesPerSegment > 0) {
+            // crude mapping: ~segmentLen/sps; will be overridden per segment anyway
+            ds = Math.max(0.1, Math.min(2.0, 200.0/Math.max(10, samplesPerSegment)));
+        }
+        buildByDs(ds);
     }
 
     /** Preferred: sample each segment at ~uniform ds along arc length. */
@@ -36,11 +40,9 @@ public class CompositePath {
         for (int i = 0; i < segments.size(); i++){
             ParametricPath seg = segments.get(i);
 
-            // choose number of samples proportional to segment length
             double L = Math.max(1e-6, seg.length());
-            int N = Math.max(4, (int) Math.ceil(L / ds));
+            int N = Math.max(4, (int)Math.ceil(L/ds));
 
-            // marching samples 0..1 with N steps
             Vector2d prev = seg.p(0);
             Vector2d prevDp = seg.dp(0);
             Vector2d prevDdp = seg.ddp(0);
@@ -60,12 +62,7 @@ public class CompositePath {
         }
     }
 
-    public void clear(){
-        segments.clear();
-        table.clear();
-        totalLength = 0.0;
-    }
-
+    public void clear(){ segments.clear(); table.clear(); totalLength = 0.0; }
     public double length(){ return totalLength; }
 
     /** Return sample at arc-length s (clamped) with tangent & curvature. */
@@ -74,18 +71,16 @@ public class CompositePath {
         if (s <= 0) return toPathSample(table.get(0));
         if (s >= totalLength) return toPathSample(table.get(table.size()-1));
 
-        // binary search in cumulative arc-length
-        int lo = 0, hi = table.size() - 1;
+        int lo=0, hi=table.size()-1;
         while (hi - lo > 1){
-            int mid = (lo + hi) >>> 1;
-            if (table.get(mid).s < s) lo = mid; else hi = mid;
+            int mid = (lo+hi)>>>1;
+            if (table.get(mid).s < s) lo=mid; else hi=mid;
         }
 
         SampleU a = table.get(lo), b = table.get(hi);
         double span = Math.max(1e-9, b.s - a.s);
-        double t = (s - a.s) / span;
+        double t = (s - a.s)/span;
 
-        // lerp position & derivatives (derivatives are wrt parameter u; linear blend is fine for sampling)
         Vector2d pos = new Vector2d(
                 a.pos.x + (b.pos.x - a.pos.x)*t,
                 a.pos.y + (b.pos.y - a.pos.y)*t
@@ -99,27 +94,20 @@ public class CompositePath {
                 a.ddp.y + (b.ddp.y - a.ddp.y)*t
         );
 
-        // curvature kappa(u) = (x' y'' - y' x'') / (x'^2 + y'^2)^(3/2), primes wrt u
+        // curvature kappa = (x'y'' - y'x'') / (x'^2 + y'^2)^(3/2)
         double x1 = dp.x, y1 = dp.y, x2 = ddp.x, y2 = ddp.y;
         double denom = Math.pow(Math.max(1e-9, x1*x1 + y1*y1), 1.5);
         double kappa = (x1*y2 - y1*x2) / denom;
 
-        // unit tangent (guard zero)
         Vector2d tan = dp.normalized();
-        if (tan.norm() < 1e-9) tan = new Vector2d(1,0);
-
         return new PathSample(s, pos, tan, kappa);
     }
-
-    public Vector2d pointAtS(double s){ return sampleS(s).pos; }
 
     private PathSample toPathSample(SampleU su){
         Vector2d dp = su.dp;
         double x1 = dp.x, y1 = dp.y, x2 = su.ddp.x, y2 = su.ddp.y;
         double denom = Math.pow(Math.max(1e-9, x1*x1 + y1*y1), 1.5);
         double kappa = (x1*y2 - y1*x2) / denom;
-        Vector2d tan = dp.normalized();
-        if (tan.norm() < 1e-9) tan = new Vector2d(1,0);
-        return new PathSample(su.s, su.pos, tan, kappa);
+        return new PathSample(su.s, su.pos, dp.normalized(), kappa);
     }
 }
