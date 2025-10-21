@@ -34,7 +34,7 @@ public class TF_StraightBackForth extends LinearOpMode {
         );
 
         Vector2d A = new Vector2d(0, 0);
-        Vector2d B = new Vector2d(30, 0);
+        Vector2d B = new Vector2d(60, 0);
 
         // A -> B, tangent heading
         Trajectory t1 = new TrajectoryBuilder()
@@ -83,7 +83,7 @@ public class TF_StraightBackForth extends LinearOpMode {
         double now = getRuntime();
         double lastNow = now;
         int stage = 1;
-        follower.setTrajectory(t1, now, false);
+        follower.setTrajectory(t1, now, true);
 
 
         while (opModeIsActive()) {
@@ -99,7 +99,7 @@ public class TF_StraightBackForth extends LinearOpMode {
 
             if (stage == 1 && follower.isFinished(now)) {
                 follower.cancel();
-                follower.setTrajectory(t3, now, false);
+                follower.setTrajectory(t3, now, true);
                 stage = 2;
             }
             else if (stage == 2 && follower.isFinished(now)) {

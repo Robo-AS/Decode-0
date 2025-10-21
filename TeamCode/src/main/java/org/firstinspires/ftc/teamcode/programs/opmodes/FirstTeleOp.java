@@ -14,7 +14,7 @@ public class FirstTeleOp extends LinearOpMode {
     GamepadEx driver;
     MecanumDrive body;
     private ElapsedTime runtime = new ElapsedTime();
-    private double serv0 = 0.15;
+    private double serv0 = 0;
 
     @Override
     public void runOpMode() {

@@ -1,5 +1,6 @@
-package org.firstinspires.ftc.teamcode.programs.CustomPathingLibraryTests;
+package org.firstinspires.ftc.teamcode.programs.opmodes;
 
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
@@ -7,8 +8,8 @@ import org.firstinspires.ftc.teamcode.programs.CustomPathingLibrary.*;
 
 import Pinpoint_Blocks_Driver.GoBildaPinpointDriver;
 
-@Autonomous(name = "TurnTest", group = "Tuning")
-public class TF_TurnProfileTune extends LinearOpMode {
+@Autonomous(name = "FirstAutoTest", group = "Tuning")
+public class FirstAuto extends LinearOpMode {
 
     // Use DriveConstants in real code; kept local for a quick test
     public static double MAX_VEL = 60, MAX_ACC = 60, MAX_JERK = 200, MAX_DECEL = 30, MAX_CENTRIPETAL = 80, DS = 0.5;
@@ -34,8 +35,8 @@ public class TF_TurnProfileTune extends LinearOpMode {
         );
 
         Vector2d A = new Vector2d(0, 0);
-        Vector2d B = new Vector2d(17, 0);
-        Vector2d C = new Vector2d(65, -25);
+        Vector2d B = new Vector2d(23, 0);
+        Vector2d C = new Vector2d(23, -50);
 
 
         // A -> B, tangent heading
@@ -45,6 +46,11 @@ public class TF_TurnProfileTune extends LinearOpMode {
 
         // Store its end heading for continuity
         double seed12 = t1.allStates().get(t1.allStates().size()-1).pose.heading;
+
+        Pose2d p = localizer.getPose();
+        Pose2d poseAtB = t1.allStates().get(t1.allStates().size()-1).pose;
+
+        Trajectory turnLeft = TurnInPlace.buildRelative(poseAtB, Math.toRadians(225), lim);
 
 
         // In-place 180 face back toward A using a fixed heading profile across a 1-inch "stub"
@@ -59,15 +65,12 @@ public class TF_TurnProfileTune extends LinearOpMode {
                 .buildWithHeading(lim, DS, new FixedStartEndHeading(hA, hB, 1.0), seed12);
 
         double seed23 = t2.allStates().get(t2.allStates().size()-1).pose.heading;
-        Pose2d p = localizer.getPose();
-
-        Trajectory turnLeft = TurnInPlace.buildRelative(p, Math.toRadians(+240), lim);
 
 
         // B -> A, tangent heading (which is already pointing back)
         Trajectory t3 = new TrajectoryBuilder()
                 .line(B, C)
-                .buildWithHeading(lim, DS, new FixedStartEndHeading(h1, h2, 0), 0.0);
+                .buildTangentHeading(lim, DS, null);
 
         // Turn back to original heading on a 1-inch stub at A
         Trajectory t4 = new TrajectoryBuilder()
@@ -87,8 +90,8 @@ public class TF_TurnProfileTune extends LinearOpMode {
 
         double now = getRuntime();
         double lastNow = now;
-        int stage = 2;
-        follower.setTrajectory(turnLeft, now, false);
+        int stage = 1;
+        follower.setTrajectory(t1, now, true);
 
 
         while (opModeIsActive()) {
@@ -104,22 +107,27 @@ public class TF_TurnProfileTune extends LinearOpMode {
 
             if (stage == 1 && follower.isFinished(now)) {
                 follower.cancel();
-                follower.setTrajectory(t3, now, true);
+                follower.setTrajectory(turnLeft, now, false);
                 stage = 2;
             }
             else if (stage == 2 && follower.isFinished(now)) {
-                // Done
+                follower.cancel();
+                follower.setTrajectory(t3, now, true);
+                stage = 3;
+            }
+            else if (stage==3 && follower.isFinished(now))
+            {
+                //Done
                 follower.cancel();
                 drive.setPowers(0,0,0,0);
                 break;
             }
 
-            p = localizer.getPose();
-
             // telemetry
             telemetry.addData("Stage", stage);
 
 
+            p = localizer.getPose();
             telemetry.addData("pose","x=%.1f y=%.1f h=%.0f°", p.x, p.y, Math.toDegrees(p.heading));
             telemetry.addData("LF", "%.2f", drive.LeftFront.getPower());
             telemetry.addData("RF", "%.2f", drive.RightFront.getPower());

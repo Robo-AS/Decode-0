@@ -30,8 +30,8 @@ public final class DriveConstants {
 
     // PIDF gains
     public static double KP_X=3, KI_X=0.003, KD_X=0.01, KF_X=0;
-    public static double KP_Y=1, KI_Y=0, KD_Y=0.2, KF_Y=0;
-    public static double KP_H=0.05,  KI_H=0, KD_H=0.2,  KF_H=0;
+    public static double KP_Y=3, KI_Y=0.0005, KD_Y=0.2, KF_Y=0;
+    public static double KP_H=0.05,  KI_H=0.003, KD_H=0.2,  KF_H=0;
 
     public static double KS_POWER = 0.06; //Static Friction Compensation
     public static double POWER_DEADBAND = 0.02;
