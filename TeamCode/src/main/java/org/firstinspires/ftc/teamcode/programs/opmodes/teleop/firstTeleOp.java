@@ -30,6 +30,8 @@ public class firstTeleOp extends CommandOpMode {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
         CommandScheduler.getInstance().reset();
 
+        //TODO 14: ce face initializeHardware? ce face aceasta metoda initialize()?
+
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap, (MultipleTelemetry) telemetry);
         robot.initialize();
@@ -44,6 +46,7 @@ public class firstTeleOp extends CommandOpMode {
         exponentialJoystickCoord_Y = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
 
         double turnSpeed =  -exponentialJoystickCoord_X_TURN;
+        //TODO 15: Schimba linia de mai jos astfel incat coordonatele pentru fata sunt reversed? (inmultiti cu -1)
         PoseRR drive = new PoseRR(-exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y, turnSpeed);
         robot.mecanum.set(drive, 0);
 
@@ -52,10 +55,10 @@ public class firstTeleOp extends CommandOpMode {
         robot.turret.loop(20);
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new startIntake(1),
-                new WaitCommand(2000),
-                new stopIntake()
+                //TODO 16: Folositi metodele startIntake, stopIntake si WaitCommand (in milisecunde) astfel incat sa porniti mai jos intakeul pentru exact 2 secunde
         ));
+
+        //TODo 17: Ce face secventa de mai jos?
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(

@@ -13,13 +13,12 @@ public class Mecanum  {
     double[] ws = new double[4];
     private final int frontLeft = 3, frontRight = 1, backLeft = 2, backRight = 0, ks = 0;
 
+    //TODO 8: Ce credeti ca face initialize?
+
     public void initialize() {
         Robot robot = Robot.getInstance();
 
-        this.leftFront = robot.leftFront;
-        this.leftRear  = robot.leftRear;
-        this.rightRear = robot.rightRear;
-        this.rightFront = robot.rightFront;
+        //TODO 7: Aduceti local toate motoarele din Robot in variabilele de mai sus
     }
 
     public void set(PoseRR pose, double angle) {
@@ -27,6 +26,8 @@ public class Mecanum  {
     }
 
     public void set(double strafeSpeed, double forwardSpeed, double turnSpeed, double gyroAngle) {
+
+        //TODO 9: Ce reprezinta acesti parametri?
 
         Vector2D input = new Vector2D(strafeSpeed, forwardSpeed).rotate(-gyroAngle);
         double actualks = ks; // *12/getVoltage();
@@ -58,6 +59,8 @@ public class Mecanum  {
         ws[frontRight] = wheelSpeeds[frontRight];
         ws[backLeft] = wheelSpeeds[backLeft];
         ws[backRight] = wheelSpeeds[backRight];
+
+        //TODO 10: Aici, inainte de a seta putere motoarelor, printati cu ajutorul telemetriei valorile puterilor
 
         leftFront.setPower(ws[frontLeft]);
         rightFront.setPower(ws[frontRight]);

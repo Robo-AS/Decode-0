@@ -20,11 +20,13 @@ import java.util.List;
 public class Robot {
     private static Robot instance = null;
     private static HardwareMap hardwareMap;
-    public Mecanum mecanum = null;
+
+    ///TODO 1: declarati o instanta a clasei Mecanum
     public Limelight limelight = null;
     public Turret turret = null;
-    public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
-    public DcMotorEx launcher;
+    public DcMotorEx leftFront, leftRear, rightRear, rightFront;
+
+    ///TODO 2: declarati motoare pentru intake si lansator
     public Servo servoX, servoY;
     public IMU imu;
     public List<DcMotorEx> motors;
@@ -33,6 +35,7 @@ public class Robot {
     public static GoBildaPinpointDriver pinpoint = null;
 
 
+    // TODO 3: Explicati in acest comentariu de ce folosim o SINGURA instanta a clasei Robot?
     public static Robot getInstance() {
         if (instance == null) {
             instance = new Robot();
@@ -61,7 +64,7 @@ public class Robot {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
-        mecanum = new Mecanum();
+        //TODO 6: Creati un nou obiect Mecanum folosindu va de constructor
 
         //limelight
 
@@ -80,8 +83,7 @@ public class Robot {
         turret = new Turret();
 
         //launcher
-        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
-        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
+        //TODO 4: Initializati lansatorul si schimbati directia sa
 
         //imu
         imu = hardwareMap.get(IMU.class, "imu");
@@ -93,8 +95,7 @@ public class Robot {
         pinpoint.resetPosAndIMU();
 
         //intake
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-        //intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        // TODO 4: Initializati intake ul
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap, MultipleTelemetry telemetry) {
