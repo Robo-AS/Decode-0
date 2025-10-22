@@ -24,7 +24,7 @@ public class Robot {
     public Limelight limelight = null;
     public Turret turret = null;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
-    public DcMotorEx leftLauncher, rightLauncher;
+    public DcMotorEx launcher;
     public Servo servoX, servoY;
     public IMU imu;
     public List<DcMotorEx> motors;
@@ -80,16 +80,13 @@ public class Robot {
         turret = new Turret();
 
         //launcher
-        leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
-        rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
-
-     //   leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
-     //   rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
 
         //imu
         imu = hardwareMap.get(IMU.class, "imu");
         revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD);
+                RevHubOrientationOnRobot.UsbFacingDirection.UP);
 
         //pinpoint
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -97,8 +94,28 @@ public class Robot {
 
         //intake
         intake = hardwareMap.get(DcMotorEx.class, "intake");
-        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        //intake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
+
+    public void initializeHardwareAuto(HardwareMap hardwareMap, MultipleTelemetry telemetry) {
+        this.hardwareMap = hardwareMap;
+        this.telemetry = telemetry;
+
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        servoX = hardwareMap.get(Servo.class, "servoX");
+        servoY = hardwareMap.get(Servo.class, "servoY");
+
+        servoX.setDirection(Servo.Direction.REVERSE);
+        servoY.setDirection(Servo.Direction.REVERSE);
+
+        turret = new Turret();
+        turret.initialize();
+    }
+
 
     public void initialize() {
         limelight.initialize();

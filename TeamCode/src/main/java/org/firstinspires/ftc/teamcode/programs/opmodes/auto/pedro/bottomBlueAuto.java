@@ -20,11 +20,13 @@ import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.PathConstraints;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.commandbase.auto.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "Bottom Blue Auto")
+@Autonomous(name = "Bottom Blue Auto WITH SWITCH")
 public class bottomBlueAuto extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
@@ -35,13 +37,14 @@ public class bottomBlueAuto extends OpMode {
     private int pathState;
 
     private final Pose startPose = new Pose(56, 8, Math.toRadians(90));
-    private final Pose outtake = new Pose(56.000, 18.000, Math.toRadians(270));
+    private final Pose outtake = new Pose(56.000, 18.000, Math.toRadians(90));
 
     private final Pose intake1 = new Pose(42.000, 35.000, Math.toRadians(180));
+    private final Pose loaded1 = new Pose(23.000, 35.000, Math.toRadians(180));
     private final Pose intake2 = new Pose(42.000, 60.000, Math.toRadians(180));
     private final Pose intake3 = new Pose(42.00, 84.000, Math.toRadians(180));
 
-    private PathChain launchPreload, get1, throw1, get2, throw2, get3, throw3;
+    private PathChain launchPreload, get1, throw1, get2, throw2, get3, throw3, loading1;
     public void buildPaths()
     {
         launchPreload = follower.pathBuilder()
@@ -51,32 +54,37 @@ public class bottomBlueAuto extends OpMode {
 
         get1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake1))
-                .setLinearHeadingInterpolation(outtake.getHeading(), intake1.getHeading())
+                .setConstantHeadingInterpolation(intake1.getHeading())
+                .build();
+
+        loading1 = follower.pathBuilder()
+                .addPath(new BezierLine(intake1, loaded1))
+                .setLinearHeadingInterpolation(intake1.getHeading(), loaded1.getHeading())
                 .build();
 
         throw1 = follower.pathBuilder()
-                .addPath(new BezierLine(intake1, outtake))
-                .setLinearHeadingInterpolation(intake1.getHeading(), outtake.getHeading())
+                .addPath(new BezierLine(loaded1, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
         get2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake2))
-                .setLinearHeadingInterpolation(outtake.getHeading(), intake2.getHeading())
+                .setConstantHeadingInterpolation(intake2.getHeading())
                 .build();
 
         throw2 = follower.pathBuilder()
                 .addPath(new BezierLine(intake2, outtake))
-                .setLinearHeadingInterpolation(intake2.getHeading(), outtake.getHeading())
+                .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
         get3  = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake3))
-                .setLinearHeadingInterpolation(outtake.getHeading(), intake3.getHeading())
+                .setConstantHeadingInterpolation(intake3.getHeading())
                 .build();
 
         throw3 = follower.pathBuilder()
                 .addPath(new BezierLine(intake3, outtake))
-                .setLinearHeadingInterpolation(intake3.getHeading(), outtake.getHeading())
+                .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
     }
@@ -95,35 +103,43 @@ public class bottomBlueAuto extends OpMode {
                 break;
             case 2:
                 if(!follower.isBusy()) {
-                    follower.followPath(throw1,true);
+                    follower.followPath(loading1,true);
+                    robot.intake.setPower(0.75);
                     setPathState(3);
                 }
                 break;
             case 3:
                 if(!follower.isBusy()) {
-                    follower.followPath(get2,true);
+                    follower.followPath(throw1,true);
+                    robot.intake.setPower(0);
                     setPathState(4);
                 }
                 break;
             case 4:
                 if(!follower.isBusy()) {
-                    follower.followPath(throw2,true);
+                    follower.followPath(get2,true);
                     setPathState(5);
                 }
                 break;
             case 5:
                 if(!follower.isBusy()) {
-                    follower.followPath(get3,true);
+                    follower.followPath(throw2,true);
                     setPathState(6);
                 }
                 break;
             case 6:
                 if(!follower.isBusy()) {
-                    follower.followPath(throw3,true);
+                    follower.followPath(get3,true);
                     setPathState(7);
                 }
                 break;
             case 7:
+                if(!follower.isBusy()) {
+                    follower.followPath(throw3,true);
+                    setPathState(8);
+                }
+                break;
+            case 8:
                 if(!follower.isBusy()) {
                     reachedEnd = true;
                 }
@@ -144,8 +160,7 @@ public class bottomBlueAuto extends OpMode {
         follower.update();
         autonomousPathUpdate();
 
-        robot.pinpoint.update();
-        robot.turret.loop(20);
+        robot.turret.autoAlignToBlueGoal(follower.getPose());
 
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());
@@ -161,12 +176,10 @@ public class bottomBlueAuto extends OpMode {
         opmodeTimer.resetTimer();
 
         follower = Constants.createFollower(hardwareMap);
-        buildPaths();
         follower.setStartingPose(startPose);
+        buildPaths();
 
-        robot.initializeHardware(hardwareMap, new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
-        robot.initialize();
-        robot.turret.initialize();
+        robot.initializeHardwareAuto(hardwareMap, new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
     }
 
     @Override

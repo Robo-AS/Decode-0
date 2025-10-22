@@ -5,9 +5,9 @@ import com.arcrobotics.ftclib.command.InstantCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class startIntake extends InstantCommand {
-    public startIntake(double joystickPower) {
+    public startIntake(double power) {
         super(
-                () -> Robot.getInstance().intake.setPower(joystickPower)
+                () -> Robot.getInstance().intake.setPower(power)
         );
     }
 }

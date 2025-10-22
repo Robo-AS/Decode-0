@@ -3,161 +3,162 @@ package org.firstinspires.ftc.teamcode.programs.opmodes.auto.pedro;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
-import com.pedropathing.paths.PathConstraints;
+import com.pedropathing.util.Timer;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
-import org.firstinspires.ftc.teamcode.programs.opmodes.auto.pedro.AutoPaths;
 
-@Autonomous(name = "Upper Blue w Gate Auto")
-public class upperBlueAutoWithGate extends LinearOpMode {
+@Autonomous(name = "Upper Blue Auto with Gate")
+public class upperBlueAutoWithGate extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
+    private Timer pathTimer;
+    private int pathState = 0;
+    private boolean reachedEnd = false;
 
-    public static Pose startPose = new Pose(56.000, 135.400, Math.toRadians(90));
-    public static Pose outtakePreload = new Pose(32.626, 110.690);
-    public static Pose outtake1 = new Pose(50.050, 93.267);
-    public static Pose outtake2 = new Pose(62.520, 80.968);
+    private final Pose startPose = new Pose(56.000, 135.400, Math.toRadians(90));
+    private final Pose outtakePreload = new Pose(32.626, 110.690, Math.toRadians(315));
+    private final Pose openGate = new Pose(17.000, 72.000, Math.toRadians(270));
+    private final Pose gateControl = new Pose(66.619, 69.865, Math.toRadians(270));
+    private final Pose leaveGateControl = new Pose(61.495, 69.181, Math.toRadians(270));
+    private final Pose leaveGate = new Pose(48.171, 84.384, Math.toRadians(270));
 
-    public static Pose openGate = new Pose(17.000, 72.000);
-    public static Pose gateControl = new Pose(66.619, 69.865);
-    public static Pose leaveGateControl = new Pose(61.495, 69.181);
-    public static Pose leaveGate = new Pose(48.171, 84.384);
+    private final Pose intake1 = new Pose(41.000, 84.043, Math.toRadians(180));
+    private final Pose outtake1 = new Pose(50.050, 93.267, Math.toRadians(315));
+    private final Pose intake2 = new Pose(41.000, 60.000, Math.toRadians(180));
+    private final Pose outtake2 = new Pose(62.520, 80.968, Math.toRadians(315));
 
-    public static Pose intake1 = new Pose(41.000, 84.043);
-    public static Pose intake2 = new Pose(41.000, 60.000);
+    private PathChain launchPreload, gate, leaveGatePath, get1, throw1, get2, throw2;
 
-    @Override
-    public void runOpMode() {
-        robot.initializeHardware(hardwareMap, new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
-        robot.initialize();
-
-        follower = Constants.createFollower(Robot.getInstanceHardwareMap());
-        follower.setStartingPose(startPose);
-
-        PathBuilder builder = new PathBuilder(follower, new PathConstraints(0, 0));
-
-        PathChain launchPreload = builder.addPath(new BezierLine(startPose, outtakePreload))
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(315))
+    public void buildPaths() {
+        launchPreload = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, outtakePreload))
+                .setLinearHeadingInterpolation(startPose.getHeading(), outtakePreload.getHeading())
                 .build();
 
-        PathChain gate = builder.addPath(new BezierCurve(outtakePreload, gateControl, openGate))
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(270))
+        gate = follower.pathBuilder()
+                .addPath(new BezierCurve(outtakePreload, gateControl, openGate))
+                .setLinearHeadingInterpolation(outtakePreload.getHeading(), openGate.getHeading())
                 .build();
 
-        PathChain goToIntake = builder.addPath(new BezierCurve(openGate, leaveGateControl, leaveGate))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
+        leaveGatePath = follower.pathBuilder()
+                .addPath(new BezierCurve(openGate, leaveGateControl, leaveGate))
+                .setLinearHeadingInterpolation(openGate.getHeading(), leaveGate.getHeading())
                 .build();
 
-        PathChain get1 = builder.addPath(new BezierLine(leaveGate, intake1))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+        get1 = follower.pathBuilder()
+                .addPath(new BezierLine(leaveGate, intake1))
+                .setLinearHeadingInterpolation(leaveGate.getHeading(), intake1.getHeading())
                 .build();
 
-        PathChain throw1 = builder.addPath(new BezierLine(intake1, outtake1))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+        throw1 = follower.pathBuilder()
+                .addPath(new BezierLine(intake1, outtake1))
+                .setLinearHeadingInterpolation(intake1.getHeading(), outtake1.getHeading())
                 .build();
 
-        PathChain get2 = builder.addPath(new BezierLine(outtake1, intake2))
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
+        get2 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake1, intake2))
+                .setLinearHeadingInterpolation(outtake1.getHeading(), intake2.getHeading())
                 .build();
 
-        PathChain throw2 = builder.addPath(new BezierLine(intake2, outtake2))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+        throw2 = follower.pathBuilder()
+                .addPath(new BezierLine(intake2, outtake2))
+                .setLinearHeadingInterpolation(intake2.getHeading(), outtake2.getHeading())
                 .build();
+    }
 
-        AutoPaths paths = AutoPaths.getInstance();
-        paths.resetAll();
-
-        PathChain currentPath = null;
-
-        waitForStart();
-        if (isStopRequested()) return;
-
-        while (opModeIsActive()) {
-            follower.update();
-
-            // Only start a path if not already started
-            if (!paths.LAUNCH_PRELOAD_COMPLETED) {
-                if (currentPath != launchPreload) {
-                    follower.followPath(launchPreload, true);
-                    currentPath = launchPreload;
-                }
+    public void autonomousPathUpdate() {
+        switch (pathState) {
+            case 0:
+                follower.followPath(launchPreload);
+                setPathState(1);
+                break;
+            case 1:
                 if (!follower.isBusy()) {
-                    paths.LAUNCH_PRELOAD_COMPLETED = true;
-                    currentPath = null;
+                    follower.followPath(gate, true);
+                    setPathState(2);
                 }
-            } else if (!paths.GATE_COMPLETED) {
-                if (currentPath != gate) {
-                    follower.followPath(gate, false);
-                    currentPath = gate;
-                }
+                break;
+            case 2:
                 if (!follower.isBusy()) {
-                    paths.GATE_COMPLETED = true;
-                    currentPath = null;
+                    follower.followPath(leaveGatePath, true);
+                    setPathState(3);
                 }
-            } else if (!paths.GO_TO_INTAKE_COMPLETED) {
-                if (currentPath != goToIntake) {
-                    follower.followPath(goToIntake, false);
-                    currentPath = goToIntake;
-                }
+                break;
+            case 3:
                 if (!follower.isBusy()) {
-                    paths.GO_TO_INTAKE_COMPLETED = true;
-                    currentPath = null;
+                    follower.followPath(get1, true);
+                    setPathState(4);
                 }
-            } else if (!paths.GET1_COMPLETED) {
-                if (currentPath != get1) {
-                    follower.followPath(get1, false);
-                    currentPath = get1;
-                }
+                break;
+            case 4:
                 if (!follower.isBusy()) {
-                    paths.GET1_COMPLETED = true;
-                    currentPath = null;
+                    follower.followPath(throw1, true);
+                    setPathState(5);
                 }
-            } else if (!paths.THROW1_COMPLETED) {
-                if (currentPath != throw1) {
-                    follower.followPath(throw1, false);
-                    currentPath = throw1;
-                }
+                break;
+            case 5:
                 if (!follower.isBusy()) {
-                    paths.THROW1_COMPLETED = true;
-                    currentPath = null;
+                    follower.followPath(get2, true);
+                    setPathState(6);
                 }
-            } else if (!paths.GET2_COMPLETED) {
-                if (currentPath != get2) {
-                    follower.followPath(get2, false);
-                    currentPath = get2;
-                }
+                break;
+            case 6:
                 if (!follower.isBusy()) {
-                    paths.GET2_COMPLETED = true;
-                    currentPath = null;
+                    follower.followPath(throw2, true);
+                    setPathState(7);
                 }
-            } else if (!paths.THROW2_COMPLETED) {
-                if (currentPath != throw2) {
-                    follower.followPath(throw2, false);
-                    currentPath = throw2;
-                }
+                break;
+            case 7:
                 if (!follower.isBusy()) {
-                    paths.THROW2_COMPLETED = true;
-                    currentPath = null;
+                    reachedEnd = true;
                 }
-            }
-
-            // Telemetry for debugging
-            telemetry.addData("LaunchPreload", paths.LAUNCH_PRELOAD_COMPLETED);
-            telemetry.addData("Gate", paths.GATE_COMPLETED);
-            telemetry.addData("GoToIntake", paths.GO_TO_INTAKE_COMPLETED);
-            telemetry.addData("Get1", paths.GET1_COMPLETED);
-            telemetry.addData("Throw1", paths.THROW1_COMPLETED);
-            telemetry.addData("Get2", paths.GET2_COMPLETED);
-            telemetry.addData("Throw2", paths.THROW2_COMPLETED);
-            telemetry.update();
+                break;
         }
     }
+
+    private void setPathState(int newState) {
+        pathState = newState;
+        pathTimer.resetTimer();
+    }
+
+    @Override
+    public void init() {
+        pathTimer = new Timer();
+
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(startPose);
+        buildPaths();
+
+        robot.initializeHardwareAuto(hardwareMap,
+                new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
+    }
+
+    @Override
+    public void loop() {
+        if (reachedEnd) return;
+
+        follower.update();
+        autonomousPathUpdate();
+
+        telemetry.addData("Path State", pathState);
+        telemetry.addData("X", follower.getPose().getX());
+        telemetry.addData("Y", follower.getPose().getY());
+        telemetry.addData("Heading", follower.getPose().getHeading());
+        telemetry.update();
+    }
+
+    @Override
+    public void start() {
+        setPathState(0);
+    }
+
+    @Override
+    public void stop() {}
 }

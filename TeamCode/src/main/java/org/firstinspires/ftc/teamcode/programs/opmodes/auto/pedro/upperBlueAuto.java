@@ -2,110 +2,145 @@ package org.firstinspires.ftc.teamcode.programs.opmodes.auto.pedro;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.arcrobotics.ftclib.command.CommandScheduler;
-import com.arcrobotics.ftclib.command.SequentialCommandGroup;
-import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
-import com.pedropathing.paths.PathConstraints;
+import com.pedropathing.util.Timer;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.programs.commandbase.auto.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "Upper Blue Auto")
-public class upperBlueAuto extends LinearOpMode {
+@Autonomous(name = "Upper Blue Auto WITH SWITCH")
+public class upperBlueAuto extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
-    private double loopTime = 0;
-    private final ElapsedTime time = new ElapsedTime();
 
-    public static Pose startPose = new Pose(56.000, 135.400, Math.toRadians(90));
-    public static Pose outtakePreload = new Pose(32.626, 110.690);
-    public static Pose outtake1 = new Pose(51.758, 91.730);
-    public static Pose outtake2 =  new Pose(64.740, 79.089);
+    private Timer pathTimer, opmodeTimer;
+    private boolean reachedEnd = false;
+    private int pathState = 0;
+    
+    private final Pose startPose = new Pose(56.000, 135.400, Math.toRadians(90));
+    private final Pose outtakePreload = new Pose(32.626, 110.690, Math.toRadians(315));
+    private final Pose intake1 = new Pose(45.000, 84.500, Math.toRadians(180));
+    private final Pose outtake1 = new Pose(51.758, 91.730, Math.toRadians(315));
+    private final Pose intake2 = new Pose(45.000, 59.000, Math.toRadians(180));
+    private final Pose outtake2 = new Pose(64.740, 79.089, Math.toRadians(315));
 
-    public static Pose intake1 = new Pose(45.000, 84.500);
-    public static Pose intake2 = new Pose(45.000, 59.000);
+    private PathChain launchPreload, get1, throw1, get2, throw2;
 
-
-    @Override
-    public void runOpMode() throws InterruptedException {
-        CommandScheduler.getInstance().reset();
-
-        follower = Constants.createFollower(Robot.getInstanceHardwareMap());
-        follower.setStartingPose(startPose);
-
-        robot.initializeHardware(hardwareMap, new MultipleTelemetry(
-                telemetry, FtcDashboard.getInstance().getTelemetry()
-        ));
-        robot.initialize();
-
-        PathBuilder builder = new PathBuilder(follower, new PathConstraints(30, 30));
-
-        PathChain launchPreload = builder
-                .addPath(
-                        new BezierLine(startPose, outtakePreload)
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(315))
+    public void buildPaths() {
+        launchPreload = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, outtakePreload))
+                .setLinearHeadingInterpolation(startPose.getHeading(), outtakePreload.getHeading())
                 .build();
 
-        PathChain get1 = builder
-                .addPath(
-                        new BezierLine(outtakePreload, intake1)
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
+        get1 = follower.pathBuilder()
+                .addPath(new BezierLine(outtakePreload, intake1))
+                .setLinearHeadingInterpolation(outtakePreload.getHeading(), intake1.getHeading())
                 .build();
 
-        PathChain throw1 = builder
+        throw1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake1))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+                .setLinearHeadingInterpolation(intake1.getHeading(), outtake1.getHeading())
                 .build();
 
-        PathChain get2 = builder
+        get2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake1, intake2))
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
+                .setLinearHeadingInterpolation(outtake1.getHeading(), intake2.getHeading())
                 .build();
 
-        PathChain throw2 = builder
+        throw2 = follower.pathBuilder()
                 .addPath(new BezierLine(intake2, outtake2))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+                .setLinearHeadingInterpolation(intake2.getHeading(), outtake2.getHeading())
                 .build();
+    }
 
-        SequentialCommandGroup autoSequence = new SequentialCommandGroup(
-                new FollowPathCommand(follower, launchPreload, true),
-                new WaitCommand(500),
-                new FollowPathCommand(follower, get1, false),
-                new WaitCommand(500),
-                new FollowPathCommand(follower, throw1, false),
-                new WaitCommand(500),
-                new FollowPathCommand(follower, get2, false),
-                new WaitCommand(500),
-                new FollowPathCommand(follower, throw2, false)
-        );
+    public void autonomousPathUpdate() {
+        switch (pathState) {
+            case 0:
+                follower.followPath(launchPreload);
+                setPathState(1);
+                break;
 
-        waitForStart();
+            case 1:
+                if (!follower.isBusy()) {
+                    follower.followPath(get1, true);
+                    setPathState(2);
+                }
+                break;
 
-        if (isStopRequested()) return;
+            case 2:
+                if (!follower.isBusy()) {
+                    follower.followPath(throw1, true);
+                    setPathState(3);
+                }
+                break;
 
-        CommandScheduler.getInstance().schedule(autoSequence);
+            case 3:
+                if (!follower.isBusy()) {
+                    follower.followPath(get2, true);
+                    setPathState(4);
+                }
+                break;
 
-        while (opModeIsActive()) {
-            follower.update();
-            CommandScheduler.getInstance().run();
+            case 4:
+                if (!follower.isBusy()) {
+                    follower.followPath(throw2, true);
+                    setPathState(5);
+                }
+                break;
 
-            robot.getInstanceLimelight().loop();
-
-            double loop = System.nanoTime();
-            telemetry.addData("Hz", 1000000000 / (loop - loopTime));
-            loopTime = loop;
-            telemetry.update();
+            case 5:
+                if (!follower.isBusy()) {
+                    reachedEnd = true;
+                }
+                break;
         }
     }
+
+    private void setPathState(int newState) {
+        pathState = newState;
+        pathTimer.resetTimer();
+    }
+
+    @Override
+    public void init() {
+        pathTimer = new Timer();
+        opmodeTimer = new Timer();
+        opmodeTimer.resetTimer();
+
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(startPose);
+        buildPaths();
+
+        robot.initializeHardwareAuto(hardwareMap,
+                new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
+    }
+
+    @Override
+    public void loop() {
+        if (reachedEnd)
+            return;
+
+        follower.update();
+        autonomousPathUpdate();
+
+        telemetry.addData("Path State", pathState);
+        telemetry.addData("X", follower.getPose().getX());
+        telemetry.addData("Y", follower.getPose().getY());
+        telemetry.addData("Heading", follower.getPose().getHeading());
+        telemetry.update();
+    }
+
+    @Override
+    public void start() {
+        opmodeTimer.resetTimer();
+        setPathState(0);
+    }
+
+    @Override
+    public void stop() {}
 }

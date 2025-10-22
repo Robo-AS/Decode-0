@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.startLauncher;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
@@ -50,14 +51,22 @@ public class firstTeleOp extends CommandOpMode {
         robot.limelight.loop();
         robot.turret.loop(20);
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
+                new startIntake(1),
+                new WaitCommand(2000),
+                new stopIntake()
+        ));
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(
                         new RunCommand(
-                                () -> Robot.getInstance().intake.setPower(Math.abs(gamepadEx.getLeftY()))
+                                () -> Robot.getInstance().launcher.setPower(Math.abs(gamepadEx.getLeftY()))
                         )
                 )
                 .whenReleased(
-                        new stopIntake()
+                        new RunCommand(
+                                () -> Robot.getInstance().launcher.setPower(Math.abs(0))
+                        )
                 );
     }
 }

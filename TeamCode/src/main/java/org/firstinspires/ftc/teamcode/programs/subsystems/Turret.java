@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.programs.subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -50,7 +51,8 @@ public class Turret extends SubsystemBase {
         GoBildaPinpointDriver pinpoint = Robot.getInstancePinpoint();
         if (pinpoint == null || !FIELD_TAGS.containsKey(targetID)) return;
 
-        pinpoint.update();
+        //pinpoint.update();
+
         double robotX = pinpoint.getPosX(DistanceUnit.METER);
         double robotY = pinpoint.getPosY(DistanceUnit.METER);
         double robotHeading = pinpoint.getHeading(AngleUnit.RADIANS);
@@ -70,6 +72,34 @@ public class Turret extends SubsystemBase {
         double angleToTag = Math.atan2(dy, dx);
         double relativeAngle = wrapRad(angleToTag - robotHeading);
         relativeAngle = clamp(relativeAngle, -Math.toRadians(yawMaxDeg), Math.toRadians(yawMaxDeg));
+        double servoXPos = centerX + (relativeAngle / Math.toRadians(yawMaxDeg)) * 0.5;
+        servoXPos = clamp(servoXPos, 0.0, 1.0);
+        servoX.setPosition(servoXPos);
+
+        double horiz = Math.hypot(dx, dy);
+        double pitchRad = Math.atan2(dz, horiz);
+        double servoYPos = centerY + (Math.toDegrees(pitchRad) / pitchMaxDeg) * (upY - centerY);
+        servoYPos = clamp(servoYPos, downY, upY);
+        servoY.setPosition(servoYPos);
+    }
+
+    public void autoAlignToBlueGoal(Pose currentPose) {
+        double goalX = 16.5 * 0.0254;
+        double goalY = 131.5 * 0.0254;
+        double goalZ = 0.749;
+
+        double robotX = currentPose.getX() * 0.0254;
+        double robotY = currentPose.getY() * 0.0254;
+        double robotHeading = wrapRad(currentPose.getHeading() + Math.PI); // rotate 180° to match turret frame
+
+        double dx = goalX - robotX;
+        double dy = goalY - robotY;
+        double dz = goalZ - cameraHeightM;
+
+        double angleToGoal = Math.atan2(dy, dx);
+        double relativeAngle = wrapRad(angleToGoal - robotHeading);
+        relativeAngle = clamp(relativeAngle, -Math.toRadians(yawMaxDeg), Math.toRadians(yawMaxDeg));
+
         double servoXPos = centerX + (relativeAngle / Math.toRadians(yawMaxDeg)) * 0.5;
         servoXPos = clamp(servoXPos, 0.0, 1.0);
         servoX.setPosition(servoXPos);

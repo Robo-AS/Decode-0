@@ -21,7 +21,7 @@ public class bottomBlueAutoWithGate extends OpMode {
     private int pathState;
 
     private final Pose startPose = new Pose(56, 8, Math.toRadians(90));
-    private final Pose outtake = new Pose(56, 18, Math.toRadians(270));
+    private final Pose outtake = new Pose(56, 18, Math.toRadians(90));
     private final Pose gateControl = new Pose(66.278, 78.064);
     private final Pose openGate = new Pose(17, 71.744);
     private final Pose leaveGateControl = new Pose(45.609, 76.185);
@@ -34,37 +34,37 @@ public class bottomBlueAutoWithGate extends OpMode {
     public void buildPaths() {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(90))
                 .build();
 
         gate = follower.pathBuilder()
                 .addPath(new BezierCurve(outtake, gateControl, openGate))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(90))
                 .build();
 
         goToIntake = follower.pathBuilder()
                 .addPath(new BezierCurve(openGate, leaveGateControl, leaveGate))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(90))
                 .build();
 
         get1 = follower.pathBuilder()
                 .addPath(new BezierLine(leaveGate, intake1))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
                 .build();
 
         throw1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
                 .build();
 
         get2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake2))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
                 .build();
 
         throw2 = follower.pathBuilder()
                 .addPath(new BezierLine(intake2, outtake))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
                 .build();
     }
 
@@ -91,40 +91,33 @@ public class bottomBlueAutoWithGate extends OpMode {
             }
             case 3: {
                 if (!follower.isBusy()) {
-                    follower.followPath(goToIntake, true);
+                    follower.followPath(get1, true);
                     setPathState(4);
                 }
                 break;
             }
             case 4: {
                 if (!follower.isBusy()) {
-                    follower.followPath(get1, true);
+                    follower.followPath(throw1, true);
                     setPathState(5);
                 }
                 break;
             }
             case 5: {
                 if (!follower.isBusy()) {
-                    follower.followPath(throw1, true);
+                    follower.followPath(get2, true);
                     setPathState(6);
                 }
                 break;
             }
             case 6: {
                 if (!follower.isBusy()) {
-                    follower.followPath(get2, true);
+                    follower.followPath(throw2, true);
                     setPathState(7);
                 }
                 break;
             }
             case 7: {
-                if (!follower.isBusy()) {
-                    follower.followPath(throw2, true);
-                    setPathState(8);
-                }
-                break;
-            }
-            case 8:{
                 if(!follower.isBusy())
                     reachedEnd = true;
                 break;
