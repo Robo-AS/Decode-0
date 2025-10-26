@@ -22,7 +22,6 @@ public class Turret extends SubsystemBase {
     private final double limelightLensHeight = 0.2925; //in metri
     private final double goalHeightMeters = 0.784; //in metri
     private final double gearRatio = 1.5;
-    private final double CONSTANT = 0.5;
     private double servoXPos = centerX;
     private boolean scanningRight = true;
     private final double scanSpeed = 0.01;
@@ -71,7 +70,6 @@ public class Turret extends SubsystemBase {
                     double targetPitch = getPitchFromDistance(distance);
 
                     servoXPos = centerX + ((targetYaw * gearRatio) / Math.toRadians(yawMaxDeg)) * 0.5;
-                    servoXPos = servoXPos * CONSTANT;
                     servoXPos = clamp(servoXPos, 0.0, 1.0);
                     servoX.setPosition(servoXPos);
 
