@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 public class startLauncher extends InstantCommand {
     public startLauncher(double joystickPower) {
         super(
-               //TODO 11: Setati puterea joystickPower la launcher
+                () -> Robot.getInstance().launcher.setPower(joystickPower)
         );
     }
 }

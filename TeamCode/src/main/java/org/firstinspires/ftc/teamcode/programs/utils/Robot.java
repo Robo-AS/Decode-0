@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.programs.utils;
 
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -10,7 +11,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.IMU;
 
-import org.firstinspires.ftc.teamcode.programs.subsystems.Limelight;
+import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Turret;
 
@@ -20,14 +21,13 @@ import java.util.List;
 public class Robot {
     private static Robot instance = null;
     private static HardwareMap hardwareMap;
-
-    ///TODO 1: declarati o instanta a clasei Mecanum
-    public Limelight limelight = null;
+    public Mecanum mecanum = null;
+    public Limelight3A limelight = null;
+    public LimelightWrapper llwrapped = null;
     public Turret turret = null;
-    public DcMotorEx leftFront, leftRear, rightRear, rightFront;
-
-    ///TODO 2: declarati motoare pentru intake si lansator
-    public Servo servoX, servoY;
+    public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
+    public DcMotorEx launcher;
+    public Servo servoX, servoY, servoLauncher;
     public IMU imu;
     public List<DcMotorEx> motors;
     public static MultipleTelemetry telemetry;
@@ -35,7 +35,6 @@ public class Robot {
     public static GoBildaPinpointDriver pinpoint = null;
 
 
-    // TODO 3: Explicati in acest comentariu de ce folosim o SINGURA instanta a clasei Robot?
     public static Robot getInstance() {
         if (instance == null) {
             instance = new Robot();
@@ -64,26 +63,32 @@ public class Robot {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
-        //TODO 6: Creati un nou obiect Mecanum folosindu va de constructor
+        mecanum = new Mecanum();
 
         //limelight
 
-        limelight = new Limelight();
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.start();
 
-        limelight.initializeHardware(hardwareMap);
+        llwrapped = new LimelightWrapper();
+        llwrapped.initializeHardware(hardwareMap);
+        llwrapped.initialize();
 
         // turret
 
         servoX = hardwareMap.get(Servo.class, "servoX");
         servoY = hardwareMap.get(Servo.class, "servoY");
 
-        servoX.setDirection(Servo.Direction.REVERSE);
         servoY.setDirection(Servo.Direction.REVERSE);
+        servoX.setDirection(Servo.Direction.REVERSE);
 
         turret = new Turret();
 
         //launcher
-        //TODO 4: Initializati lansatorul si schimbati directia sa
+        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
 
         //imu
         imu = hardwareMap.get(IMU.class, "imu");
@@ -95,7 +100,8 @@ public class Robot {
         pinpoint.resetPosAndIMU();
 
         //intake
-        // TODO 4: Initializati intake ul
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+        //intake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap, MultipleTelemetry telemetry) {
@@ -119,11 +125,11 @@ public class Robot {
 
 
     public void initialize() {
-        limelight.initialize();
         mecanum.initialize();
         turret.initialize();
         imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
         pinpoint.resetPosAndIMU();
+        servoLauncher.setPosition(0);
     }
 
     public void update() {
@@ -141,13 +147,22 @@ public class Robot {
         return turret;
     }
 
-    public Limelight getInstanceLimelight(){
+    public LimelightWrapper getInstanceLimelight(){
         if(limelight == null) {
-            limelight = new Limelight();
-            limelight.initializeHardware(hardwareMap);
+            llwrapped = new LimelightWrapper();
+            llwrapped.initializeHardware(hardwareMap);
+        }
+        return llwrapped;
+    }
+
+    public Limelight3A getInstanceLimelight3A() {
+        if (limelight == null) {
+            limelight = hardwareMap.get(Limelight3A.class, "limelight");
+            limelight.start();
         }
         return limelight;
     }
+
 
     public static HardwareMap getInstanceHardwareMap(){
         return hardwareMap;

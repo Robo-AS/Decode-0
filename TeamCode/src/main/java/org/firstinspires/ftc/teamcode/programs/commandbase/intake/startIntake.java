@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 public class startIntake extends InstantCommand {
     public startIntake(double power) {
         super(
-                //TODO 12: setati puterea power la intake
+                () -> Robot.getInstance().intake.setPower(power)
         );
     }
 }

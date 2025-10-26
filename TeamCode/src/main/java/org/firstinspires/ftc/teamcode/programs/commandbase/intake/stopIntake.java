@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 public class stopIntake extends InstantCommand {
     public stopIntake(){
         super(
-                //TODO 13: setati puterea 0 la intake (opriti-l)
+                () -> Robot.getInstance().intake.setPower(0)
         );
     }
 }

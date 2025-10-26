@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Limelight extends SubsystemBase {
+public class LimelightWrapper extends SubsystemBase {
     private Limelight3A limelight;
     public double purpleTx = 0.0;
     public double purpleTy = 0.0;
@@ -100,7 +100,7 @@ public class Limelight extends SubsystemBase {
         if(currentPipeline == 0) {
             Robot.getInstance().telemetry.addData("number of artifacts", artifactList.size());
             Robot.getInstance().telemetry.update();
-        } else if(currentPipeline == 1){
+        } else if(currentPipeline == 1) {
             Robot.getInstance().telemetry.addData("AprilTag id ", tagId);
             Robot.getInstance().telemetry.update();
         }
@@ -109,7 +109,6 @@ public class Limelight extends SubsystemBase {
     public boolean hasTargets() {
         return !(purpleTx == 0 && purpleTy == 0 && greenTx == 0 && greenTy == 0);
     }
-
 
     public static class Artifact {
         public final String type;
