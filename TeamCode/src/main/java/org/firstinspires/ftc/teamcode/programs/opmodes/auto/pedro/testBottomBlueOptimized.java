@@ -174,7 +174,7 @@ public class testBottomBlueOptimized extends OpMode {
         follower.update();
         autonomousPathUpdate();
 
-        robot.turret.autoAlignToBlueGoal(follower.getPose());
+       // robot.turret.autoAlignToBlueGoal(follower.getPose());
 
         telemetry.addData("Path State", pathState);
         telemetry.addData("X", follower.getPose().getX());

@@ -160,7 +160,7 @@ public class bottomBlueAuto extends OpMode {
         follower.update();
         autonomousPathUpdate();
 
-        robot.turret.autoAlignToBlueGoal(follower.getPose());
+       // robot.turret.autoAlignToBlueGoal(follower.getPose());
 
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());

@@ -74,6 +74,6 @@ public class firstTeleOp extends CommandOpMode {
 
         robot.pinpoint.update();
        // robot.llwrapped.loop();
-        robot.turret.loop();
+        robot.turret.loop(20);
     }
 }

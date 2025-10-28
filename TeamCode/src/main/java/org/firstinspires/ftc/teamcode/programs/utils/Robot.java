@@ -79,14 +79,13 @@ public class Robot {
         servoX = hardwareMap.get(Servo.class, "servoX");
         servoY = hardwareMap.get(Servo.class, "servoY");
 
-        servoY.setDirection(Servo.Direction.REVERSE);
         servoX.setDirection(Servo.Direction.REVERSE);
+        servoY.setDirection(Servo.Direction.REVERSE);
 
         turret = new Turret();
 
         //launcher
         launcher = hardwareMap.get(DcMotorEx.class, "launcher");
-        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
 
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
 
