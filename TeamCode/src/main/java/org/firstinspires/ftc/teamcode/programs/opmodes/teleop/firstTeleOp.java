@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.Shoot;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.startLauncher;
+import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
@@ -37,9 +38,6 @@ public class firstTeleOp extends CommandOpMode {
         robot.initializeHardware(hardwareMap, (MultipleTelemetry) telemetry);
         robot.initialize();
 
-        robot.servoX.setPosition(0.5);
-        robot.servoY.setPosition(0.5);
-
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
                 new startIntake(1),
                 new WaitCommand(2000),
@@ -57,6 +55,9 @@ public class firstTeleOp extends CommandOpMode {
                 new WaitCommand(250),
                 new setServoLauncherPosition(0)
         ));
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new setServoYPosition(0.3));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new setServoYPosition(0.5));
     }
 
     @Override

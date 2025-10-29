@@ -80,7 +80,7 @@ public class Robot {
         servoY = hardwareMap.get(Servo.class, "servoY");
 
         servoX.setDirection(Servo.Direction.REVERSE);
-        servoY.setDirection(Servo.Direction.REVERSE);
+      //  servoY.setDirection(Servo.Direction.REVERSE);
 
         turret = new Turret();
 

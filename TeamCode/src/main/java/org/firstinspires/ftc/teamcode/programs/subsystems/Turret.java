@@ -6,15 +6,16 @@ import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class Turret extends SubsystemBase {
     private Servo servoX, servoY;
@@ -24,19 +25,20 @@ public class Turret extends SubsystemBase {
     private final double centerY = 0.5;
     private final double upY = 0.75;
     private final double downY = 0.25;
-
     private final double yawMaxDeg = 150.0;
     private final double pitchMaxDeg = 20.0;
     private final double cameraHeightM = 0.2925;
-
-    private final double CAMERA_ANGLE = 20;
-    private final double CAMERA_HEIGHT = 0.2925;
-    private final double LATERAL_OFFSET = 0.0;
-    private final double BONUS = 0.01;
-
-    private final double LIMELIGHT_GAIN = 0.0005;
     private final double GEAR_RATIO_YAW = 1.5;
-    private final double GEAR_RATIO_PITCH = 1.0;
+
+    private static final int SMOOTH_FRAMES = 100;
+    private final Queue<Double> llXQueue = new LinkedList<>();
+    private final Queue<Double> llYQueue = new LinkedList<>();
+    private final Queue<Double> llHeadingQueue = new LinkedList<>();
+
+    private static final double MAX_LL_DELTA = 0.5;
+    private static final double Kp = 0.2;
+    private static final double MAX_SERVO_DELTA = 0.02;
+    private static final double MIN_ERROR = 0.002;
 
     public static class TagPose {
         public final double x, y, z;
@@ -50,7 +52,6 @@ public class Turret extends SubsystemBase {
     }
 
     private TagPose lockedTag = null;
-    private double limelightOffsetX = 0.0, limelightOffsetY = 0.0;
 
     public void initialize() {
         Robot robot = Robot.getInstance();
@@ -66,74 +67,108 @@ public class Turret extends SubsystemBase {
     public void loop(int targetID) {
         GoBildaPinpointDriver pinpoint = Robot.getInstancePinpoint();
         if (pinpoint == null || !FIELD_TAGS.containsKey(targetID)) return;
-
         pinpoint.update();
+        if (lockedTag == null) lockedTag = FIELD_TAGS.get(targetID);
+
         double robotX = pinpoint.getPosX(DistanceUnit.METER);
         double robotY = pinpoint.getPosY(DistanceUnit.METER);
         double robotHeading = pinpoint.getHeading(AngleUnit.RADIANS);
 
-        if (lockedTag == null) lockedTag = FIELD_TAGS.get(targetID);
+        double[] pinpointTargets = computeServoTargets(lockedTag, robotX, robotY, robotHeading);
+        double[] correctedTargets = blendLimelightCorrection(targetID, pinpointTargets, pinpoint);
 
-        aimAt(lockedTag, robotX, robotY, robotHeading);
-        applyLimelightCorrection(targetID);
+        double servoXCurrent = servoX.getPosition();
+        double servoYCurrent = servoY.getPosition();
+
+        double deltaX = clamp(correctedTargets[0] - servoXCurrent, -MAX_SERVO_DELTA, MAX_SERVO_DELTA);
+        double deltaY = clamp(correctedTargets[1] - servoYCurrent, -MAX_SERVO_DELTA, MAX_SERVO_DELTA);
+
+        if(Math.abs(deltaX) > MIN_ERROR) servoX.setPosition(clamp(servoXCurrent + deltaX, 0.0, 1.0));
+        if(Math.abs(deltaY) > MIN_ERROR) servoY.setPosition(clamp(servoYCurrent + deltaY, downY, upY));
     }
 
-    private void aimAt(TagPose tag, double robotX, double robotY, double robotHeading) {
+    private double[] computeServoTargets(TagPose tag, double robotX, double robotY, double robotHeading) {
         double dx = tag.x - robotX;
         double dy = tag.y - robotY;
         double dz = tag.z - cameraHeightM;
 
+        double horiz = Math.hypot(dx, dy);
+        double distance = Math.max(horiz, 0.05);
+
         double angleToTag = Math.atan2(dy, dx);
         double relativeYaw = wrapRad(angleToTag - robotHeading);
-        relativeYaw = clamp(relativeYaw, -Math.toRadians(yawMaxDeg), Math.toRadians(yawMaxDeg));
+        double servoXTarget = centerX + (relativeYaw / Math.toRadians(yawMaxDeg)) / GEAR_RATIO_YAW;
 
-        double servoXTarget = centerX + (relativeYaw / Math.toRadians(yawMaxDeg)) / GEAR_RATIO_YAW + limelightOffsetX;
-
-        double horiz = Math.hypot(dx, dy);
         double pitchRad = Math.atan2(dz, horiz);
+        double basePitch = Math.toDegrees(pitchRad) / pitchMaxDeg;
 
-        double servoYTarget = centerY + (Math.toDegrees(pitchRad) / pitchMaxDeg) / GEAR_RATIO_PITCH * (upY - centerY) + limelightOffsetY;
+        double distanceComp = clamp((1.2 - distance) * 0.25, 0.0, 0.15);
+        basePitch -= distanceComp;
 
-        servoX.setPosition(clamp(servoXTarget, 0.0, 1.0));
-        servoY.setPosition(clamp(servoYTarget, downY, upY));
+        double servoYTarget = centerY + basePitch * (upY - downY);
+        servoYTarget = clamp(servoYTarget, downY, upY);
+
+        telemetry.addData("Distance (m)", distance);
+        telemetry.addData("BasePitch", basePitch);
+        telemetry.addData("DistanceComp", distanceComp);
+        telemetry.addData("servoYTarget", servoYTarget);
+
+        return new double[]{servoXTarget, servoYTarget};
     }
 
-    private void applyLimelightCorrection(int targetID) {
+
+
+    private double[] blendLimelightCorrection(int targetID, double[] baseTargets, GoBildaPinpointDriver pinpoint) {
+        limelight.updateRobotOrientation(pinpoint.getHeading(AngleUnit.RADIANS));
         LLResult result = limelight.getLatestResult();
-        if (result == null || !result.isValid()) return;
+        if (result == null || !result.isValid()) return baseTargets;
 
-        List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
-        if (tags == null || tags.isEmpty()) return;
+        Pose3D botPose = result.getBotpose();
+        if (botPose == null) return baseTargets;
 
-        for (LLResultTypes.FiducialResult tag : tags) {
-            if (tag.getFiducialId() == targetID) {
-                double tx = tag.getTargetXDegreesNoCrosshair();
-                double ty = tag.getTargetYDegreesNoCrosshair();
+        double llX = botPose.getPosition().x;
+        double llY = botPose.getPosition().y;
+        double llHeading = botPose.getOrientation().getYaw();
 
-                if (Math.abs(tx) < 0.5 && Math.abs(ty) < 0.5) return;
+        if (!llXQueue.isEmpty() && Math.abs(llX - llXQueue.peek()) > MAX_LL_DELTA) return baseTargets;
+        if (!llYQueue.isEmpty() && Math.abs(llY - llYQueue.peek()) > MAX_LL_DELTA) return baseTargets;
 
-                double cameraAngleRad = Math.toRadians(CAMERA_ANGLE + ((servoY.getPosition() - centerY) / (upY - centerY)) * pitchMaxDeg);
-                double yDistance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty) + cameraAngleRad);
+        llXQueue.add(llX); if (llXQueue.size() > SMOOTH_FRAMES) llXQueue.poll();
+        llYQueue.add(llY); if (llYQueue.size() > SMOOTH_FRAMES) llYQueue.poll();
+        llHeadingQueue.add(llHeading); if (llHeadingQueue.size() > SMOOTH_FRAMES) llHeadingQueue.poll();
 
-                double xDistance = Math.sqrt(yDistance*yDistance + CAMERA_HEIGHT*CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx)) + LATERAL_OFFSET;
-                double targetAngle = -Math.atan2(xDistance, yDistance + BONUS);
-                
-                limelightOffsetX = clamp(targetAngle * LIMELIGHT_GAIN / GEAR_RATIO_YAW / Math.toRadians(yawMaxDeg), -0.1, 0.1);
-                limelightOffsetY = clamp(ty * 0.0015 / GEAR_RATIO_PITCH, -0.1, 0.1);
+        double avgX = llXQueue.stream().mapToDouble(d->d).average().orElse(llX);
+        double avgY = llYQueue.stream().mapToDouble(d->d).average().orElse(llY);
+        double avgHeading = llHeadingQueue.stream().mapToDouble(d->d).average().orElse(llHeading);
 
-                telemetry.addData("tx:", tag.getTargetXDegreesNoCrosshair());
-                telemetry.addData("ty:", tag.getTargetYDegreesNoCrosshair());
-                telemetry.addData("target angle:", targetAngle);
-                telemetry.update();
+        TagPose tag = FIELD_TAGS.get(targetID);
+        if (tag == null) return baseTargets;
 
-                break;
-            }
-        }
+        double[] llTargets = computeServoTargets(tag, avgX, avgY, avgHeading);
+        double servoXError = llTargets[0] - baseTargets[0];
+        double servoYError = llTargets[1] - baseTargets[1];
+
+        double confidence = 1.0 / (1.0 + computeStd(llXQueue) + computeStd(llYQueue));
+
+        double correctedX = baseTargets[0] + Kp * confidence * servoXError;
+        double correctedY = baseTargets[1] + Kp * confidence * servoYError;
+
+        telemetry.addData("LL Correction", confidence);
+        telemetry.addData("ServoX Error", servoXError);
+        telemetry.addData("ServoY Error", servoYError);
+        telemetry.update();
+
+        return new double[]{correctedX, correctedY};
+    }
+
+    private static double computeStd(Queue<Double> q) {
+        double mean = q.stream().mapToDouble(d->d).average().orElse(0.0);
+        return Math.sqrt(q.stream().mapToDouble(d->(d-mean)*(d-mean)).average().orElse(0.0));
     }
 
     private static double wrapRad(double r) {
-        while (r > Math.PI) r -= 2*Math.PI;
-        while (r < -Math.PI) r += 2*Math.PI;
+        while (r > Math.PI) r -= 2 * Math.PI;
+        while (r < -Math.PI) r += 2 * Math.PI;
         return r;
     }
 
