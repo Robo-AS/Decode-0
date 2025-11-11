@@ -57,15 +57,12 @@ public class TurretCR extends SubsystemBase {
         FIELD_TAGS_LL.put(24, new TagPose(-1.482, 1.413, 0.749));
     }
 
-    private static final Map<Integer, TagPose> FIELD_TAGS_PINPOINT = new HashMap<>();
-    static {
-        FIELD_TAGS_PINPOINT.put(20, new TagPose(2.98, 1.31, 0.749));
-        FIELD_TAGS_PINPOINT.put(24, new TagPose(2.98, -1.31, 0.749));
-    }
-
     public TurretCR() {
         servoX = robot.servoX;
         limelight = robot.limelight;
+
+        // if current angle is in range of +- 4 degrees of target it doesnt correct
+        // should remove jitter
         pid.setTolerance(TOLERANCE);
     }
 
@@ -76,11 +73,14 @@ public class TurretCR extends SubsystemBase {
     }
 
 
+    //the analog input returns voltage between 0 and 3.3 V
+    //convert that % of voltage to % of rotation, then to degrees
     private double getRawAngle() {
         double pct = robot.axonEncoder.getVoltage() / robot.axonEncoder.getMaxVoltage();
         return pct * 360.0 / GEAR_RATIO;
     }
 
+    //normalize angle in range [-180, 180] and clamp it too
     private double getAngle() {
         double angle = getRawAngle() - encoderZero;
 
@@ -93,11 +93,14 @@ public class TurretCR extends SubsystemBase {
         return angle;
     }
 
+    //stores the current encoder position as the new "zero", it shifts reference
     public void resetEncoderPosition() {
         encoderZero = getRawAngle();
     }
 
     private void updateHeadings() {
+        // use limelight as much as possible to get the target angle
+        // keeping pinpoint as a fail-safe
         LLResult ll = limelight.getLatestResult();
         boolean useLL = ll != null && ll.isValid() && ll.getBotpose_MT2() != null && FIELD_TAGS_LL.containsKey(targetID);
         boolean usePinpoint = robot.pinpoint != null && FIELD_TAGS_LL.containsKey(targetID) && !useLL;
@@ -108,6 +111,10 @@ public class TurretCR extends SubsystemBase {
         if (useLL)
         {
             targetAngle = ll.getTx();
+
+            //get robot field-relative coordinates from limelight as much as possible
+            //and sync odometry with those, bc they are more accurate
+            //so if you do fallback to pinpoint it has less error (hopefully)
             Pose2D poseFromLL = new Pose2D(
                     DistanceUnit.METER,
                     ll.getBotpose_MT2().getPosition().x,
@@ -121,16 +128,19 @@ public class TurretCR extends SubsystemBase {
         {
             robot.pinpoint.update();
 
+            //read robot position and heading from pinpoint
             robotX = robot.pinpoint.getPosX(DistanceUnit.METER);
             robotY = robot.pinpoint.getPosY(DistanceUnit.METER);
             headingRad = Math.toRadians(robot.pinpoint.getHeading(AngleUnit.DEGREES));
 
+            //angle to target tag in world space
             tag = FIELD_TAGS_LL.get(targetID);
             double dx = tag.x - robotX;
             double dy = tag.y - robotY;
 
+            //get the target angle and normalize it
             double fieldAngle = Math.atan2(dy, dx);
-            double error = fieldAngle - headingRad;
+            double error = fieldAngle - headingRad; // angle from goal - current heading
             double errorDeg = Math.toDegrees(error);
 
             while (errorDeg > 180) errorDeg -= 360;
@@ -138,28 +148,35 @@ public class TurretCR extends SubsystemBase {
 
             targetAngle = errorDeg;
         }
-        else targetAngle = 0;
+        else targetAngle = 0; //if neither is available for some reason reset the turret
     }
 
 
     public void loop() {
-        updateHeadings();
+        updateHeadings(); //get targetAngle
 
         double current = getAngle();
 
+        //normalize again bc i only do that for pinpoint
         while (targetAngle > 180) targetAngle -= 360;
         while (targetAngle < -180) targetAngle += 360;
 
+        //clamp it again to [-180, 180] for extra safety
         targetAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, targetAngle));
 
+        //new pid and feedforward
         pid.setPIDF(kP, kI, kD, 0);
         ff = new SimpleMotorFeedforward(kS, kV);
 
-        double pidOut = pid.calculate(current, targetAngle);
-        double ffOut = ff.calculate(targetAngle - current);
-        double power = pidOut + ffOut;
+        double pidOut = pid.calculate(current, targetAngle); //get the target power
+        double ffOut = ff.calculate(targetAngle - current); //feedforward based on angular error rate
+        double power = pidOut + ffOut; // combo
 
         if(pid.atSetPoint())
+            //using the setTolerance method only works if you are going to use atSetPoint
+            //basically the setPoint isnt just one degree anymore, its an interval:
+            //[targetAngle-TOLERANCE, targetAngle+TOLERANCE]
+            //if you reached that interval stop aiming
             servoX.setPower(0);
         else
             servoX.setPower(power);
