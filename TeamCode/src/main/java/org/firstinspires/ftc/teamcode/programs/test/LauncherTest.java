@@ -27,18 +27,18 @@ public class LauncherTest extends CommandOpMode {
 
         gamepadEx = new GamepadEx(gamepad1);
 
-        robot.initializeHardware(hardwareMap, (MultipleTelemetry) telemetry);
+        robot.initializeHardware(hardwareMap);
         robot.initialize();
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(
                         new RunCommand(
-                                () -> Robot.getInstance().launcher.setPower(Math.abs(gamepadEx.getLeftY()))
+                                () -> Robot.getInstance().launcher1.setPower(Math.abs(gamepadEx.getLeftY()))
                         )
                 )
                 .whenReleased(
                         new RunCommand(
-                                () -> Robot.getInstance().launcher.setPower(Math.abs(0))
+                                () -> Robot.getInstance().launcher1.setPower(Math.abs(0))
                         )
                 );
 

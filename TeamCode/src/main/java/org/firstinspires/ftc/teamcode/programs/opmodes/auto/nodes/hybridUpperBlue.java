@@ -37,8 +37,7 @@ public class hybridUpperBlue extends LinearOpMode {
         follower = Constants.createFollower(Robot.getInstanceHardwareMap());
         follower.setStartingPose(startPose);
 
-        robot.initializeHardware(hardwareMap,
-                new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
+        robot.initializeHardware(hardwareMap);
         robot.initialize();
 
         PathBuilder builder = new PathBuilder(follower, new PathConstraints(30, 30));

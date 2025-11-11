@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -13,7 +15,6 @@ import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
-import org.firstinspires.ftc.teamcode.programs.subsystems.Turret;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,10 +25,12 @@ public class Robot {
     public Mecanum mecanum = null;
     public Limelight3A limelight = null;
     public LimelightWrapper llwrapped = null;
-    public Turret turret = null;
+    //public TurretCR turret = null;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
-    public DcMotorEx launcher;
-    public Servo servoX, servoY, servoLauncher;
+    public DcMotorEx launcher1, launcher2;
+    public Servo servoY, servoLauncher;
+    public CRServo servoX;
+    public AnalogInput axonEncoder;
     public IMU imu;
     public List<DcMotorEx> motors;
     public static MultipleTelemetry telemetry;
@@ -42,9 +45,8 @@ public class Robot {
         return instance;
     }
 
-    public void initializeHardware(final HardwareMap hardwareMap, MultipleTelemetry telemetry){
+    public void initializeHardware(final HardwareMap hardwareMap){
         this.hardwareMap = hardwareMap;
-        this.telemetry = telemetry;
 
         //mecanum
 
@@ -76,16 +78,26 @@ public class Robot {
 
         // turret
 
-        servoX = hardwareMap.get(Servo.class, "servoX");
+        servoX = hardwareMap.get(CRServo.class, "servoX");
         servoY = hardwareMap.get(Servo.class, "servoY");
 
-        servoX.setDirection(Servo.Direction.REVERSE);
-      //  servoY.setDirection(Servo.Direction.REVERSE);
+        axonEncoder = hardwareMap.get(AnalogInput.class, "encoder");
 
-        turret = new Turret();
+        //turret = new TurretCR();
 
         //launcher
-        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
+        launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
+
+        launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcher1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        launcher2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcher2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        launcher2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
 
@@ -100,7 +112,6 @@ public class Robot {
 
         //intake
         intake = hardwareMap.get(DcMotorEx.class, "intake");
-        //intake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap, MultipleTelemetry telemetry) {
@@ -112,20 +123,18 @@ public class Robot {
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        servoX = hardwareMap.get(Servo.class, "servoX");
+        servoX = hardwareMap.get(CRServo.class, "servoX");
         servoY = hardwareMap.get(Servo.class, "servoY");
 
-        servoX.setDirection(Servo.Direction.REVERSE);
+        servoX.setDirection(CRServo.Direction.REVERSE);
         servoY.setDirection(Servo.Direction.REVERSE);
 
-        turret = new Turret();
-        turret.initialize();
+     //   turret = new TurretCR();
     }
 
 
     public void initialize() {
         mecanum.initialize();
-        turret.initialize();
         imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
         pinpoint.resetPosAndIMU();
         servoLauncher.setPosition(0);
@@ -140,11 +149,11 @@ public class Robot {
         return mecanum;
     }
 
-    public Turret getInstanceTurret(){
+   /* public TurretCR getInstanceTurret(){
         if(turret == null)
-            return new Turret();
+            return new TurretCR();
         return turret;
-    }
+    }*/
 
     public LimelightWrapper getInstanceLimelight(){
         if(limelight == null) {

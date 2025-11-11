@@ -29,7 +29,7 @@ public class IntakeTest extends CommandOpMode {
 
         gamepadEx = new GamepadEx(gamepad1);
 
-        robot.initializeHardware(hardwareMap, (MultipleTelemetry) telemetry);
+        robot.initializeHardware(hardwareMap);
         robot.initialize();
 
 
