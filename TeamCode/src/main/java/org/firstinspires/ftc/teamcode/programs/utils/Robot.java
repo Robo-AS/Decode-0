@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.IMU;
 
+import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 
@@ -26,6 +27,8 @@ public class Robot {
     public Limelight3A limelight = null;
     public LimelightWrapper llwrapped = null;
     //public TurretCR turret = null;
+
+    public Flywheel flywheel = null;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
     public DcMotorEx launcher1, launcher2;
     public Servo servoY, servoLauncher;
@@ -89,17 +92,15 @@ public class Robot {
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
 
-        launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
+        launcher1.setDirection(DcMotorSimple.Direction.REVERSE);
 
         launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         launcher1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        launcher2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        launcher2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        launcher2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
+
+        flywheel = new Flywheel();
 
         //imu
         imu = hardwareMap.get(IMU.class, "imu");
@@ -112,6 +113,7 @@ public class Robot {
 
         //intake
         intake = hardwareMap.get(DcMotorEx.class, "intake");
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap, MultipleTelemetry telemetry) {
@@ -137,6 +139,7 @@ public class Robot {
         mecanum.initialize();
         imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
         pinpoint.resetPosAndIMU();
+        flywheel.initialize();
         servoLauncher.setPosition(0);
     }
 
@@ -163,12 +166,12 @@ public class Robot {
         return llwrapped;
     }
 
-    public Limelight3A getInstanceLimelight3A() {
-        if (limelight == null) {
-            limelight = hardwareMap.get(Limelight3A.class, "limelight");
-            limelight.start();
+    public Flywheel getInstanceFlywheel(){
+        if(flywheel == null){
+            flywheel = new Flywheel();
         }
-        return limelight;
+
+        return flywheel;
     }
 
 

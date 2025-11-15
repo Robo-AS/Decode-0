@@ -41,6 +41,8 @@ public class TurretCR extends SubsystemBase {
     public static double MAX_ANGLE = 180.0;
     public static double TOLERANCE = 4.0;
 
+    private boolean poseSynced = false;
+
     private PIDFController pid = new PIDFController(kP, kI, kD, 0);
     private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(kS, kV);
 
@@ -123,8 +125,11 @@ public class TurretCR extends SubsystemBase {
                     ll.getBotpose_MT2().getOrientation().getYaw()
             );
             robot.pinpoint.setPosition(poseFromLL);
+
+            poseSynced = true; //only start aiming with pinpoint if the limelight has seen the apriltag before
+            //in order to avoid pointing behind the robot
         }
-        else if (usePinpoint)
+        else if (usePinpoint && poseSynced)
         {
             robot.pinpoint.update();
 
@@ -177,7 +182,7 @@ public class TurretCR extends SubsystemBase {
             //basically the setPoint isnt just one degree anymore, its an interval:
             //[targetAngle-TOLERANCE, targetAngle+TOLERANCE]
             //if you reached that interval stop aiming
-            servoX.setPower(0);
+            servoX.setPower(Math.max(-1.0, Math.min(1.0, power)));
         else
             servoX.setPower(power);
     }

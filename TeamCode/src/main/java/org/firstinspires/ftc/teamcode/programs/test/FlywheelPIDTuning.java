@@ -50,7 +50,6 @@ public class FlywheelPIDTuning extends OpMode {
         flyWheel1 = Robot.getInstance().launcher1;
         flyWheel2 = Robot.getInstance().launcher2;
         limelight = Robot.getInstance().limelight;
-
     }
 
     @Override

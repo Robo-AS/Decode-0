@@ -35,7 +35,7 @@ public class firstTeleOp extends CommandOpMode {
 
     public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
     public Pose3D botpose;
-    public double downY = 0.2, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
 
     public double CAMERA_ANGLE = 18;
     public double CAMERA_HEIGHT = 0.4;
@@ -77,7 +77,6 @@ public class firstTeleOp extends CommandOpMode {
     @Override
     public void run() {
         CommandScheduler.getInstance().run();
-        robot.launcher1.setPower(1);
 
         exponentialJoystickCoord_X_TURN = (Math.pow(gamepad1.right_stick_x, 3) + liniarCoefTerm * gamepad1.right_stick_x) * constantTerm;
         exponentialJoystickCoord_X_FORWARD = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
@@ -101,10 +100,12 @@ public class firstTeleOp extends CommandOpMode {
 
             y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
             x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-            distance = y_distance;
+            distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
             targetAngle = tx;
 
-            pos = getServoYPositionFromDistance(distance);
+            robot.flywheel.loop(distance);
+
+            pos = getServoYPositionFromDistance(y_distance);
             robot.servoY.setPosition(pos);
 
             telemetry.addData("Target Area", ta);

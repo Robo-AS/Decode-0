@@ -66,7 +66,7 @@ public class TurretPIDTuning extends OpMode {
         double ffOut = ff.calculate(targetAngle - currentAngle);
         double power = pidOut + ffOut;
 
-        servoX.setPower(power);
+        power = Math.max(-1.0, Math.min(1.0, power));
 
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("currentAngle", currentAngle);
