@@ -92,6 +92,8 @@ public class firstTeleOp extends CommandOpMode {
         YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
         robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
+        robot.turret.loop();
+
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
             ta = result.getTa();
@@ -120,7 +122,7 @@ public class firstTeleOp extends CommandOpMode {
     public double getServoYPositionFromDistance(double distance)
     {
         if(distance < maxDistance) return 0.6;
-        if(distance > minDistance) return 0.2;
+        if(distance > minDistance) return 0.1;
 
         double ratio = (minDistance - distance) / (minDistance - maxDistance);
         return downY + ratio * (upY - downY);

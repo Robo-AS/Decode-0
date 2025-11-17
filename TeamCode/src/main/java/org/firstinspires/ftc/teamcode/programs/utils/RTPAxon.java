@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.programs.utils;
 
-import android.annotation.SuppressLint;
-
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -25,6 +23,8 @@ public class RTPAxon {
     private double totalRotation;
     // Target rotation in degrees
     private double targetRotation;
+    private double encoderZero = 0;
+    private final double gearRatio = 1.5;
 
     // PID controller coefficients and state
     private double kP;
@@ -49,7 +49,6 @@ public class RTPAxon {
 
     // region constructors
 
-    // Basic constructor, defaults to FORWARD direction
     public RTPAxon(CRServo servo, AnalogInput encoder) {
         rtp = true;
         this.servo = servo;
@@ -58,37 +57,43 @@ public class RTPAxon {
         initialize();
     }
 
-    // Constructor with explicit direction
     public RTPAxon(CRServo servo, AnalogInput encoder, Direction direction) {
         this(servo, encoder);
         this.direction = direction;
         initialize();
     }
 
+    public void updatePIDCoeffs(double kP, double kI, double kD) {
+        this.kP = kP;
+        this.kI = kI;
+        this.kD = kD;
+        resetPID();
+    }
+
     // Initialization logic for servo and encoder
-    private void initialize() {
+    public void initialize() {
         servo.setPower(0);
         try {
             Thread.sleep(50);
-        } catch (InterruptedException ignored) {
-        }
+        } catch (InterruptedException ignored) { }
 
         // Try to get a valid starting position
         do {
-            STARTPOS = getCurrentAngle();
+            STARTPOS = getRawAngle();
             if (Math.abs(STARTPOS) > 1) {
-                previousAngle = getCurrentAngle();
+                previousAngle = getRawAngle();
             } else {
                 try {
                     Thread.sleep(50);
-                } catch (InterruptedException ignored) {
-                }
+                } catch (InterruptedException ignored) { }
             }
             ntry++;
         } while (Math.abs(previousAngle) < 0.2 && (ntry < 50));
 
+        encoderZero = previousAngle;
+
         totalRotation = 0;
-        homeAngle = previousAngle;
+        homeAngle = 0;   // now home angle is always 0 due to encoderZero subtraction
 
         // Default PID coefficients
         kP = 0.015;
@@ -105,6 +110,13 @@ public class RTPAxon {
     }
     // endregion
 
+    // INTERNAL RAW ENCODER VALUE (never apply correction here)
+    private double getRawAngle() {
+        if (servoEncoder == null) return 0;
+        return (servoEncoder.getVoltage() / 3.3) *
+                (direction.equals(Direction.REVERSE) ? -360 : 360);
+    }
+
     // Set servo direction
     public void setDirection(Direction direction) {
         this.direction = direction;
@@ -116,149 +128,73 @@ public class RTPAxon {
         servo.setPower(this.power * (direction == Direction.REVERSE ? -1 : 1));
     }
 
-    // Get current power
-    public double getPower() {
-        return power;
-    }
+    public double getPower() { return power; }
 
-    // Set maximum allowed power
-    public void setMaxPower(double maxPower) {
-        this.maxPower = maxPower;
-    }
+    public void setMaxPower(double maxPower) { this.maxPower = maxPower; }
+    public double getMaxPower() { return maxPower; }
 
-    // Get maximum allowed power
-    public double getMaxPower() {
-        return maxPower;
-    }
-
-    // Enable or disable run-to-position mode
     public void setRtp(boolean rtp) {
         this.rtp = rtp;
-        if (rtp) {
-            resetPID();
-        }
+        if (rtp) resetPID();
     }
 
-    // Get run-to-position mode state
-    public boolean getRtp() {
-        return rtp;
-    }
+    public boolean getRtp() { return rtp; }
 
-    // Set PID P coefficient
-    public void setKP(double kP) {
-        this.kP = kP;
-    }
+    public void setKP(double kP) { this.kP = kP; }
+    public void setKI(double kI) { this.kI = kI; resetIntegral(); }
+    public void setKD(double kD) { this.kD = kD; }
 
-    // Set PID I coefficient and reset integral
-    public void setKI(double kI) {
-        this.kI = kI;
-        resetIntegral();
-    }
-
-    // Set PID D coefficient
-    public void setKD(double kD) {
-        this.kD = kD;
-    }
-
-    // Set all PID coefficients
     public void setPidCoeffs(double kP, double kI, double kD) {
-        setKP(kP);
-        setKI(kI);
-        setKD(kD);
+        setKP(kP); setKI(kI); setKD(kD);
     }
 
-    // Get PID P coefficient
-    public double getKP() {
-        return kP;
-    }
+    public double getKP() { return kP; }
+    public double getKI() { return kI; }
+    public double getKD() { return kD; }
 
-    // Get PID I coefficient
-    public double getKI() {
-        return kI;
-    }
+    public void setK(double k) { setKP(k); }
+    public double getK() { return getKP(); }
 
-    // Get PID D coefficient
-    public double getKD() {
-        return kD;
-    }
-
-    // Set only P coefficient (alias)
-    public void setK(double k) {
-        setKP(k);
-    }
-
-    // Get only P coefficient (alias)
-    public double getK() {
-        return getKP();
-    }
-
-    // Set maximum allowed integral sum
     public void setMaxIntegralSum(double maxIntegralSum) {
         this.maxIntegralSum = maxIntegralSum;
     }
+    public double getMaxIntegralSum() { return maxIntegralSum; }
 
-    // Get maximum allowed integral sum
-    public double getMaxIntegralSum() {
-        return maxIntegralSum;
-    }
+    public double getTotalRotation() { return totalRotation; }
+    public double getTargetRotation() { return targetRotation; }
 
-    // Get total rotation since initialization
-    public double getTotalRotation() {
-        return totalRotation;
-    }
+    public void changeTargetRotation(double change) { targetRotation += change; }
 
-    // Get current target rotation
-    public double getTargetRotation() {
-        return targetRotation;
-    }
-
-    // Increment target rotation by a value
-    public void changeTargetRotation(double change) {
-        targetRotation += change;
-    }
-
-    // Set target rotation and reset PID
     public void setTargetRotation(double target) {
         targetRotation = target;
         resetPID();
     }
 
-    // Get current angle from encoder (in degrees)
     public double getCurrentAngle() {
-        if (servoEncoder == null) return 0;
-        return (servoEncoder.getVoltage() / 3.3) * (direction.equals(Direction.REVERSE) ? -360 : 360);
+        double encoderAngle = getRawAngle() - encoderZero;
+        return encoderAngle / gearRatio;
     }
 
-    // Check if servo is at target (default tolerance)
-    public boolean isAtTarget() {
-        return isAtTarget(5);
-    }
-
-    // Check if servo is at target (custom tolerance)
+    public boolean isAtTarget() { return isAtTarget(5); }
     public boolean isAtTarget(double tolerance) {
         return Math.abs(targetRotation - totalRotation) < tolerance;
     }
 
-    // Force reset total rotation and PID state
     public void forceResetTotalRotation() {
         totalRotation = 0;
         previousAngle = getCurrentAngle();
         resetPID();
     }
 
-    // Reset PID controller state
     public void resetPID() {
         resetIntegral();
         lastError = 0;
         pidTimer.reset();
     }
 
-    // Reset integral sum
-    public void resetIntegral() {
-        integralSum = 0;
-    }
+    public void resetIntegral() { integralSum = 0; }
 
-    // Main update loop: updates rotation, computes PID, applies power
+    // Main update loop
     public synchronized void update() {
         double currentAngle = getCurrentAngle();
         double angleDifference = currentAngle - previousAngle;
@@ -272,8 +208,8 @@ public class RTPAxon {
             cliffs++;
         }
 
-        // Update total rotation with wraparound correction
-        totalRotation = currentAngle - homeAngle + cliffs * 360;
+        // Update total rotation
+        totalRotation = (currentAngle) + cliffs * 360;
         previousAngle = currentAngle;
 
         if (!rtp) return;
@@ -281,63 +217,28 @@ public class RTPAxon {
         double dt = pidTimer.seconds();
         pidTimer.reset();
 
-        // Ignore unreasonable dt values
-        if (dt < 0.001 || dt > 1.0) {
-            return;
-        }
+        if (dt < 0.001 || dt > 1.0) return;
 
         double error = targetRotation - totalRotation;
 
-        // PID integral calculation with clamping
+        // PID integral
         integralSum += error * dt;
         integralSum = Math.max(-maxIntegralSum, Math.min(maxIntegralSum, integralSum));
 
-        // Integral wind-down in deadzone
         final double INTEGRAL_DEADZONE = 2.0;
-        if (Math.abs(error) < INTEGRAL_DEADZONE) {
-            integralSum *= 0.95;
-        }
+        if (Math.abs(error) < INTEGRAL_DEADZONE) integralSum *= 0.95;
 
-        // PID derivative calculation
         double derivative = (error - lastError) / dt;
         lastError = error;
 
-        // PID output calculation
-        double pTerm = kP * error;
-        double iTerm = kI * integralSum;
-        double dTerm = kD * derivative;
+        double output = kP * error + kI * integralSum + kD * derivative;
 
-        double output = pTerm + iTerm + dTerm;
-
-        // Deadzone for output
         final double DEADZONE = 0.5;
         if (Math.abs(error) > DEADZONE) {
-            double power = Math.min(maxPower, Math.abs(output)) * Math.signum(output);
+            double power = -Math.min(maxPower, Math.abs(output)) * Math.signum(output);
             setPower(power);
         } else {
             setPower(0);
         }
-    }
-
-    // Log current state for telemetry/debug
-    @SuppressLint("DefaultLocale")
-    public String log() {
-        return String.format(
-                "Current Volts: %.3f\n" +
-                        "Current Angle: %.2f\n" +
-                        "Total Rotation: %.2f\n" +
-                        "Target Rotation: %.2f\n" +
-                        "Current Power: %.3f\n" +
-                        "PID Values: P=%.3f I=%.3f D=%.3f\n" +
-                        "PID Terms: Error=%.2f Integral=%.2f",
-                servoEncoder.getVoltage(),
-                getCurrentAngle(),
-                totalRotation,
-                targetRotation,
-                power,
-                kP, kI, kD,
-                targetRotation - totalRotation,
-                integralSum
-        );
     }
 }

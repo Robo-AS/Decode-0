@@ -16,6 +16,7 @@ import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,8 +27,8 @@ public class Robot {
     public Mecanum mecanum = null;
     public Limelight3A limelight = null;
     public LimelightWrapper llwrapped = null;
-    //public TurretCR turret = null;
-
+    public TurretCR turret = null;
+    public RTPAxon axon = null;
     public Flywheel flywheel = null;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intake;
     public DcMotorEx launcher1, launcher2;
@@ -86,7 +87,9 @@ public class Robot {
 
         axonEncoder = hardwareMap.get(AnalogInput.class, "encoder");
 
-        //turret = new TurretCR();
+        axon = new RTPAxon(servoX, axonEncoder);
+        axon.setDirection(RTPAxon.Direction.REVERSE);
+        turret = new TurretCR();
 
         //launcher
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
@@ -131,7 +134,7 @@ public class Robot {
         servoX.setDirection(CRServo.Direction.REVERSE);
         servoY.setDirection(Servo.Direction.REVERSE);
 
-     //   turret = new TurretCR();
+        turret = new TurretCR();
     }
 
 
@@ -141,6 +144,7 @@ public class Robot {
         pinpoint.resetPosAndIMU();
         flywheel.initialize();
         servoLauncher.setPosition(0);
+        turret.initialize();
     }
 
     public void update() {
@@ -152,11 +156,11 @@ public class Robot {
         return mecanum;
     }
 
-   /* public TurretCR getInstanceTurret(){
+    public TurretCR getInstanceTurret(){
         if(turret == null)
             return new TurretCR();
         return turret;
-    }*/
+    }
 
     public LimelightWrapper getInstanceLimelight(){
         if(limelight == null) {
