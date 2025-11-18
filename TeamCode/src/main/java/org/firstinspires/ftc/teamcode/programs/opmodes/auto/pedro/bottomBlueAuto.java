@@ -179,7 +179,7 @@ public class bottomBlueAuto extends OpMode {
         follower.setStartingPose(startPose);
         buildPaths();
 
-        robot.initializeHardwareAuto(hardwareMap, new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry()));
+        robot.initializeHardwareAuto(hardwareMap);
     }
 
     @Override

@@ -56,6 +56,7 @@
         private void updateHeadings() {
             LLResult ll = limelight.getLatestResult();
             boolean useLL = ll != null && ll.isValid() && ll.getBotpose_MT2() != null && FIELD_TAGS_LL.containsKey(targetID);
+            boolean usePinpoint = !useLL && robot.getInstancePinpoint() != null;
 
             if (useLL) {
                 targetAngle = ll.getTx();
@@ -79,7 +80,7 @@
         public void loop() {
             updateHeadings();
 
-            targetRotation = axon.getCurrentAngle() + targetAngle; //current angle the turret is at + what it sees from ll
+            targetRotation = axon.getTotalRotation() + targetAngle; //current angle the turret is at + what it sees from ll
 
             double clampedTarget = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, targetRotation));
 

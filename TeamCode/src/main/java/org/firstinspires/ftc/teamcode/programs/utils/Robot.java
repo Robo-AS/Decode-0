@@ -88,7 +88,7 @@ public class Robot {
         axonEncoder = hardwareMap.get(AnalogInput.class, "encoder");
 
         axon = new RTPAxon(servoX, axonEncoder);
-        axon.setDirection(RTPAxon.Direction.REVERSE);
+        axon.setDirection(RTPAxon.Direction.FORWARD);
         turret = new TurretCR();
 
         //launcher
@@ -119,22 +119,33 @@ public class Robot {
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
-    public void initializeHardwareAuto(HardwareMap hardwareMap, MultipleTelemetry telemetry) {
+    public void initializeHardwareAuto(HardwareMap hardwareMap) {
         this.hardwareMap = hardwareMap;
-        this.telemetry = telemetry;
 
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        servoX = hardwareMap.get(CRServo.class, "servoX");
-        servoY = hardwareMap.get(Servo.class, "servoY");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.start();
 
-        servoX.setDirection(CRServo.Direction.REVERSE);
-        servoY.setDirection(Servo.Direction.REVERSE);
+        llwrapped = new LimelightWrapper();
+        llwrapped.initializeHardware(hardwareMap);
+        llwrapped.initialize();
 
-        turret = new TurretCR();
+        launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
+        launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
+
+        launcher1.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcher1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
+
+        flywheel = new Flywheel();
     }
 
 
