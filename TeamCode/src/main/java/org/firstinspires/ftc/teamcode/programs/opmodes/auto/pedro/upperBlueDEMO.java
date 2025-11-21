@@ -22,7 +22,7 @@ public class upperBlueDEMO extends OpMode {
 
     private int pathState = 0;
     private int pathSubState = 0;
-    private int throwCycle = 0; // counts 0,1,2 for three shots
+    private int throwCycle = 0;
 
     private final Pose startPose = new Pose(21.01067615658363, 124.01423487544484, Math.toRadians(144));
     private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(135));
