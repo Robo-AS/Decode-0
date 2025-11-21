@@ -235,7 +235,7 @@ public class RTPAxon {
 
         final double DEADZONE = 0.5;
         if (Math.abs(error) > DEADZONE) {
-            double power = Math.min(maxPower, Math.abs(output)) * Math.signum(output);
+            double power = -Math.min(maxPower, Math.abs(output)) * Math.signum(output);
             setPower(power);
         } else {
             setPower(0);

@@ -88,7 +88,7 @@ public class Robot {
         axonEncoder = hardwareMap.get(AnalogInput.class, "encoder");
 
         axon = new RTPAxon(servoX, axonEncoder);
-        axon.setDirection(RTPAxon.Direction.FORWARD);
+        axon.setDirection(RTPAxon.Direction.REVERSE);
         turret = new TurretCR();
 
         //launcher
@@ -122,17 +122,13 @@ public class Robot {
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
         this.hardwareMap = hardwareMap;
 
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.start();
+
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.start();
-
-        llwrapped = new LimelightWrapper();
-        llwrapped.initializeHardware(hardwareMap);
-        llwrapped.initialize();
 
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
@@ -145,6 +141,8 @@ public class Robot {
 
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
 
+        servoY = hardwareMap.get(Servo.class, "servoY");
+
         flywheel = new Flywheel();
     }
 
@@ -156,6 +154,11 @@ public class Robot {
         flywheel.initialize();
         servoLauncher.setPosition(0);
         turret.initialize();
+    }
+
+    public void initializeAuto() {
+        flywheel.initialize();
+        servoLauncher.setPosition(0);
     }
 
     public void update() {

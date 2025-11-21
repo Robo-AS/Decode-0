@@ -17,20 +17,20 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(12.6)
-            .forwardZeroPowerAcceleration(-35.57080508596905)
-            .lateralZeroPowerAcceleration(-56.95653863702711)
+            .forwardZeroPowerAcceleration(-28.213609111043983)
+            .lateralZeroPowerAcceleration(-62.00894187182901)
             .useSecondaryTranslationalPIDF(false)
             .useSecondaryHeadingPIDF(false)
             .useSecondaryDrivePIDF(false)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.05, 0.00005, 0.001, 0.0000005))
-            .headingPIDFCoefficients(new PIDFCoefficients(0.65, 0, 0.003, 0.007))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01,0.0,0.00001,0.0,0.0))
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.075, 0, 0.01, 0))
+            .headingPIDFCoefficients(new PIDFCoefficients(0.95, 0, 0.003, 0.007))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.006,0.0,0.00001,0.0,0.0))
             .centripetalScaling(0.00035);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .xVelocity(76.78102652482161)
-            .yVelocity(61.409594918799215)
+            .xVelocity(76.42478690560408)
+            .yVelocity(58.62435648760457)
             .rightFrontMotorName("rightFront")
             .rightRearMotorName("rightBack")
             .leftRearMotorName("leftBack")
@@ -43,12 +43,12 @@ public class Constants {
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(14.7)
-            .strafePodX(10.5)
+            .strafePodX(13.7)
             .distanceUnit(DistanceUnit.CM)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
     /**
      These are the PathConstraints in order:
