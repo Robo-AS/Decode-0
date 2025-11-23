@@ -10,8 +10,8 @@ import com.pedropathing.paths.PathChain;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "AUTO MEET SUS SUB POARTA BLUE")
-public class upperBlueDEMO extends OpMode {
+@Autonomous(name = "AUTO MEET SUS SUB POARTA RED")
+public class upperRedDemo extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
     private double y_distance, x_distance, distance, ty, tx, CAMERA_HEIGHT = 0.4, CAMERA_ANGLE = 18, pos;
@@ -24,10 +24,10 @@ public class upperBlueDEMO extends OpMode {
     private int pathSubState = 0;
     private int throwCycle = 0;
 
-    private final Pose startPose = new Pose(21.01067615658363, 124.01423487544484, Math.toRadians(144));
-    private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(135));
-    private final Pose alignToBalls1 = new Pose(38.09252669039146, 97, Math.toRadians(180));
-    private final Pose intake1 = new Pose(15, 97, Math.toRadians(180));
+    private final Pose startPose = new Pose(21.01067615658363, 124.01423487544484, Math.toRadians(144)).mirror();
+    private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(135)).mirror();
+    private final Pose alignToBalls1 = new Pose(97, 84.2135231316726, Math.toRadians(0));
+    private final Pose intake1 = new Pose(110, 84.2135231316726, Math.toRadians(0));
 
     private PathChain launchPreload, align1, intaking1, outtaking1;
 

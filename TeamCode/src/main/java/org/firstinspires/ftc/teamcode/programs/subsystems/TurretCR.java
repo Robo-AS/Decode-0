@@ -3,6 +3,7 @@
     import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
 
     import com.arcrobotics.ftclib.command.SubsystemBase;
+    import com.qualcomm.hardware.limelightvision.LLResultTypes;
     import com.qualcomm.hardware.limelightvision.Limelight3A;
     import com.qualcomm.hardware.limelightvision.LLResult;
     import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -53,9 +54,19 @@
             axon.initialize(); //get encoderZero
         }
 
-        private void updateHeadings() {
+        private void updateHeadings(int targetID) {
             LLResult ll = limelight.getLatestResult();
-            boolean useLL = ll != null && ll.isValid() && ll.getBotpose_MT2() != null && FIELD_TAGS_LL.containsKey(targetID);
+            boolean seesTargetID = false;
+
+            for(LLResultTypes.FiducialResult apriltag : ll.getFiducialResults()){
+                if(apriltag.getFiducialId() == targetID){
+                    seesTargetID = true;
+                    break;
+                }
+            }
+
+            boolean useLL = ll != null && ll.isValid() && ll.getBotpose_MT2() != null && FIELD_TAGS_LL.containsKey(targetID) && seesTargetID;
+            boolean usePinpoint = robot.getInstancePinpoint() != null && poseSynced && !useLL;
 
             if (useLL) {
                 targetAngle = ll.getTx();
@@ -68,16 +79,21 @@
                         AngleUnit.RADIANS,
                         ll.getBotpose_MT2().getOrientation().getYaw()
                 );
+
                 robot.pinpoint.setPosition(poseFromLL);
+
                 poseSynced = true;
-            } else {
+            }else if(usePinpoint){
+
+            }
+            else {
                 //home turret if it loses sight of target for simplicity
                 targetAngle = 0;
             }
         }
 
-        public void loop() {
-            updateHeadings();
+        public void loop(int targetID) {
+            updateHeadings(targetID);
 
             targetRotation = axon.getCurrentAngle() + targetAngle; //current angle the turret is at + what it sees from ll
 
@@ -88,5 +104,17 @@
             axon.setTargetRotation(clampedTarget); // update targetRotation in rtp axon as well
 
             axon.update(); // pid logic in rtp axon
+        }
+
+        public void loopAuto(int target){
+            targetRotation = target;
+
+            double clampedTarget = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, targetRotation));
+
+            axon.updatePIDCoeffs(kP, kI, kD); //set pid coefficients for rtp axon
+
+            axon.setTargetRotation(clampedTarget); // update targetRotation in rtp axon as well
+
+            axon.update();
         }
     }

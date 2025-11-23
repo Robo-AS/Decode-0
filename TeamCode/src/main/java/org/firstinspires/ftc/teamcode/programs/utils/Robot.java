@@ -144,6 +144,15 @@ public class Robot {
         servoY = hardwareMap.get(Servo.class, "servoY");
 
         flywheel = new Flywheel();
+
+        servoX = hardwareMap.get(CRServo.class, "servoX");
+        servoY = hardwareMap.get(Servo.class, "servoY");
+
+        axonEncoder = hardwareMap.get(AnalogInput.class, "encoder");
+
+        axon = new RTPAxon(servoX, axonEncoder);
+        axon.setDirection(RTPAxon.Direction.REVERSE);
+        turret = new TurretCR();
     }
 
 
@@ -159,6 +168,7 @@ public class Robot {
     public void initializeAuto() {
         flywheel.initialize();
         servoLauncher.setPosition(0);
+        turret.initialize();
     }
 
     public void update() {

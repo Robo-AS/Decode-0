@@ -4,8 +4,6 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
-import com.arcrobotics.ftclib.command.ParallelCommandGroup;
-import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -18,15 +16,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.Shoot;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.startLauncher;
 import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
-@TeleOp(name = "Drive", group = "OpModes")
-public class firstTeleOp extends CommandOpMode {
+@TeleOp(name = "Drive BLUE", group = "OpModes")
+public class driveBlue extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -66,7 +62,7 @@ public class firstTeleOp extends CommandOpMode {
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
                 new setServoLauncherPosition(1),
-                new WaitCommand(250),
+                new WaitCommand(1000),
                 new setServoLauncherPosition(0)
         ));
 
@@ -92,7 +88,7 @@ public class firstTeleOp extends CommandOpMode {
         YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
         robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
-        robot.turret.loop();
+        robot.turret.loop(20);
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
