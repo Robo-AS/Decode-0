@@ -22,8 +22,8 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPo
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
-@TeleOp(name = "Drive BLUE", group = "OpModes")
-public class driveBlue extends CommandOpMode {
+@TeleOp(name = "Drive RED", group = "OpModes")
+public class driveRed extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -89,7 +89,7 @@ public class driveBlue extends CommandOpMode {
         YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
         robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
-        robot.turret.loop(20);
+        robot.turret.loop(24);
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
@@ -107,7 +107,7 @@ public class driveBlue extends CommandOpMode {
             boolean seesTargetID = false;
 
             for(LLResultTypes.FiducialResult apriltag : result.getFiducialResults()){
-                if(apriltag.getFiducialId() == 20){
+                if(apriltag.getFiducialId() == 24){
                     seesTargetID = true;
                     break;
                 }

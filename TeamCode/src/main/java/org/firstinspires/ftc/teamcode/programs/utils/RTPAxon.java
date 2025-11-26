@@ -233,7 +233,7 @@ public class RTPAxon {
 
         double output = kP * error + kI * integralSum + kD * derivative;
 
-        final double DEADZONE = 0.5;
+        final double DEADZONE = 0.0;
         if (Math.abs(error) > DEADZONE) {
             double power = -Math.min(maxPower, Math.abs(output)) * Math.signum(output);
             setPower(power);

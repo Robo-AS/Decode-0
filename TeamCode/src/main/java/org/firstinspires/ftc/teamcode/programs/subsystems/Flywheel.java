@@ -51,17 +51,38 @@ public class Flywheel extends SubsystemBase {
         flyWheel2.setPower(power);
     }
 
+    public void loopAuto(double velocity){
+        currentVelocity = flyWheel1.getVelocity();
+        targetVelocity = velocity;
+
+        pid_Flywheel.setPIDF(kP, kI, kD, 0);
+        feedforward = new SimpleMotorFeedforward(kS, kV);
+
+        double ff = feedforward.calculate(targetVelocity);
+        double pid = pid_Flywheel.calculate(currentVelocity, targetVelocity);
+        double power = pid + ff;
+
+        flyWheel1.setPower(power);
+        flyWheel2.setPower(power);
+    }
+
     public void initializeVelInterpLUT()
     {
         vel = new InterpLUT();
         vel.add(0, 3100);
+        vel.add(0.0153, 3000);
+        vel.add(0.0176, 2300);
         vel.add(0.0270, 3100);
+        vel.add(0.03, 2100);
         vel.add(0.0454, 2800);
+        vel.add(0.0491, 1850);
+        vel.add(0.052, 2100);
         vel.add(0.0562, 1950);
         vel.add(0.0668, 1900);
         vel.add(0.0900, 1700);
         vel.add(0.1820, 1500);
         vel.add(0.2704, 900);
+        vel.add(0.3, 900);
         vel.createLUT();
 
     }

@@ -40,17 +40,14 @@ public class bottomBlueAuto extends OpMode {
     private int pathState = 0;
     private int pathSubState = 0;
     private double loopTime = 0;
-    private Timer pathTimer, actionTimer;
+    private Timer pathTimer = new Timer(), actionTimer = new Timer();
 
     private final Pose startPose = new Pose(56, 8, Math.toRadians(90));
     private final Pose outtake = new Pose(56.000, 18.000, Math.toRadians(90));
+    private final Pose intake2 = new Pose(40.000, 57.000, Math.toRadians(180));
+    private final Pose loaded2 = new Pose(12, 57, Math.toRadians(180));
 
-    private final Pose intake1 = new Pose(42.000, 35.000, Math.toRadians(180));
-    private final Pose loaded1 = new Pose(23.000, 35.000, Math.toRadians(180));
-    private final Pose intake2 = new Pose(42.000, 60.000, Math.toRadians(180));
-    private final Pose loaded2 = new Pose(23, 60, Math.toRadians(180));
-
-    private PathChain launchPreload, get1, throw1, loading1, get2, throw2, loading2;
+    private PathChain launchPreload, get2, throw2, loading2;
     public void buildPaths()
     {
         launchPreload = follower.pathBuilder()
@@ -58,23 +55,8 @@ public class bottomBlueAuto extends OpMode {
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
 
-        get1 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, intake1))
-                .setConstantHeadingInterpolation(intake1.getHeading())
-                .build();
-
-        loading1 = follower.pathBuilder()
-                .addPath(new BezierLine(intake1, loaded1))
-                .setLinearHeadingInterpolation(intake1.getHeading(), loaded1.getHeading())
-                .build();
-
-        throw1 = follower.pathBuilder()
-                .addPath(new BezierLine(loaded1, outtake))
-                .setConstantHeadingInterpolation(outtake.getHeading())
-                .build();
-
         get2 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, intake2))
+                .addPath(new BezierLine(startPose, intake2))
                 .setConstantHeadingInterpolation(intake2.getHeading())
                 .build();
 
@@ -105,7 +87,7 @@ public class bottomBlueAuto extends OpMode {
                 pathSubState = 1;
                 break;
             case 1:
-                if (!hasWaitElapsed(300)) break;
+                if (!hasWaitElapsed(100)) break;
                 robot.servoLauncher.setPosition(1);
                 startWait();
                 pathSubState = 2;
@@ -129,7 +111,7 @@ public class bottomBlueAuto extends OpMode {
                 pathSubState = 5;
                 break;
             case 5:
-                if (!hasWaitElapsed(300)) break;
+                if (!hasWaitElapsed(100)) break;
                 robot.servoLauncher.setPosition(1);
                 startWait();
                 pathSubState = 6;
@@ -153,7 +135,7 @@ public class bottomBlueAuto extends OpMode {
                 pathSubState = 9;
                 break;
             case 9:
-                if (!hasWaitElapsed(300)) break;
+                if (!hasWaitElapsed(100)) break;
                 robot.servoLauncher.setPosition(1);
                 startWait();
                 pathSubState = 10;
@@ -171,12 +153,27 @@ public class bottomBlueAuto extends OpMode {
     private void autonomousPathUpdate() {
         switch (pathState) {
 
+            case -2:
+                follower.followPath(launchPreload);
+                pathState = -1;
+                pathSubState = 0;
+                startWait();
+
+                break;
+
+            case -1:
+                if(!hasWaitElapsed(1000)) break;
+
+                pathState = 0;
+                break;
+
             case 0:
+                if(follower.isBusy()) break;
                 shootingSequence();
 
                 if (pathSubState <= 10) break;
 
-                follower.followPath(get1, true);
+                follower.followPath(get2, true);
 
                 pathSubState = 0;
                 pathState = 1;
@@ -188,7 +185,7 @@ public class bottomBlueAuto extends OpMode {
 
                 robot.intake.setPower(1);
 
-                follower.followPath(loading1, true);
+                follower.followPath(loading2, true);
                 pathState = 2;
 
                 break;
@@ -197,43 +194,27 @@ public class bottomBlueAuto extends OpMode {
                 if (follower.isBusy()) break;
 
                 robot.intake.setPower(0);
-                follower.followPath(throw1, true);
+                follower.followPath(throw2, true);
                 pathState = 3;
 
                 break;
 
             case 3:
-                if (follower.isBusy()) break;
+                if(follower.isBusy()) break;
 
-                shootingSequence();
-
-                if(pathSubState <= 10) break;
-
-                follower.followPath(get2, true);
-
-                pathSubState = 0;
+                startWait();
                 pathState = 4;
 
                 break;
 
             case 4:
-                if (follower.isBusy()) break;
+                if(!hasWaitElapsed(1000)) break;
 
-                robot.intake.setPower(1);
-
-                follower.followPath(loading2, true);
                 pathState = 5;
+
                 break;
+
             case 5:
-                if(follower.isBusy()) break;
-
-                robot.intake.setPower(0);
-
-                follower.followPath(throw2, true);
-                pathState = 6;
-                break;
-
-            case 6:
                 if(follower.isBusy()) break;
 
                 shootingSequence();
@@ -241,8 +222,6 @@ public class bottomBlueAuto extends OpMode {
                 if(pathSubState <= 10) break;
 
                 reachedEnd = true;
-
-                break;
         }
     }
 
@@ -264,11 +243,10 @@ public class bottomBlueAuto extends OpMode {
         x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
         distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
 
-        robot.flywheel.loop(distance);
-        pos = getServoYPositionFromDistance(y_distance);
-        robot.servoY.setPosition(pos);
+        robot.flywheel.loopAuto(3050);
+        robot.servoY.setPosition(0.6);
 
-        robot.turret.loopAuto(-25);
+        robot.turret.loopAuto(-27.5);
     }
 
     @Override
@@ -286,7 +264,7 @@ public class bottomBlueAuto extends OpMode {
     @Override
     public void start() {
         opmodeTimer.resetTimer();
-        setPathState(0);
+        setPathState(-2);
     }
 
     @Override
