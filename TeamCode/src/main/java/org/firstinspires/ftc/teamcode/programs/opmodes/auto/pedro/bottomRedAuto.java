@@ -26,6 +26,8 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.commandbase.auto.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
+import java.lang.annotation.Target;
+
 @Autonomous(name = "AUTO MEET JOS ROSU")
 public class bottomRedAuto extends OpMode {
     private final Robot robot = Robot.getInstance();
@@ -33,6 +35,7 @@ public class bottomRedAuto extends OpMode {
 
     private double y_distance, x_distance, distance, ty, tx, CAMERA_HEIGHT = 0.4, CAMERA_ANGLE = 18, pos;
     public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double TARGET_ANGLE = 19;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private boolean reachedEnd = false;
@@ -44,10 +47,11 @@ public class bottomRedAuto extends OpMode {
 
     private final Pose startPose = new Pose(88, 8, Math.toRadians(90));
     private final Pose outtake   = new Pose(88, 18, Math.toRadians(90));
-    private final Pose intake2   = new Pose(77, 30, Math.toRadians(0));
-    private final Pose loaded2   = new Pose(110, 30, Math.toRadians(0));
+    private final Pose intake2   = new Pose(77, 32, Math.toRadians(0));
+    private final Pose loaded2   = new Pose(110, 32, Math.toRadians(0));
+    private final Pose leavePoint   = new Pose(77, 42, Math.toRadians(0));
 
-    private PathChain launchPreload, get2, throw2, loading2;
+    private PathChain launchPreload, get2, throw2, loading2, leave;
     public void buildPaths()
     {
         launchPreload = follower.pathBuilder()
@@ -69,6 +73,11 @@ public class bottomRedAuto extends OpMode {
                 .addPath(new BezierLine(loaded2, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
+
+        leave = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, leavePoint))
+                .setConstantHeadingInterpolation(leavePoint.getHeading())
+                .build();
     }
 
     private void startWait() {
@@ -87,14 +96,14 @@ public class bottomRedAuto extends OpMode {
                 pathSubState = 1;
                 break;
             case 1:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(1);
+                if (!hasWaitElapsed(300)) break;
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 2;
                 break;
             case 2:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
                 startWait();
                 pathSubState = 3;
                 break;
@@ -105,20 +114,20 @@ public class bottomRedAuto extends OpMode {
                 pathSubState = 4;
                 break;
             case 4:
-                if (!hasWaitElapsed(700)) break;
+                if (!hasWaitElapsed(450)) break;
                 robot.intake.setPower(0);
                 startWait();
                 pathSubState = 5;
                 break;
             case 5:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(1);
+                if (!hasWaitElapsed(300)) break;
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 6;
                 break;
             case 6:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
                 startWait();
                 pathSubState = 7;
                 break;
@@ -129,20 +138,20 @@ public class bottomRedAuto extends OpMode {
                 pathSubState = 8;
                 break;
             case 8:
-                if (!hasWaitElapsed(700)) break;
+                if (!hasWaitElapsed(450)) break;
                 robot.intake.setPower(0);
                 startWait();
                 pathSubState = 9;
                 break;
             case 9:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(1);
+                if (!hasWaitElapsed(300)) break;
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 10;
                 break;
             case 10:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
 
                 pathSubState = 11;
 
@@ -153,16 +162,22 @@ public class bottomRedAuto extends OpMode {
     private void autonomousPathUpdate() {
         switch (pathState) {
 
-            case -1:
+            case -2:
                 follower.followPath(launchPreload);
-                pathState = 0;
+                pathState = -1;
                 pathSubState = 0;
                 startWait();
 
                 break;
 
+            case -1:
+                if(!hasWaitElapsed(2000)) break;
+
+                pathState = 0;
+                break;
+
             case 0:
-                if(!hasWaitElapsed(1000)) break;
+                if(follower.isBusy()) break;
                 shootingSequence();
 
                 if (pathSubState <= 10) break;
@@ -199,15 +214,30 @@ public class bottomRedAuto extends OpMode {
                 startWait();
                 pathState = 4;
 
+                break;
+
             case 4:
-                if(!hasWaitElapsed(1000)) break;
+                if(!hasWaitElapsed(2000)) break;
+
+                pathState = 5;
+
+                break;
+
+            case 5:
+                if(follower.isBusy()) break;
 
                 shootingSequence();
 
                 if(pathSubState <= 10) break;
 
-                reachedEnd = true;
+                pathSubState = 0;
+                TARGET_ANGLE = 0;
+                follower.followPath(leave);
+                pathState = 6;
+            case 6:
+                if(follower.isBusy()) break;
 
+                reachedEnd = true;
                 break;
         }
     }
@@ -230,10 +260,10 @@ public class bottomRedAuto extends OpMode {
         x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
         distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
 
-        robot.flywheel.loopAuto(3000);
+        robot.flywheel.loopAuto(3100);
         robot.servoY.setPosition(0.55);
 
-        robot.turret.loopAuto(19);
+        robot.turret.loopAuto(TARGET_ANGLE);
     }
 
     @Override
@@ -251,7 +281,7 @@ public class bottomRedAuto extends OpMode {
     @Override
     public void start() {
         opmodeTimer.resetTimer();
-        setPathState(-1);
+        setPathState(-2);
     }
 
     @Override

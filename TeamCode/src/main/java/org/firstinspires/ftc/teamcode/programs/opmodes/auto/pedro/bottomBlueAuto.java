@@ -33,6 +33,7 @@ public class bottomBlueAuto extends OpMode {
 
     private double y_distance, x_distance, distance, ty, tx, CAMERA_HEIGHT = 0.4, CAMERA_ANGLE = 18, pos;
     public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double TARGET_ANGLE = -30.5;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private boolean reachedEnd = false;
@@ -44,10 +45,11 @@ public class bottomBlueAuto extends OpMode {
 
     private final Pose startPose = new Pose(56, 8, Math.toRadians(90));
     private final Pose outtake = new Pose(56.000, 18.000, Math.toRadians(90));
-    private final Pose intake2 = new Pose(40.000, 57.000, Math.toRadians(180));
-    private final Pose loaded2 = new Pose(12, 57, Math.toRadians(180));
+    private final Pose intake2 = new Pose(40.000, 62.000, Math.toRadians(180));
+    private final Pose loaded2 = new Pose(6, 62, Math.toRadians(180));
+    private final Pose leavePoint = new Pose(30, 72, Math.toRadians(180));
 
-    private PathChain launchPreload, get2, throw2, loading2;
+    private PathChain launchPreload, get2, throw2, loading2, leave;
     public void buildPaths()
     {
         launchPreload = follower.pathBuilder()
@@ -69,6 +71,12 @@ public class bottomBlueAuto extends OpMode {
                 .addPath(new BezierLine(loaded2, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
+
+        leave = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, leavePoint))
+                .setConstantHeadingInterpolation(leavePoint.getHeading())
+                .build();
+
     }
 
     private void startWait() {
@@ -87,14 +95,14 @@ public class bottomBlueAuto extends OpMode {
                 pathSubState = 1;
                 break;
             case 1:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(1);
+                if (!hasWaitElapsed(300)) break;
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 2;
                 break;
             case 2:
-                if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
                 startWait();
                 pathSubState = 3;
                 break;
@@ -105,20 +113,20 @@ public class bottomBlueAuto extends OpMode {
                 pathSubState = 4;
                 break;
             case 4:
-                if (!hasWaitElapsed(700)) break;
+                if (!hasWaitElapsed(450)) break;
                 robot.intake.setPower(0);
                 startWait();
                 pathSubState = 5;
                 break;
             case 5:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(1);
+                if (!hasWaitElapsed(300)) break;
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 6;
                 break;
             case 6:
-                if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
                 startWait();
                 pathSubState = 7;
                 break;
@@ -129,20 +137,20 @@ public class bottomBlueAuto extends OpMode {
                 pathSubState = 8;
                 break;
             case 8:
-                if (!hasWaitElapsed(700)) break;
+                if (!hasWaitElapsed(450)) break;
                 robot.intake.setPower(0);
                 startWait();
                 pathSubState = 9;
                 break;
             case 9:
-                if (!hasWaitElapsed(100)) break;
-                robot.servoLauncher.setPosition(1);
+                if (!hasWaitElapsed(300)) break;
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 10;
                 break;
             case 10:
-                if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
 
                 pathSubState = 11;
 
@@ -221,7 +229,18 @@ public class bottomBlueAuto extends OpMode {
 
                 if(pathSubState <= 10) break;
 
+                follower.followPath(leave);
+                TARGET_ANGLE = 0;
+                pathSubState = 0;
+                pathState = 6;
+
+                break;
+            case 6:
+                if(follower.isBusy()) break;
+
                 reachedEnd = true;
+
+                break;
         }
     }
 
@@ -243,10 +262,10 @@ public class bottomBlueAuto extends OpMode {
         x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
         distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
 
-        robot.flywheel.loopAuto(3050);
+        robot.flywheel.loopAuto(3100);
         robot.servoY.setPosition(0.6);
 
-        robot.turret.loopAuto(-27.5);
+        robot.turret.loopAuto(TARGET_ANGLE);
     }
 
     @Override

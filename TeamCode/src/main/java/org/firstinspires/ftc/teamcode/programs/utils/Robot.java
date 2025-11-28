@@ -161,13 +161,13 @@ public class Robot {
         imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
         pinpoint.resetPosAndIMU();
         flywheel.initialize();
-        servoLauncher.setPosition(0);
+        servoLauncher.setPosition(0.8);
         turret.initialize();
     }
 
     public void initializeAuto() {
         flywheel.initialize();
-        servoLauncher.setPosition(0);
+        servoLauncher.setPosition(1);
         turret.initialize();
     }
 

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.programs.opmodes.auto.pedro;
 
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -16,6 +17,7 @@ public class upperRedDemo extends OpMode {
     private Follower follower;
     private double y_distance, x_distance, distance, ty, tx, CAMERA_HEIGHT = 0.4, CAMERA_ANGLE = 18, pos;
     public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double TARGET_ANGLE = 4;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private boolean reachedEnd = false;
@@ -27,10 +29,10 @@ public class upperRedDemo extends OpMode {
     private final Pose startPose = new Pose(21.01067615658363, 124.01423487544484, Math.toRadians(144)).mirror();
     private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(135)).mirror();
     private final Pose alignToBalls1 = new Pose(94, 87.2135231316726, Math.toRadians(0));
-    private final Pose intake1 = new Pose(113, 87.2135231316726, Math.toRadians(0));
+    private final Pose intake1 = new Pose(118, 87.2135231316726, Math.toRadians(0));
 
-    private final Pose alignToBalls2 = new Pose(84, 63.2135231316726, Math.toRadians(0));
-    private final Pose intake2 = new Pose(114, 63.2135231316726, Math.toRadians(0));
+    private final Pose alignToBalls2 = new Pose(84, 61.7135231316726, Math.toRadians(0));
+    private final Pose intake2 = new Pose(119, 61.7135231316726, Math.toRadians(0));
     private final Pose leavePoint = new Pose(88.24911032028469, 75.5729537366548, Math.toRadians(0));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave;
@@ -67,7 +69,7 @@ public class upperRedDemo extends OpMode {
                 .build();
 
         outtaking2 = follower.pathBuilder()
-                .addPath(new BezierLine(intake2, outtake))
+                .addPath(new BezierCurve(intake2, new Pose(110.09750297265161, 41.607609988109395), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
@@ -89,18 +91,17 @@ public class upperRedDemo extends OpMode {
         switch (pathSubState) {
             case 0:
                 startWait();
-                follower.followPath(launchPreload);
                 pathSubState = 1;
                 break;
             case 1:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(1);
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 2;
                 break;
             case 2:
-                if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
                 startWait();
                 pathSubState = 3;
                 break;
@@ -111,20 +112,20 @@ public class upperRedDemo extends OpMode {
                 pathSubState = 4;
                 break;
             case 4:
-                if (!hasWaitElapsed(700)) break;
+                if (!hasWaitElapsed(450)) break;
                 robot.intake.setPower(0);
                 startWait();
                 pathSubState = 5;
                 break;
             case 5:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(1);
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 6;
                 break;
             case 6:
-                if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
                 startWait();
                 pathSubState = 7;
                 break;
@@ -135,29 +136,26 @@ public class upperRedDemo extends OpMode {
                 pathSubState = 8;
                 break;
             case 8:
-                if (!hasWaitElapsed(700)) break;
+                if (!hasWaitElapsed(450)) break;
                 robot.intake.setPower(0);
                 startWait();
                 pathSubState = 9;
                 break;
             case 9:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(1);
+                robot.servoLauncher.setPosition(0);
                 startWait();
                 pathSubState = 10;
                 break;
             case 10:
-                if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                if (!hasWaitElapsed(500)) break;
+                robot.servoLauncher.setPosition(0.8);
 
                 pathSubState = 11;
 
                 break;
         }
     }
-
-
-
 
     private void autonomousPathUpdate() {
         switch (pathState) {
@@ -240,6 +238,7 @@ public class upperRedDemo extends OpMode {
 
                 pathState = 8;
                 pathSubState = 0;
+                TARGET_ANGLE = 0;
                 follower.followPath(leave);
 
                 break;
@@ -289,7 +288,7 @@ public class upperRedDemo extends OpMode {
         pos = getServoYPositionFromDistance(y_distance);
         robot.servoY.setPosition(pos);
 
-        robot.turret.loopAuto(0);
+        robot.turret.loopAuto(TARGET_ANGLE);
     }
 
     @Override

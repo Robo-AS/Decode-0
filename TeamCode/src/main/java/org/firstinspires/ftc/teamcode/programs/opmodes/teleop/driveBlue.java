@@ -62,9 +62,9 @@ public class driveBlue extends CommandOpMode {
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new setServoLauncherPosition(1),
+                new setServoLauncherPosition(0), //AICI RARES
                 new WaitCommand(300),
-                new setServoLauncherPosition(0)
+                new setServoLauncherPosition(1) //AICI RARES
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new setServoYPosition(0.3));
@@ -118,12 +118,9 @@ public class driveBlue extends CommandOpMode {
                 robot.servoY.setPosition(pos);
             }
 
-            telemetry.addData("Target Area", ta);
-            telemetry.addData("TX", tx);
-            telemetry.addData("TY", ty);
-            telemetry.addData("BotPose", botpose.toString());
             telemetry.addData("Distance", distance);
-            telemetry.addData("ServoY position", pos);
+            telemetry.addData("Velocity", robot.launcher1.getVelocity());
+            telemetry.update();
         }
     }
 
