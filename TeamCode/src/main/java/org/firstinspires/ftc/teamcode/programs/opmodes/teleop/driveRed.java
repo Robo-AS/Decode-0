@@ -62,9 +62,9 @@ public class driveRed extends CommandOpMode {
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new setServoLauncherPosition(0), //AICI RARES
+                new setServoLauncherPosition(0.45), //AICI RARES
                 new WaitCommand(500),
-                new setServoLauncherPosition(0.8) //AICI RARES
+                new setServoLauncherPosition(0) //AICI RARES
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new setServoYPosition(0.3));
@@ -114,16 +114,17 @@ public class driveRed extends CommandOpMode {
             }
 
             if(seesTargetID){
+                robot.flywheel.loop(distance);
                 pos = getServoYPositionFromDistance(y_distance);
                 robot.servoY.setPosition(pos);
             }
+            else{
+                robot.flywheel.loop(2000);
+            }
 
-            telemetry.addData("Target Area", ta);
-            telemetry.addData("TX", tx);
-            telemetry.addData("TY", ty);
-            telemetry.addData("BotPose", botpose.toString());
             telemetry.addData("Distance", distance);
-            telemetry.addData("ServoY position", pos);
+            telemetry.addData("Velocity", robot.launcher1.getVelocity());
+            telemetry.update();
         }
     }
 

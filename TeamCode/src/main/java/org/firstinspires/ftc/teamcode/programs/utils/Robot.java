@@ -102,6 +102,7 @@ public class Robot {
         launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
+        servoLauncher.setDirection(Servo.Direction.REVERSE);
 
         flywheel = new Flywheel();
 
@@ -140,6 +141,7 @@ public class Robot {
         launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
+        servoLauncher.setDirection(Servo.Direction.REVERSE);
 
         servoY = hardwareMap.get(Servo.class, "servoY");
 
@@ -161,13 +163,13 @@ public class Robot {
         imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
         pinpoint.resetPosAndIMU();
         flywheel.initialize();
-        servoLauncher.setPosition(0.8);
+        servoLauncher.setPosition(0);
         turret.initialize();
     }
 
     public void initializeAuto() {
         flywheel.initialize();
-        servoLauncher.setPosition(1);
+        servoLauncher.setPosition(0);
         turret.initialize();
     }
 

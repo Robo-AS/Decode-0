@@ -94,13 +94,13 @@ public class upperBlueDEMO extends OpMode {
                 break;
             case 1:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0); //AICI RARES
+                robot.servoLauncher.setPosition(0.45); //AICI RARES
                 startWait();
                 pathSubState = 2;
                 break;
             case 2:
                 if (!hasWaitElapsed(500)) break;
-                robot.servoLauncher.setPosition(0.8); //AICI RARES
+                robot.servoLauncher.setPosition(0); //AICI RARES
                 startWait();
                 pathSubState = 3;
                 break;
@@ -118,13 +118,13 @@ public class upperBlueDEMO extends OpMode {
                 break;
             case 5:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0); //AICI RARES
+                robot.servoLauncher.setPosition(0.45); //AICI RARES
                 startWait();
                 pathSubState = 6;
                 break;
             case 6:
                 if (!hasWaitElapsed(500)) break;
-                robot.servoLauncher.setPosition(0.8); //AICI RARES
+                robot.servoLauncher.setPosition(0); //AICI RARES
                 startWait();
                 pathSubState = 7;
                 break;
@@ -142,13 +142,13 @@ public class upperBlueDEMO extends OpMode {
                 break;
             case 9:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0); //AICI RARES
+                robot.servoLauncher.setPosition(0.45); //AICI RARES
                 startWait();
                 pathSubState = 10;
                 break;
             case 10:
                 if (!hasWaitElapsed(500)) break;
-                robot.servoLauncher.setPosition(0.8); //AICI RARES
+                robot.servoLauncher.setPosition(0); //AICI RARES
 
                 pathSubState = 11;
 

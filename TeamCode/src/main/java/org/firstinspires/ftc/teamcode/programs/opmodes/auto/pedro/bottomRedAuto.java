@@ -97,13 +97,13 @@ public class bottomRedAuto extends OpMode {
                 break;
             case 1:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                robot.servoLauncher.setPosition(0.45); //AICI RARES
                 startWait();
                 pathSubState = 2;
                 break;
             case 2:
                 if (!hasWaitElapsed(500)) break;
-                robot.servoLauncher.setPosition(0.8);
+                robot.servoLauncher.setPosition(0); //AICI RARES
                 startWait();
                 pathSubState = 3;
                 break;
@@ -121,13 +121,13 @@ public class bottomRedAuto extends OpMode {
                 break;
             case 5:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                robot.servoLauncher.setPosition(0.45); //AICI RARES
                 startWait();
                 pathSubState = 6;
                 break;
             case 6:
                 if (!hasWaitElapsed(500)) break;
-                robot.servoLauncher.setPosition(0.8);
+                robot.servoLauncher.setPosition(0); //AICI RARES
                 startWait();
                 pathSubState = 7;
                 break;
@@ -145,19 +145,20 @@ public class bottomRedAuto extends OpMode {
                 break;
             case 9:
                 if (!hasWaitElapsed(300)) break;
-                robot.servoLauncher.setPosition(0);
+                robot.servoLauncher.setPosition(0.45); //AICI RARES
                 startWait();
                 pathSubState = 10;
                 break;
             case 10:
                 if (!hasWaitElapsed(500)) break;
-                robot.servoLauncher.setPosition(0.8);
+                robot.servoLauncher.setPosition(0); //AICI RARES
 
                 pathSubState = 11;
 
                 break;
         }
     }
+
 
     private void autonomousPathUpdate() {
         switch (pathState) {
@@ -260,10 +261,10 @@ public class bottomRedAuto extends OpMode {
         x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
         distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
 
-        robot.flywheel.loopAuto(3100);
-        robot.servoY.setPosition(0.55);
+        robot.flywheel.loopAuto(3300);
+        robot.servoY.setPosition(0.5);
 
-        robot.turret.loopAuto(TARGET_ANGLE);
+        robot.turret.loopAuto(16);
     }
 
     @Override

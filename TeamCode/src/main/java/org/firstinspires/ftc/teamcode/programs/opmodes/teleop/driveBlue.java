@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.programs.opmodes.teleop;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
@@ -21,7 +22,6 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLaun
 import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
-
 @TeleOp(name = "Drive BLUE", group = "OpModes")
 public class driveBlue extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
@@ -62,9 +62,9 @@ public class driveBlue extends CommandOpMode {
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new setServoLauncherPosition(0), //AICI RARES
+                new setServoLauncherPosition(0.45), //AICI RARES
                 new WaitCommand(300),
-                new setServoLauncherPosition(1) //AICI RARES
+                new setServoLauncherPosition(0) //AICI RARES
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new setServoYPosition(0.3));
@@ -102,8 +102,6 @@ public class driveBlue extends CommandOpMode {
             distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
             targetAngle = tx;
 
-            robot.flywheel.loop(distance);
-
             boolean seesTargetID = false;
 
             for(LLResultTypes.FiducialResult apriltag : result.getFiducialResults()){
@@ -114,8 +112,12 @@ public class driveBlue extends CommandOpMode {
             }
 
             if(seesTargetID){
+                robot.flywheel.loop(distance);
                 pos = getServoYPositionFromDistance(y_distance);
                 robot.servoY.setPosition(pos);
+            }
+            else{
+                robot.flywheel.loop(2000);
             }
 
             telemetry.addData("Distance", distance);
