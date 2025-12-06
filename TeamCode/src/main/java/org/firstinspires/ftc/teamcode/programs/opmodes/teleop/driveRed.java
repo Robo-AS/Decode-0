@@ -119,7 +119,7 @@ public class driveRed extends CommandOpMode {
                 robot.servoY.setPosition(pos);
             }
             else{
-                robot.flywheel.loop(2000);
+                robot.flywheel.loop(0.0627);
             }
 
             telemetry.addData("Distance", distance);

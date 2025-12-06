@@ -18,8 +18,12 @@ public class upperBlueDEMO extends OpMode {
     private double y_distance, x_distance, distance, ty, tx, CAMERA_HEIGHT = 0.4, CAMERA_ANGLE = 18, pos;
     public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
     public double TARGET_ANGLE = -9;
+
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
+    private Timer pathTimeoutTimer = new Timer();
+    private final long PATH_TIMEOUT_MS = 4000;
+
     private boolean reachedEnd = false;
 
     private int pathState = 0;
@@ -77,6 +81,14 @@ public class upperBlueDEMO extends OpMode {
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
                 .build();
     }
+
+    private PathChain buildExitPath() {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(follower.getPose(), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+    }
+
 
     private void startWait() {
         waitTimer.resetTimer();
@@ -185,11 +197,21 @@ public class upperBlueDEMO extends OpMode {
 
                 robot.intake.setPower(1);
                 follower.followPath(intaking1, true);
+                pathTimeoutTimer.resetTimer();
                 pathState = 3;
 
                 break;
 
             case 3:
+                // FAILSAFEEE
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    telemetry.addData("Failsafe", "Intaking 1 Timeout. Running EXIT.");
+                    robot.intake.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathState = 4;
+                    break;
+                }
+
                 if (follower.isBusy()) break;
 
                 robot.intake.setPower(0);
@@ -216,11 +238,21 @@ public class upperBlueDEMO extends OpMode {
 
                 robot.intake.setPower(1);
                 follower.followPath(intaking2);
+                pathTimeoutTimer.resetTimer();
                 pathState = 6;
 
                 break;
 
             case 6:
+                // FAILSAFEEEE
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    telemetry.addData("Failsafe", "Intaking 2 Timeout. Running EXIT.");
+                    robot.intake.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathState = 7;
+                    break;
+                }
+
                 if(follower.isBusy()) break;
 
                 robot.intake.setPower(0);
@@ -248,8 +280,9 @@ public class upperBlueDEMO extends OpMode {
 
                 reachedEnd = true;
                 break;
-        }
 
+
+        }
     }
 
     @Override
@@ -267,6 +300,7 @@ public class upperBlueDEMO extends OpMode {
     @Override
     public void start() {
         opmodeTimer.resetTimer();
+        pathTimeoutTimer.resetTimer();
         pathState = 0;
         pathSubState = 0;
         throwCycle = 0;
@@ -289,6 +323,10 @@ public class upperBlueDEMO extends OpMode {
         robot.servoY.setPosition(0.4);
 
         robot.turret.loopAuto(TARGET_ANGLE);
+
+        telemetry.addData("Path State", pathState);
+        telemetry.addData("Path Timer (ms)", pathTimeoutTimer.getElapsedTime());
+        telemetry.update();
     }
 
     @Override

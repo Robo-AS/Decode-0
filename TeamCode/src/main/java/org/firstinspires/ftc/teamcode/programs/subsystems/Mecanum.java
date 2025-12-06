@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.programs.subsystems;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
+import com.solverslib.controller.PIDController;
 
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
@@ -9,12 +10,16 @@ import org.firstinspires.ftc.teamcode.programs.utils.geometry.Vector2D;
 
 public class Mecanum  {
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
-
+    double targetX = 320;
+    private PIDController strafe_pid = new PIDController(kp, 0, 0);
+    private static double kp = 0.0002;
     double[] ws = new double[4];
     private final int frontLeft = 3, frontRight = 1, backLeft = 2, backRight = 0, ks = 0;
 
     public void initialize() {
         Robot robot = Robot.getInstance();
+
+        strafe_pid.setPID(kp, 0, 0);
 
         this.leftFront = robot.leftFront;
         this.leftRear  = robot.leftRear;
@@ -63,5 +68,15 @@ public class Mecanum  {
         rightFront.setPower(ws[frontRight]);
         leftRear.setPower(ws[backLeft]);
         rightRear.setPower(ws[backRight]);
+    }
+
+    public void strafePID(double offsetX) {
+        double pidOutput = strafe_pid.calculate(offsetX, targetX);
+        double strafePower = Range.clip(pidOutput, -1, 1);
+
+        leftFront.setPower(strafePower);
+        rightFront.setPower(-strafePower);
+        leftRear.setPower(-strafePower);
+        rightRear.setPower(strafePower);
     }
 }

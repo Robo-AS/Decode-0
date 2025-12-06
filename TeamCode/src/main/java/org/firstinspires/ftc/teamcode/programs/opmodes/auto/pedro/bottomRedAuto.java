@@ -38,6 +38,8 @@ public class bottomRedAuto extends OpMode {
     public double TARGET_ANGLE = 19;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
+    private Timer pathTimeoutTimer = new Timer();
+    private final long PATH_TIMEOUT_MS = 5000;
     private boolean reachedEnd = false;
 
     private int pathState = 0;
@@ -77,6 +79,13 @@ public class bottomRedAuto extends OpMode {
         leave = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, leavePoint))
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
+                .build();
+    }
+
+    private PathChain buildExitPath() {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(follower.getPose(), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
     }
 
@@ -196,11 +205,20 @@ public class bottomRedAuto extends OpMode {
                 robot.intake.setPower(1);
 
                 follower.followPath(loading2, true);
+                pathTimeoutTimer.resetTimer();
                 pathState = 2;
 
                 break;
 
             case 2:
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    telemetry.addData("Failsafe", "Intaking 1 Timeout. Running EXIT.");
+                    robot.intake.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathState = 3;
+                    break;
+                }
+
                 if (follower.isBusy()) break;
 
                 robot.intake.setPower(0);
@@ -264,7 +282,7 @@ public class bottomRedAuto extends OpMode {
         robot.flywheel.loopAuto(3300);
         robot.servoY.setPosition(0.5);
 
-        robot.turret.loopAuto(16);
+        robot.turret.loopAuto(18.5);
     }
 
     @Override
@@ -282,6 +300,7 @@ public class bottomRedAuto extends OpMode {
     @Override
     public void start() {
         opmodeTimer.resetTimer();
+        pathTimeoutTimer.resetTimer();
         setPathState(-2);
     }
 

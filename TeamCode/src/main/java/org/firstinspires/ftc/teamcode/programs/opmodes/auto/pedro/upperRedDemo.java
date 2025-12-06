@@ -20,6 +20,8 @@ public class upperRedDemo extends OpMode {
     public double TARGET_ANGLE = 4;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
+    private Timer pathTimeoutTimer = new Timer();
+    private final long PATH_TIMEOUT_MS = 4000;
     private boolean reachedEnd = false;
 
     private int pathState = 0;
@@ -79,6 +81,12 @@ public class upperRedDemo extends OpMode {
                 .build();
     }
 
+    private PathChain buildExitPath() {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(follower.getPose(), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+    }
     private void startWait() {
         waitTimer.resetTimer();
     }
@@ -186,11 +194,20 @@ public class upperRedDemo extends OpMode {
 
                 robot.intake.setPower(1);
                 follower.followPath(intaking1, true);
+                pathTimeoutTimer.resetTimer();
                 pathState = 3;
 
                 break;
 
             case 3:
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    telemetry.addData("Failsafe", "Intaking 1 Timeout. Running EXIT.");
+                    robot.intake.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathState = 4;
+                    break;
+                }
+
                 if (follower.isBusy()) break;
 
                 robot.intake.setPower(0);
@@ -217,11 +234,20 @@ public class upperRedDemo extends OpMode {
 
                 robot.intake.setPower(1);
                 follower.followPath(intaking2);
+                pathTimeoutTimer.resetTimer();
                 pathState = 6;
 
                 break;
 
             case 6:
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    telemetry.addData("Failsafe", "Intaking 1 Timeout. Running EXIT.");
+                    robot.intake.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathState = 7;
+                    break;
+                }
+
                 if (follower.isBusy()) break;
 
                 robot.intake.setPower(0);
@@ -267,6 +293,7 @@ public class upperRedDemo extends OpMode {
     @Override
     public void start() {
         opmodeTimer.resetTimer();
+        pathTimeoutTimer.resetTimer();
         pathState = 0;
         pathSubState = 0;
         throwCycle = 0;

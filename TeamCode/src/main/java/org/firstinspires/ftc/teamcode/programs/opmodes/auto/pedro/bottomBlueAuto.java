@@ -36,6 +36,8 @@ public class bottomBlueAuto extends OpMode {
     public double TARGET_ANGLE = -30.5;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
+    private Timer pathTimeoutTimer = new Timer();
+    private final long PATH_TIMEOUT_MS = 4000;
     private boolean reachedEnd = false;
 
     private int pathState = 0;
@@ -45,8 +47,8 @@ public class bottomBlueAuto extends OpMode {
 
     private final Pose startPose = new Pose(56, 8, Math.toRadians(90));
     private final Pose outtake = new Pose(56.000, 18.000, Math.toRadians(90));
-    private final Pose intake2 = new Pose(40.000, 64.000, Math.toRadians(180));
-    private final Pose loaded2 = new Pose(6, 64, Math.toRadians(180));
+    private final Pose intake2 = new Pose(40.000, 54.000, Math.toRadians(180));
+    private final Pose loaded2 = new Pose(6, 54, Math.toRadians(180));
     private final Pose leavePoint = new Pose(30, 72, Math.toRadians(180));
 
     private PathChain launchPreload, get2, throw2, loading2, leave;
@@ -77,6 +79,13 @@ public class bottomBlueAuto extends OpMode {
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
                 .build();
 
+    }
+
+    private PathChain buildExitPath() {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(follower.getPose(), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
     }
 
     private void startWait() {
@@ -193,11 +202,20 @@ public class bottomBlueAuto extends OpMode {
                 robot.intake.setPower(1);
 
                 follower.followPath(loading2, true);
+                pathTimeoutTimer.resetTimer();
                 pathState = 2;
 
                 break;
 
             case 2:
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    telemetry.addData("Failsafe", "Intaking 1 Timeout. Running EXIT.");
+                    robot.intake.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathState = 3;
+                    break;
+                }
+
                 if (follower.isBusy()) break;
 
                 robot.intake.setPower(0);
@@ -262,9 +280,9 @@ public class bottomBlueAuto extends OpMode {
         distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
 
         robot.flywheel.loopAuto(3300);
-        robot.servoY.setPosition(0.475);
+        robot.servoY.setPosition(0.525);
 
-        robot.turret.loopAuto(-32.5);
+        robot.turret.loopAuto(-30.5);
     }
 
     @Override
@@ -282,6 +300,7 @@ public class bottomBlueAuto extends OpMode {
     @Override
     public void start() {
         opmodeTimer.resetTimer();
+        pathTimeoutTimer.resetTimer();
         setPathState(-2);
     }
 

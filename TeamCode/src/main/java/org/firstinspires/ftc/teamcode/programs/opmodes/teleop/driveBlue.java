@@ -16,6 +16,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.programs.commandbase.auto.StrafeMecanumToArtifact;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
@@ -67,8 +68,7 @@ public class driveBlue extends CommandOpMode {
                 new setServoLauncherPosition(0) //AICI RARES
         ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new setServoYPosition(0.3));
-        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new setServoYPosition(0.5));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new StrafeMecanumToArtifact());
     }
 
     @Override
@@ -117,7 +117,7 @@ public class driveBlue extends CommandOpMode {
                 robot.servoY.setPosition(pos);
             }
             else{
-                robot.flywheel.loop(2000);
+                robot.flywheel.loop(0.0627);
             }
 
             telemetry.addData("Distance", distance);
