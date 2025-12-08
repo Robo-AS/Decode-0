@@ -43,9 +43,13 @@ public class Camera extends OpenCvPipeline {
         Imgproc.cvtColor(input, imgHsv, Imgproc.COLOR_BGR2HSV);
 
         // Cyan/green range (adjust if needed)
-        Scalar cyanLow = new Scalar(80, 50, 50);
+        Scalar cyanLow = new Scalar(20, 50, 50);
         Scalar cyanHigh = new Scalar(105, 255, 255);
+        Scalar purpleLow = new Scalar (120, 50, 50);
+        Scalar purpleHigh= new Scalar (170, 255, 255);
         Mat maskCyan = new Mat();
+        Mat maskPurple = new Mat();
+        ///  Cyan HSV
         Core.inRange(imgHsv, cyanLow, cyanHigh, maskCyan);
 
         imgHsv.release();
@@ -56,6 +60,13 @@ public class Camera extends OpenCvPipeline {
 
         List<BallData> ballData = new ArrayList<>();
         processContours(input, contoursCyan, ballData, new Scalar(0, 255, 255), imgW, imgH);
+        /// Purple HSV
+        Core.inRange (imgHsv, purpleLow, purpleHigh, maskPurple);
+        imgHsv.release ();
+        List<MatOfPoint> contoursPurple = new ArrayList<>();
+        Imgproc.findContours(maskPurple, contoursPurple, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        maskPurple.release ();
+        processContours (input, contoursPurple, ballData, new Scalar (0, 255, 255), imgW, imgH);
 
         // Sliding window for max area (like before)
         double maxAreaSum = -1.0;
