@@ -47,6 +47,7 @@ public class Camera extends OpenCvPipeline {
         Scalar cyanHigh = new Scalar(105, 255, 255);
         Scalar purpleLow = new Scalar (120, 50, 50);
         Scalar purpleHigh= new Scalar (170, 255, 255);
+        Mat maskGreen = new Mat();
         Mat maskCyan = new Mat();
         Mat maskPurple = new Mat();
         ///  Cyan HSV
