@@ -241,7 +241,7 @@ public class upperRedDemo extends OpMode {
 
             case 6:
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    telemetry.addData("Failsafe", "Intaking 1 Timeout. Running EXIT.");
+                    telemetry.addData("Failsafe", "Intaking 2 Timeout. Running EXIT.");
                     robot.intake.setPower(0);
                     follower.followPath(buildExitPath());
                     pathState = 7;

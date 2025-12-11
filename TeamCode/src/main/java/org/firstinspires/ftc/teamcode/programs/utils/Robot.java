@@ -14,7 +14,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.programs.subsystems.Camera;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
@@ -48,11 +47,6 @@ public class Robot {
     public static MultipleTelemetry telemetry;
     public RevHubOrientationOnRobot revHubOrientationOnRobot = null;
     public static GoBildaPinpointDriver pinpoint = null;
-
-    public OpenCvWebcam webcam = null;
-    public Camera cameraPipeline = null; // Your pipeline class
-
-
 
     public static Robot getInstance() {
         if (instance == null) {
@@ -130,29 +124,6 @@ public class Robot {
         //intake
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        // webcam
-        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
-                "cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-
-        webcam = OpenCvCameraFactory.getInstance().createWebcam(
-                hardwareMap.get(WebcamName.class, "webcam`  "), cameraMonitorViewId);
-
-        cameraPipeline = new Camera();
-        webcam.setPipeline(cameraPipeline);
-
-        webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
-            @Override
-            public void onOpened() {
-                webcam.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT);
-            }
-
-            @Override
-            public void onError(int errorCode) {
-                telemetry.addData("webcam", "Error opening camera: %d", errorCode);
-                telemetry.update();
-            }
-        });
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
@@ -249,14 +220,6 @@ public class Robot {
 
     public static GoBildaPinpointDriver getInstancePinpoint() {
         return pinpoint;
-    }
-
-    public OpenCvWebcam getWebcam() {
-        return webcam;
-    }
-
-    public Camera getCameraPipeline() {
-        return cameraPipeline;
     }
 
 }

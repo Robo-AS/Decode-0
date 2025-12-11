@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.programs.opmodes.teleop;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
@@ -16,11 +15,9 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.programs.commandbase.auto.StrafeMecanumToArtifact;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 @TeleOp(name = "Drive BLUE", group = "OpModes")
@@ -67,8 +64,6 @@ public class driveBlue extends CommandOpMode {
                 new WaitCommand(300),
                 new setServoLauncherPosition(0) //AICI RARES
         ));
-
-        gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new StrafeMecanumToArtifact());
     }
 
     @Override
