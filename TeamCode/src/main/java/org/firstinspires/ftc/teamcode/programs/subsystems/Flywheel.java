@@ -12,11 +12,11 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class Flywheel extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
-    public static double kP = 0.002;
+    public static double kP = 0.01;
     public static double kI = 0;
-    public static double kD = 0.00001;
-    public static double kS = 0.0435;
-    public static double kV = 0.000275;
+    public static double kD = 0;
+    public static double kS = 0.1;
+    public static double kV = 0.000167;
 
     public InterpLUT vel = new InterpLUT();
 
@@ -37,19 +37,18 @@ public class Flywheel extends SubsystemBase {
     }
 
     public void loop(double distance) {
-        currentVelocity = flyWheel1.getVelocity();
+        currentVelocity = flyWheel2.getVelocity();
         targetVelocity = vel.get(distance);
 
-        pid_Flywheel.setPIDF(kP, kI, kD, 0);
-        feedforward = new SimpleMotorFeedforward(kS, kV);
-
-        double ff = feedforward.calculate(targetVelocity);
         double pid = pid_Flywheel.calculate(currentVelocity, targetVelocity);
+        double ff = feedforward.calculate(targetVelocity);
+
         double power = pid + ff;
 
         flyWheel1.setPower(power);
         flyWheel2.setPower(power);
     }
+
 
     public void loopAuto(double velocity){
         currentVelocity = flyWheel1.getVelocity();
@@ -73,12 +72,12 @@ public class Flywheel extends SubsystemBase {
         vel.add(0.01701, 3300);
         vel.add(0.022, 3300);
         vel.add(0.0356, 2450);
-        vel.add(0.0466, 2100);
-        vel.add(0.0627, 1900);
-        vel.add(0.08, 1600);
-        vel.add(0.1028, 1600);
-        vel.add(0.1429, 1500);
-        vel.add(0.206, 1600);
+        vel.add(0.0445, 2300);
+        vel.add(0.0587, 2300);
+        vel.add(0.062, 2000);
+        vel.add(0.0735, 2000);
+        vel.add(0.1113, 1800);
+        vel.add(0.1468, 1800);
         vel.add(0.3, 1600);
         vel.add(0.4, 1600);
         vel.createLUT();

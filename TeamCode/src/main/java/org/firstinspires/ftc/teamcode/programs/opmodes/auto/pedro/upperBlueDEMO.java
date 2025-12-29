@@ -324,8 +324,15 @@ public class upperBlueDEMO extends OpMode {
 
         robot.turret.loopAuto(TARGET_ANGLE);
 
+        robot.x = follower.getPose().getX();
+        robot.y = follower.getPose().getY();
+        robot.heading = follower.getPose().getHeading();
+
         telemetry.addData("Path State", pathState);
         telemetry.addData("Path Timer (ms)", pathTimeoutTimer.getElapsedTime());
+        telemetry.addData("X", robot.x);
+        telemetry.addData("Y", robot.y);
+        telemetry.addData("heading", robot.heading);
         telemetry.update();
     }
 

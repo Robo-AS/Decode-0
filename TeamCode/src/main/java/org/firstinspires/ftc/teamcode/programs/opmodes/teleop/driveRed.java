@@ -32,7 +32,7 @@ public class driveRed extends CommandOpMode {
 
     public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
     public Pose3D botpose;
-    public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double downY = 0.05, upY = 0.95, maxDistance = 0.004, minDistance = 0.2704;
 
     public double CAMERA_ANGLE = 18;
     public double CAMERA_HEIGHT = 0.4;
@@ -89,7 +89,7 @@ public class driveRed extends CommandOpMode {
         YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
         robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
-        robot.turret.loop(24);
+        robot.turret.loop(24, true);
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
@@ -123,7 +123,7 @@ public class driveRed extends CommandOpMode {
             }
 
             telemetry.addData("Distance", distance);
-            telemetry.addData("Velocity", robot.launcher1.getVelocity());
+            telemetry.addData("Velocity", robot.launcher2.getVelocity());
             telemetry.update();
         }
     }

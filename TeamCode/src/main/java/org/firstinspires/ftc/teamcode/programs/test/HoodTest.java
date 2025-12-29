@@ -21,7 +21,7 @@ public class HoodTest extends CommandOpMode {
     private GamepadEx gamepadEx;
     public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
     public Pose3D botpose;
-    public double downY = 0.2, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double downY = 0.05, upY = 0.95, maxDistance = 0.004, minDistance = 0.2704;
     private double lastServoY = downY;
     public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
     public double CAMERA_ANGLE = 18;

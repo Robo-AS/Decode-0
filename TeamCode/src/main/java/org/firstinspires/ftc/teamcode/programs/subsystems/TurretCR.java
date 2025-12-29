@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.programs.subsystems;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
-
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -11,8 +9,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.utils.RTPAxon;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
-import java.util.HashMap;
-import java.util.Map;
 
 public class TurretCR extends SubsystemBase {
 
@@ -21,25 +17,10 @@ public class TurretCR extends SubsystemBase {
     private RTPAxon axon;
 
     public static double targetAngle = 0.0;
-    public static double targetRotation = 0.0;
-    public static double kP = 0.006;
+    public static double kP = 0.0125;
     public static double kI = 0.001;
-    public static double kD = 0.000002;
-    public static double MAX_ANGLE = 150.0;
-    private boolean poseSynced = false;
-    private int targetID = 20;
-
-    public static class TagPose {
-        public final double x, y, z;
-        TagPose(double x, double y, double z){ this.x=x; this.y=y; this.z=z; }
-    }
-
-    //for pinpoint and mt2 later
-    private static final Map<Integer, TagPose> FIELD_TAGS_LL = new HashMap<>();
-    static {
-        FIELD_TAGS_LL.put(20, new TagPose(-1.482, -1.413, 0.749));
-        FIELD_TAGS_LL.put(24, new TagPose(-1.482,  1.413, 0.749));
-    }
+    public static double kD = 0.000003;
+    public static double MAX_ANGLE = 100.0;
 
     public TurretCR() {
         this.limelight = robot.limelight;
@@ -50,66 +31,75 @@ public class TurretCR extends SubsystemBase {
         limelight.start();
         limelight.pipelineSwitch(1);
         limelight.setPollRateHz(100);
-
-        axon.initialize(); //get encoderZero
+        axon.initialize();
     }
 
-    private void updateHeadings(int targetID) {
+    private void updateHeadings(int targetID, boolean targetRedGoal) {
         LLResult ll = limelight.getLatestResult();
         boolean seesTargetID = false;
 
-        for(LLResultTypes.FiducialResult apriltag : ll.getFiducialResults()){
-            if(apriltag.getFiducialId() == targetID){
-                seesTargetID = true;
-                break;
+        if (ll != null && ll.isValid()) {
+            for (LLResultTypes.FiducialResult apriltag : ll.getFiducialResults()) {
+                if (apriltag.getFiducialId() == targetID) {
+                    seesTargetID = true;
+                    break;
+                }
             }
         }
 
-        boolean useLL = ll != null && ll.isValid() && ll.getBotpose_MT2() != null && FIELD_TAGS_LL.containsKey(targetID) && seesTargetID;
-
-        if (useLL) {
+        if (ll != null && ll.isValid() && seesTargetID) {
+            // tx and axon current angle are both degrees
             targetAngle = axon.getCurrentAngle() + ll.getTx();
+        }
+        else if (robot.pinpoint != null) {
+            robot.pinpoint.update();
+            Pose2D pose = robot.pinpoint.getPosition();
 
-            //correct pinpoint with limelight data so it has as little error as possible
-            Pose2D poseFromLL = new Pose2D(
-                    DistanceUnit.METER,
-                    ll.getBotpose_MT2().getPosition().x,
-                    ll.getBotpose_MT2().getPosition().y,
-                    AngleUnit.RADIANS,
-                    ll.getBotpose_MT2().getOrientation().getYaw()
-            );
+            double robotX = pose.getX(DistanceUnit.INCH);
+            double robotY = pose.getY(DistanceUnit.INCH);
+            double robotHeading = pose.getHeading(AngleUnit.RADIANS);
 
-            poseSynced = true;
+            double goalX = targetRedGoal ? 144 : 0;
+            double goalY = 144;
+
+            double angleToGoalField = Math.atan2(goalY - robotY, goalX - robotX);
+            double relativeAngleRad = AngleUnit.normalizeRadians(angleToGoalField - robotHeading);
+
+            // Calculate the angle in degrees first
+            double calculatedAngle = -Math.toDegrees(relativeAngleRad) + 90;
+
+            // Your preferred if-else clamping logic in DEGREES
+            if (calculatedAngle > MAX_ANGLE) {
+                targetAngle = MAX_ANGLE;
+            } else if (calculatedAngle < -MAX_ANGLE) {
+                targetAngle = -MAX_ANGLE;
+            } else {
+                targetAngle = calculatedAngle;
+            }
         }
         else {
-            //home turret if it loses sight of target for simplicity
             targetAngle = 0;
         }
+
+        // Final safety check to ensure targetAngle is never NaN or out of bounds
+        if (targetAngle > MAX_ANGLE) targetAngle = MAX_ANGLE;
+        if (targetAngle < -MAX_ANGLE) targetAngle = -MAX_ANGLE;
     }
 
-    public void loop(int targetID) {
-        updateHeadings(targetID);
-
-        targetRotation =  targetAngle; //current angle the turret is at + what it sees from ll
-
-        double clampedTarget = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, targetRotation));
-
-        axon.updatePIDCoeffs(kP, kI, kD); //set pid coefficients for rtp axon
-
-        axon.setTargetRotation(clampedTarget); // update targetRotation in rtp axon as well
-
-        axon.update(); // pid logic in rtp axon
+    public void loop(int targetID, boolean targetRedGoal) {
+        updateHeadings(targetID, targetRedGoal);
+        axon.updatePIDCoeffs(kP, kI, kD);
+        axon.setTargetRotation(targetAngle);
+        axon.update();
     }
 
     public void loopAuto(double target){
-        targetRotation = target;
+        if (target > MAX_ANGLE) targetAngle = MAX_ANGLE;
+        else if (target < -MAX_ANGLE) targetAngle = -MAX_ANGLE;
+        else targetAngle = target;
 
-        double clampedTarget = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, targetRotation));
-
-        axon.updatePIDCoeffs(kP, kI, kD); //set pid coefficients for rtp axon
-
-        axon.setTargetRotation(clampedTarget); // update targetRotation in rtp axon as well
-
+        axon.updatePIDCoeffs(kP, kI, kD);
+        axon.setTargetRotation(targetAngle);
         axon.update();
     }
 }

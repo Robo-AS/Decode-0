@@ -13,16 +13,13 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.IMU;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
-
-import org.openftc.easyopencv.OpenCvCamera;
-import org.openftc.easyopencv.OpenCvCameraFactory;
-import org.openftc.easyopencv.OpenCvCameraRotation;
-import org.openftc.easyopencv.OpenCvWebcam;
 
 
 import java.util.Arrays;
@@ -47,6 +44,8 @@ public class Robot {
     public static MultipleTelemetry telemetry;
     public RevHubOrientationOnRobot revHubOrientationOnRobot = null;
     public static GoBildaPinpointDriver pinpoint = null;
+
+    public double x = 0, y = 0, heading = 0;
 
     public static Robot getInstance() {
         if (instance == null) {
@@ -101,11 +100,11 @@ public class Robot {
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
 
-        launcher1.setDirection(DcMotorSimple.Direction.REVERSE);
+        launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        launcher1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        launcher2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcher2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        launcher2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
         servoLauncher.setDirection(Servo.Direction.REVERSE);
@@ -129,29 +128,19 @@ public class Robot {
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
         this.hardwareMap = hardwareMap;
 
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.start();
-
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
-        launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.start();
 
-        launcher1.setDirection(DcMotorSimple.Direction.REVERSE);
+        llwrapped = new LimelightWrapper();
+        llwrapped.initializeHardware(hardwareMap);
+        llwrapped.initialize();
 
-        launcher1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        launcher1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
-        servoLauncher.setDirection(Servo.Direction.REVERSE);
-
-        servoY = hardwareMap.get(Servo.class, "servoY");
-
-        flywheel = new Flywheel();
+        // turret
 
         servoX = hardwareMap.get(CRServo.class, "servoX");
         servoY = hardwareMap.get(Servo.class, "servoY");
@@ -161,13 +150,38 @@ public class Robot {
         axon = new RTPAxon(servoX, axonEncoder);
         axon.setDirection(RTPAxon.Direction.REVERSE);
         turret = new TurretCR();
+
+        //launcher
+        launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
+        launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
+
+        launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        launcher2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcher2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        launcher2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        servoLauncher = hardwareMap.get(Servo.class, "servoLauncher");
+        servoLauncher.setDirection(Servo.Direction.REVERSE);
+
+        flywheel = new Flywheel();
     }
 
 
     public void initialize() {
         mecanum.initialize();
         imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
-        pinpoint.resetPosAndIMU();
+
+        pinpoint.setOffsets(13.7, 14.7, DistanceUnit.CM);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED,
+                GoBildaPinpointDriver.EncoderDirection.REVERSED);
+
+        double pedroHeading = this.heading;
+        double pinpointHeading = Math.toRadians(90) - pedroHeading;
+
+        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, this.x, this.y, AngleUnit.RADIANS, pinpointHeading));
+        pinpoint.update();
+
         flywheel.initialize();
         servoLauncher.setPosition(0);
         turret.initialize();

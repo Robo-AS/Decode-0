@@ -241,4 +241,14 @@ public class RTPAxon {
             setPower(0);
         }
     }
+
+    // Inside RTPAxon.java
+    public void setTargetAngleNearest(double targetAngle) {
+        double current = totalRotation; // This is the cumulative angle
+        // Calculate the shortest distance to the target angle
+        double delta = ((targetAngle - current + 180) % 360 + 360) % 360 - 180;
+        this.targetRotation = current + delta;
+        // Do NOT call resetPID() here if you call this every loop,
+        // it will wipe your integral sum and derivative.
+    }
 }

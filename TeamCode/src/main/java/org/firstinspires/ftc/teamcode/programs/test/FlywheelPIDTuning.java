@@ -55,7 +55,7 @@ public class FlywheelPIDTuning extends OpMode {
     @Override
     public void loop() {
 
-        currentVelocity = flyWheel1.getVelocity();
+        currentVelocity = flyWheel2.getVelocity();
 
         pid_Flywheel.setPIDF(kP, kI, kD, f);
         feedforward = new SimpleMotorFeedforward(kS, kV);
