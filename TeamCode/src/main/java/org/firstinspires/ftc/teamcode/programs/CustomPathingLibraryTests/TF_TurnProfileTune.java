@@ -61,8 +61,7 @@ public class TF_TurnProfileTune extends LinearOpMode {
         double seed23 = t2.allStates().get(t2.allStates().size()-1).pose.heading;
         Pose2d p = localizer.getPose();
 
-        Trajectory turnLeft = TurnInPlace.buildRelative(p, Math.toRadians(+240), lim);
-
+        Trajectory turnLeft = TurnInPlace.buildRelative(p, Math.toRadians(-45), lim);
 
         // B -> A, tangent heading (which is already pointing back)
         Trajectory t3 = new TrajectoryBuilder()

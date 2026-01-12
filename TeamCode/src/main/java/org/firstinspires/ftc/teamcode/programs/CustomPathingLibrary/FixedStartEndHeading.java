@@ -1,37 +1,98 @@
 package org.firstinspires.ftc.teamcode.programs.CustomPathingLibrary;
 
 /**
- * Interpolates heading from startH to endH over arc-length [0, totalS].
- * - Uses shortest-angle interpolation (no wrap jumps).
- * - Optional smooth easing (3t^2 - 2t^3) to reduce jerk at ends.
+ * Heading profile that interpolates from start heading to end heading.
+ *
+ * Uses shortest-angle interpolation to avoid unnecessary rotation.
+ * Optional smooth easing for reduced jerk at start/end.
  */
 public class FixedStartEndHeading implements HeadingProfile {
-    private final double startH, endH;
-    private final double totalS;
+
+    private final double startHeading;
+    private final double endHeading;
+    private final double totalLength;
     private final boolean smooth;
 
     /**
-     * Linear interpolation version (default).
+     * Create linear interpolation profile.
+     *
+     * @param startHeading  Starting heading (radians)
+     * @param endHeading    Ending heading (radians)
+     * @param totalLength   Total path length (inches)
      */
-    public FixedStartEndHeading(double startH, double endH, double totalS){
-        this(startH, endH, totalS, false);
+    public FixedStartEndHeading(double startHeading, double endHeading, double totalLength) {
+        this(startHeading, endHeading, totalLength, false);
     }
 
     /**
-     * @param smooth if true, uses S-curve easing (3t^2 - 2t^3); else linear.
+     * Create interpolation profile with optional smoothing.
+     *
+     * @param startHeading  Starting heading (radians)
+     * @param endHeading    Ending heading (radians)
+     * @param totalLength   Total path length (inches)
+     * @param smooth        If true, use S-curve easing for smoother transitions
      */
-    public FixedStartEndHeading(double startH, double endH, double totalS, boolean smooth){
-        this.startH = HeadingUtil.wrap(startH);
-        this.endH   = HeadingUtil.wrap(endH);
-        this.totalS = Math.max(1e-9, totalS);
+    public FixedStartEndHeading(double startHeading, double endHeading, double totalLength, boolean smooth) {
+        this.startHeading = HeadingUtil.wrap(startHeading);
+        this.endHeading = HeadingUtil.wrap(endHeading);
+        this.totalLength = Math.max(1e-6, totalLength);
         this.smooth = smooth;
     }
 
     @Override
-    public double headingAt(double s){
-        double t = HeadingUtil.clamp01(s / totalS);
-        if (smooth) t = HeadingUtil.smooth01(t);
-        double dh = HeadingUtil.shortestDelta(startH, endH);
-        return HeadingUtil.wrap(startH + dh * t);
+    public double headingAt(double s) {
+        // Calculate interpolation factor [0, 1]
+        double t = s / totalLength;
+        t = HeadingUtil.clamp01(t);
+
+        // Apply smoothstep if requested
+        if (smooth) {
+            t = HeadingUtil.smooth01(t);
+        }
+
+        // Interpolate using shortest angle
+        double delta = HeadingUtil.shortestDelta(startHeading, endHeading);
+        return HeadingUtil.wrap(startHeading + delta * t);
+    }
+
+    /**
+     * Get the total heading change (radians, signed).
+     */
+    public double getTotalChange() {
+        return HeadingUtil.shortestDelta(startHeading, endHeading);
+    }
+
+    /**
+     * Get start heading.
+     */
+    public double getStartHeading() {
+        return startHeading;
+    }
+
+    /**
+     * Get end heading.
+     */
+    public double getEndHeading() {
+        return endHeading;
+    }
+
+    /**
+     * Get total path length.
+     */
+    public double getTotalLength() {
+        return totalLength;
+    }
+
+    /**
+     * Check if smooth interpolation is enabled.
+     */
+    public boolean isSmooth() {
+        return smooth;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("FixedStartEndHeading(%.1f° -> %.1f° over %.1f in, smooth=%b)",
+                Math.toDegrees(startHeading), Math.toDegrees(endHeading), totalLength, smooth);
     }
 }

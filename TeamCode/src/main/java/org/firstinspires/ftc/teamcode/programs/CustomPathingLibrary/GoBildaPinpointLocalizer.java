@@ -8,210 +8,450 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import Pinpoint_Blocks_Driver.GoBildaPinpointDriver;
 
 /**
- * goBILDA Pinpoint Odometry Computer localizer (I2C).
- * - Outputs pose in INCHES (x,y) and RADIANS (heading).
- * - Uses Pinpoint's onboard encoder+IMU fusion.
- * - Provides encoder preset/custom resolution, pod offsets, encoder directions.
- * - Provides reset/recalibrate IMU, yaw scalar tuning.
- * - Supports bulk-read decimation (heading-only between bulks) to reduce I2C load.
- * - Allows external absolute pose fusion (e.g., AprilTags/Limelight) via smooth blending.
+ * goBILDA Pinpoint Odometry Computer localizer.
+ *
+ * Features:
+ * - High-precision odometry from Pinpoint's onboard fusion
+ * - Configurable pod offsets and encoder directions
+ * - Velocity estimation
+ * - External pose fusion (e.g., AprilTags/Limelight)
+ * - Bulk read decimation for I2C optimization
+ * - Robust error handling
+ *
+ * Outputs pose in INCHES (x, y) and RADIANS (heading).
  */
 public class GoBildaPinpointLocalizer {
 
-    // ---- constants & conversion ----
-    private static final double MM_PER_IN = 25.4;
+    // ==================== CONSTANTS ====================
 
-    // ---- hardware ----
-    private final String hwName; // RC config name, e.g. "pinpoint"
+    private static final double MM_PER_INCH = 25.4;
+
+    // ==================== HARDWARE ====================
+
+    private final String deviceName;
     private GoBildaPinpointDriver pinpoint;
+    private boolean initialized = false;
 
-    // ---- current state (inches, radians) ----
-    private final Pose2d poseIn = new Pose2d(0, 0, 0);
-    private double vxIn = 0.0;          // inches / sec
-    private double vyIn = 0.0;          // inches / sec
-    private double omegaRad = 0.0;      // rad / sec
+    // ==================== POSE STATE ====================
 
-    // ---- config (can be set before or after init; setters apply immediately if initialized) ----
-    private GoBildaPinpointDriver.GoBildaOdometryPods preset = GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
-    private Double customTicksPerMM = null;   // if set, overrides preset
-    private double xOffsetMM = -100;           // pod X offset from robot center (mm). Left=+
-    private double yOffsetMM = 160;          // pod Y offset from robot center (mm). Forward=+
-    private GoBildaPinpointDriver.EncoderDirection dirX = GoBildaPinpointDriver.EncoderDirection.REVERSED;
-    private GoBildaPinpointDriver.EncoderDirection dirY = GoBildaPinpointDriver.EncoderDirection.FORWARD;
-    private Double yawScalar = -1.0;          // optional fine scale for gyro
+    // Current pose (inches, radians)
+    private final Pose2d pose = new Pose2d(0, 0, 0);
 
-    // ---- bulk decimation (I2C load control) ----
-    private int bulkEveryN = 1; // 1 = bulk every loop, 2 = bulk every other loop, etc.
-    private int decimCounter = 0;
+    // Velocities
+    private double vxInPerSec = 0.0;   // Forward velocity (in/s)
+    private double vyInPerSec = 0.0;   // Strafe velocity (in/s)
+    private double omegaRadPerSec = 0.0; // Angular velocity (rad/s)
 
-    public GoBildaPinpointLocalizer(String hardwareMapName){
-        this.hwName = hardwareMapName;
+    // ==================== CONFIGURATION ====================
+
+    // Encoder resolution
+    private GoBildaPinpointDriver.GoBildaOdometryPods encoderPreset =
+            GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
+    private Double customTicksPerMM = null;
+
+    // Pod offsets (mm) relative to robot center
+    // +X = left of center, +Y = forward of center
+    private double xOffsetMM = 0.0;
+    private double yOffsetMM = 0.0;
+
+    // Encoder directions
+    private GoBildaPinpointDriver.EncoderDirection xDirection =
+            GoBildaPinpointDriver.EncoderDirection.FORWARD;
+    private GoBildaPinpointDriver.EncoderDirection yDirection =
+            GoBildaPinpointDriver.EncoderDirection.FORWARD;
+
+    // IMU yaw scalar (fine-tuning for gyro drift)
+    private Double yawScalar = null;
+
+    // Bulk read decimation
+    private int bulkReadInterval = 1;  // 1 = every loop, 2 = every other loop, etc.
+    private int loopCounter = 0;
+
+    // ==================== CONSTRUCTOR ====================
+
+    /**
+     * Create localizer with device name.
+     *
+     * @param deviceName  Hardware name in robot configuration (e.g., "pinpoint")
+     */
+    public GoBildaPinpointLocalizer(String deviceName) {
+        this.deviceName = deviceName;
     }
 
-    // ===================== CONFIG API =====================
+    // ==================== CONFIGURATION (FLUENT API) ====================
 
-    /** Use one of the goBILDA presets for ticks/mm (default = 4-bar pod). */
-    public GoBildaPinpointLocalizer setEncoderResolutionPreset(GoBildaPinpointDriver.GoBildaOdometryPods p){
-        this.preset = p;
-        if (pinpoint != null && customTicksPerMM == null) {
+    /**
+     * Set encoder resolution using a goBILDA preset.
+     */
+    public GoBildaPinpointLocalizer setEncoderResolutionPreset(
+            GoBildaPinpointDriver.GoBildaOdometryPods preset) {
+        this.encoderPreset = preset;
+        this.customTicksPerMM = null;
+        if (initialized && pinpoint != null) {
             pinpoint.setEncoderResolution(preset);
         }
         return this;
     }
 
-    /** Override the preset with your own ticks-per-mm (encoderCPR / wheelCircumferenceMM). */
-    public GoBildaPinpointLocalizer setEncoderResolutionTicksPerMM(double ticksPerMM){
+    /**
+     * Set custom encoder resolution (ticks per mm).
+     * Overrides the preset.
+     */
+    public GoBildaPinpointLocalizer setEncoderResolutionTicksPerMM(double ticksPerMM) {
         this.customTicksPerMM = ticksPerMM;
-        if (pinpoint != null) {
+        if (initialized && pinpoint != null) {
             pinpoint.setEncoderResolution(ticksPerMM);
         }
         return this;
     }
 
-    /** Pod offsets in mm (X left+, Y forward+) relative to robot center. */
-    public GoBildaPinpointLocalizer setPodOffsetsMM(double xOffsetMM, double yOffsetMM){
+    /**
+     * Set pod offsets in millimeters.
+     *
+     * @param xOffsetMM  X offset (positive = left of robot center)
+     * @param yOffsetMM  Y offset (positive = forward of robot center)
+     */
+    public GoBildaPinpointLocalizer setPodOffsetsMM(double xOffsetMM, double yOffsetMM) {
         this.xOffsetMM = xOffsetMM;
         this.yOffsetMM = yOffsetMM;
-        if (pinpoint != null) pinpoint.setOffsets(xOffsetMM, yOffsetMM);
+        if (initialized && pinpoint != null) {
+            pinpoint.setOffsets(xOffsetMM, yOffsetMM);
+        }
         return this;
     }
-
-    /** Encoder directions: X increases forward; Y increases when strafing left. */
-    public GoBildaPinpointLocalizer setEncoderDirections(GoBildaPinpointDriver.EncoderDirection xDir,
-                                                         GoBildaPinpointDriver.EncoderDirection yDir){
-        this.dirX = xDir; this.dirY = yDir;
-        if (pinpoint != null) pinpoint.setEncoderDirections(dirX, dirY);
-        return this;
-    }
-
-    /** Optional IMU scale factor tweak (usually ~1.0). */
-    public GoBildaPinpointLocalizer setYawScalar(Double scalar){
-        this.yawScalar = scalar;
-        if (pinpoint != null && yawScalar != null) pinpoint.setYawScalar(yawScalar);
-        return this;
-    }
-
-    /** Read full 40B bulk every N loops; heading-only in between (saves I2C). */
-    public GoBildaPinpointLocalizer setBulkEveryN(int n){
-        this.bulkEveryN = Math.max(1, n);
-        return this;
-    }
-
-    // ===================== LIFECYCLE =====================
-
-    /** Call once in init(). */
-    public void init(HardwareMap hw){
-        pinpoint = hw.get(GoBildaPinpointDriver.class, hwName);
-
-        // resolution
-        if (customTicksPerMM != null) pinpoint.setEncoderResolution(customTicksPerMM);
-        else pinpoint.setEncoderResolution(preset);
-
-        // offsets, directions
-        pinpoint.setOffsets(xOffsetMM, yOffsetMM);
-        pinpoint.setEncoderDirections(dirX, dirY);
-
-        // optional yaw scalar
-        if (yawScalar != null) pinpoint.setYawScalar(yawScalar);
-    }
-
-    /** Hard-set absolute pose on the device (inches + radians). */
-    public void setPose(Pose2d p){
-        Pose2D p2 = new Pose2D(DistanceUnit.INCH, p.x, p.y, AngleUnit.RADIANS, p.heading);
-        pinpoint.setPosition(p2); // device expects mm/rad internally; driver handles unit writes per registers
-        poseIn.x = p.x; poseIn.y = p.y; poseIn.heading = wrap(p.heading);
-    }
-
-    /** Best practice in INIT: call while robot is perfectly still. Resets encoders & IMU bias. */
-    public void resetPosAndIMU(){
-        if (pinpoint != null) pinpoint.resetPosAndIMU();
-    }
-
-    /** Re-zero IMU bias without resetting position (robot must be still). */
-    public void recalibrateIMU(){
-        if (pinpoint != null) pinpoint.recalibrateIMU();
-    }
-
-    // ===================== RUNTIME =====================
 
     /**
-     * Call every loop. If bulk decimation is enabled, performs full bulk read every N loops
-     * and heading-only updates on in-between loops.
+     * Set pod offsets in inches (converted to mm internally).
      */
-    public void update(double dt){
-        if (pinpoint == null) return;
+    public GoBildaPinpointLocalizer setPodOffsetsInches(double xOffsetIn, double yOffsetIn) {
+        return setPodOffsetsMM(xOffsetIn * MM_PER_INCH, yOffsetIn * MM_PER_INCH);
+    }
 
-        boolean doBulk = (bulkEveryN <= 1) || (decimCounter++ % bulkEveryN == 0);
+    /**
+     * Set encoder counting directions.
+     */
+    public GoBildaPinpointLocalizer setEncoderDirections(
+            GoBildaPinpointDriver.EncoderDirection xDir,
+            GoBildaPinpointDriver.EncoderDirection yDir) {
+        this.xDirection = xDir;
+        this.yDirection = yDir;
+        if (initialized && pinpoint != null) {
+            pinpoint.setEncoderDirections(xDir, yDir);
+        }
+        return this;
+    }
 
-        if (doBulk){
-            pinpoint.update(); // pos + vel + heading
-            // positions (mm → in)
-            poseIn.x = pinpoint.getPosX() / MM_PER_IN;
-            poseIn.y = pinpoint.getPosY() / MM_PER_IN;
-            poseIn.heading = wrap(pinpoint.getHeading());
+    /**
+     * Set IMU yaw scalar for fine-tuning gyro accuracy.
+     * Default is 1.0. Adjust if heading drifts consistently.
+     */
+    public GoBildaPinpointLocalizer setYawScalar(double scalar) {
+        this.yawScalar = scalar;
+        if (initialized && pinpoint != null) {
+            pinpoint.setYawScalar(scalar);
+        }
+        return this;
+    }
 
-            // velocities (mm/s → in/s, rad/s stays rad/s)
-            vxIn = pinpoint.getVelX() / MM_PER_IN;
-            vyIn = pinpoint.getVelY() / MM_PER_IN;
-            omegaRad = pinpoint.getHeadingVelocity();
+    /**
+     * Set bulk read interval for I2C optimization.
+     * Higher values reduce I2C traffic but lower update rate.
+     *
+     * @param interval  1 = every loop (default), 2 = every other loop, etc.
+     */
+    public GoBildaPinpointLocalizer setBulkReadInterval(int interval) {
+        this.bulkReadInterval = Math.max(1, interval);
+        return this;
+    }
 
-        } else {
-            // cheaper: only heading
-            pinpoint.update(GoBildaPinpointDriver.readData.ONLY_UPDATE_HEADING);
-            poseIn.heading = wrap(pinpoint.getHeading());
+    // ==================== LIFECYCLE ====================
+
+    /**
+     * Initialize the localizer. Call once in init().
+     */
+    public void init(HardwareMap hardwareMap) {
+        try {
+            pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, deviceName);
+
+            // Apply configuration
+            if (customTicksPerMM != null) {
+                pinpoint.setEncoderResolution(customTicksPerMM);
+            } else {
+                pinpoint.setEncoderResolution(encoderPreset);
+            }
+
+            pinpoint.setOffsets(xOffsetMM, yOffsetMM);
+            pinpoint.setEncoderDirections(xDirection, yDirection);
+
+            if (yawScalar != null) {
+                pinpoint.setYawScalar(yawScalar);
+            }
+
+            initialized = true;
+        } catch (Exception e) {
+            initialized = false;
+            System.err.println("GoBildaPinpointLocalizer: Failed to initialize - " + e.getMessage());
         }
     }
 
-    /** Current pose (inches, radians). */
-    public Pose2d getPose(){ return poseIn; }
-
-    /** Linear velocity (in/s) and angular velocity (rad/s). */
-    public double getVX(){ return vxIn; }
-    public double getVY(){ return vyIn; }
-    public double getOmega(){ return omegaRad; }
-
-    /** Device state helpers for telemetry. */
-    public String getStatusString(){
-        if (pinpoint == null || pinpoint.getDeviceStatus() == null) return "NOT_CONNECTED";
-        return pinpoint.getDeviceStatus().name();
+    /**
+     * Reset position and recalibrate IMU.
+     * Robot must be stationary when calling this!
+     */
+    public void resetPosAndIMU() {
+        if (initialized && pinpoint != null) {
+            pinpoint.resetPosAndIMU();
+            pose.x = 0;
+            pose.y = 0;
+            pose.heading = 0;
+            vxInPerSec = 0;
+            vyInPerSec = 0;
+            omegaRadPerSec = 0;
+        }
     }
-    public double getDeviceHz(){ return (pinpoint != null) ? pinpoint.getFrequency() : 0.0; }
-    public int getLoopTimeMicros(){ return (pinpoint != null) ? pinpoint.getLoopTime() : 0; }
-
-    // ===================== EXTERNAL POSE FUSION =====================
 
     /**
-     * Blend an external absolute pose (e.g., AprilTag/Limelight) into Pinpoint smoothly.
-     * alpha ∈ [0..1]: 0=no change, 1=snap to external.
-     * Writes the blended pose back to the device so its internal fusion continues from the corrected state.
+     * Recalibrate IMU only (keeps position).
+     * Robot must be stationary!
      */
-    public void fuseExternalPose(Pose2d ext, double alpha){
-        if (pinpoint == null || ext == null) return;
-        alpha = clamp(alpha, 0.0, 1.0);
-
-        Pose2d cur = getPose();
-
-        double bx = cur.x + alpha * (ext.x - cur.x);
-        double by = cur.y + alpha * (ext.y - cur.y);
-        double bh = wrap(cur.heading + alpha * angleDiff(ext.heading, cur.heading));
-
-        setPose(new Pose2d(bx, by, bh));
+    public void recalibrateIMU() {
+        if (initialized && pinpoint != null) {
+            pinpoint.recalibrateIMU();
+        }
     }
 
-    // ===================== utils =====================
-
-    private static double wrap(double a){
-        while (a <= -Math.PI) a += 2*Math.PI;
-        while (a >   Math.PI) a -= 2*Math.PI;
-        return a;
+    /**
+     * Set the current pose explicitly.
+     * Useful for setting starting position or correcting drift.
+     */
+    public void setPose(Pose2d newPose) {
+        if (initialized && pinpoint != null) {
+            Pose2D p2d = new Pose2D(DistanceUnit.INCH, newPose.x, newPose.y,
+                    AngleUnit.RADIANS, newPose.heading);
+            pinpoint.setPosition(p2d);
+        }
+        pose.x = newPose.x;
+        pose.y = newPose.y;
+        pose.heading = wrapAngle(newPose.heading);
     }
 
-    /** Smallest signed angle from 'from' to 'to' (radians, wrapped). */
-    private static double angleDiff(double to, double from){
-        return wrap(to - from);
+    /**
+     * Set pose from components.
+     */
+    public void setPose(double x, double y, double headingRad) {
+        setPose(new Pose2d(x, y, headingRad));
     }
 
-    private static double clamp(double v, double lo, double hi){
-        return Math.max(lo, Math.min(hi, v));
+    // ==================== RUNTIME UPDATE ====================
+
+    /**
+     * Update the localizer. Call every loop iteration.
+     *
+     * @param dt  Time since last update (seconds) - not used by Pinpoint but kept for interface
+     */
+    public void update(double dt) {
+        if (!initialized || pinpoint == null) {
+            return;
+        }
+
+        loopCounter++;
+        boolean doBulkRead = (loopCounter % bulkReadInterval == 0);
+
+        try {
+            if (doBulkRead) {
+                // Full update: position + velocity + heading
+                pinpoint.update();
+
+                // Read position (mm -> inches)
+                pose.x = pinpoint.getPosX() / MM_PER_INCH;
+                pose.y = pinpoint.getPosY() / MM_PER_INCH;
+                pose.heading = wrapAngle(pinpoint.getHeading());
+
+                // Read velocities (mm/s -> in/s)
+                vxInPerSec = pinpoint.getVelX() / MM_PER_INCH;
+                vyInPerSec = pinpoint.getVelY() / MM_PER_INCH;
+                omegaRadPerSec = pinpoint.getHeadingVelocity();
+
+            } else {
+                // Lightweight update: heading only (reduces I2C traffic)
+                pinpoint.update(GoBildaPinpointDriver.readData.ONLY_UPDATE_HEADING);
+                pose.heading = wrapAngle(pinpoint.getHeading());
+            }
+        } catch (Exception e) {
+            System.err.println("GoBildaPinpointLocalizer: Update error - " + e.getMessage());
+        }
+    }
+
+    /**
+     * Update without dt parameter.
+     */
+    public void update() {
+        update(0.02);  // Assume 50Hz default
+    }
+
+    // ==================== POSE ACCESS ====================
+
+    /**
+     * Get current pose (inches, radians).
+     */
+    public Pose2d getPose() {
+        return pose;
+    }
+
+    /**
+     * Get X position (inches).
+     */
+    public double getX() {
+        return pose.x;
+    }
+
+    /**
+     * Get Y position (inches).
+     */
+    public double getY() {
+        return pose.y;
+    }
+
+    /**
+     * Get heading (radians, wrapped to (-π, π]).
+     */
+    public double getHeading() {
+        return pose.heading;
+    }
+
+    /**
+     * Get heading in degrees.
+     */
+    public double getHeadingDegrees() {
+        return Math.toDegrees(pose.heading);
+    }
+
+    // ==================== VELOCITY ACCESS ====================
+
+    /**
+     * Get forward velocity (inches/second).
+     */
+    public double getVX() {
+        return vxInPerSec;
+    }
+
+    /**
+     * Get strafe velocity (inches/second).
+     */
+    public double getVY() {
+        return vyInPerSec;
+    }
+
+    /**
+     * Get angular velocity (radians/second).
+     */
+    public double getOmega() {
+        return omegaRadPerSec;
+    }
+
+    /**
+     * Get linear speed magnitude (inches/second).
+     */
+    public double getSpeed() {
+        return Math.hypot(vxInPerSec, vyInPerSec);
+    }
+
+    // ==================== EXTERNAL POSE FUSION ====================
+
+    /**
+     * Fuse an external pose measurement (e.g., from AprilTags) with current pose.
+     * Uses weighted averaging for smooth correction.
+     *
+     * @param externalPose  Pose from external source (inches, radians)
+     * @param alpha         Blend factor [0, 1]: 0 = keep current, 1 = snap to external
+     */
+    public void fuseExternalPose(Pose2d externalPose, double alpha) {
+        if (!initialized || pinpoint == null || externalPose == null) {
+            return;
+        }
+
+        alpha = Math.max(0.0, Math.min(1.0, alpha));
+
+        // Weighted average for position
+        double newX = pose.x + alpha * (externalPose.x - pose.x);
+        double newY = pose.y + alpha * (externalPose.y - pose.y);
+
+        // Shortest-path interpolation for heading
+        double headingDelta = wrapAngle(externalPose.heading - pose.heading);
+        double newHeading = wrapAngle(pose.heading + alpha * headingDelta);
+
+        // Apply fused pose to both internal state and device
+        setPose(new Pose2d(newX, newY, newHeading));
+    }
+
+    /**
+     * Fuse external pose with automatic alpha based on confidence.
+     *
+     * @param externalPose  Pose from external source
+     * @param confidence    Confidence level [0, 1]
+     * @param maxAlpha      Maximum blend factor to use
+     */
+    public void fuseExternalPose(Pose2d externalPose, double confidence, double maxAlpha) {
+        double alpha = confidence * maxAlpha;
+        fuseExternalPose(externalPose, alpha);
+    }
+
+    // ==================== STATUS ====================
+
+    /**
+     * Check if localizer is initialized and working.
+     */
+    public boolean isInitialized() {
+        return initialized && pinpoint != null;
+    }
+
+    /**
+     * Get device status string.
+     */
+    public String getStatusString() {
+        if (!initialized || pinpoint == null) {
+            return "NOT_INITIALIZED";
+        }
+        try {
+            GoBildaPinpointDriver.DeviceStatus status = pinpoint.getDeviceStatus();
+            return (status != null) ? status.name() : "UNKNOWN";
+        } catch (Exception e) {
+            return "ERROR";
+        }
+    }
+
+    /**
+     * Get device update frequency (Hz).
+     */
+    public double getFrequency() {
+        if (!initialized || pinpoint == null) return 0;
+        try {
+            return pinpoint.getFrequency();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get loop time in microseconds.
+     */
+    public int getLoopTimeMicros() {
+        if (!initialized || pinpoint == null) return 0;
+        try {
+            return pinpoint.getLoopTime();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    // ==================== UTILITY ====================
+
+    /**
+     * Wrap angle to (-π, π].
+     */
+    private static double wrapAngle(double angle) {
+        while (angle <= -Math.PI) angle += 2.0 * Math.PI;
+        while (angle > Math.PI) angle -= 2.0 * Math.PI;
+        return angle;
     }
 }
