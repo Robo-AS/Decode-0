@@ -316,7 +316,16 @@ public class upperRedDemo extends OpMode {
         pos = getServoYPositionFromDistance(y_distance);
         robot.servoY.setPosition(pos);
 
-        robot.turret.loopAuto(TARGET_ANGLE);
+        robot.turret.loopAuto(0);
+
+        robot.x = follower.getPose().getX();
+        robot.y = follower.getPose().getY();
+        robot.heading = follower.getPose().getHeading();
+        robot.lastTurretAngle = robot.axon.getCurrentAngle();
+
+        telemetry.addData("Path State", pathState);
+        telemetry.addData("Path Timer (ms)", pathTimeoutTimer.getElapsedTime());
+        telemetry.update();
     }
 
     @Override

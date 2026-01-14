@@ -116,7 +116,7 @@ public class driveBlue extends CommandOpMode {
             }
 
             telemetry.addData("Distance", distance);
-            telemetry.addData("Velocity", robot.launcher1.getVelocity());
+            telemetry.addData("Velocity", -robot.launcher1.getVelocity());
             telemetry.update();
         }
     }

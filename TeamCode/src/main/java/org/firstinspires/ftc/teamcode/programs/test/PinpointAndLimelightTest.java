@@ -18,12 +18,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
-
-@TeleOp(name = "Drive RED", group = "OpModes")
-public class driveRed extends CommandOpMode {
+@TeleOp(name = "Pinpoint and Limelight Turret Test", group = "OpModes")
+public class PinpointAndLimelightTest extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -63,12 +61,9 @@ public class driveRed extends CommandOpMode {
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
                 new setServoLauncherPosition(0.45), //AICI RARES
-                new WaitCommand(500),
+                new WaitCommand(300),
                 new setServoLauncherPosition(0) //AICI RARES
         ));
-
-        gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new setServoYPosition(0.3));
-        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new setServoYPosition(0.5));
     }
 
     @Override
@@ -89,7 +84,7 @@ public class driveRed extends CommandOpMode {
         YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
         robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
-        robot.turret.loop(24);
+        robot.turret.loop(20);
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
@@ -102,12 +97,10 @@ public class driveRed extends CommandOpMode {
             distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
             targetAngle = tx;
 
-            robot.flywheel.loop(distance);
-
             boolean seesTargetID = false;
 
             for(LLResultTypes.FiducialResult apriltag : result.getFiducialResults()){
-                if(apriltag.getFiducialId() == 24){
+                if(apriltag.getFiducialId() == 20){
                     seesTargetID = true;
                     break;
                 }

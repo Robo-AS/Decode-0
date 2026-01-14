@@ -37,7 +37,7 @@ public class Flywheel extends SubsystemBase {
     }
 
     public void loop(double distance) {
-        currentVelocity = flyWheel1.getVelocity();
+        currentVelocity = -flyWheel1.getVelocity();
         targetVelocity = vel.get(distance);
 
         pid_Flywheel.setPIDF(kP, kI, kD, 0);
@@ -52,7 +52,7 @@ public class Flywheel extends SubsystemBase {
     }
 
     public void loopAuto(double velocity){
-        currentVelocity = flyWheel1.getVelocity();
+        currentVelocity = -flyWheel1.getVelocity();
         targetVelocity = velocity;
 
         pid_Flywheel.setPIDF(kP, kI, kD, 0);

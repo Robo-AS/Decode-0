@@ -283,6 +283,11 @@ public class bottomBlueAuto extends OpMode {
         robot.servoY.setPosition(0.525);
 
         robot.turret.loopAuto(-30.5);
+
+        robot.x = follower.getPose().getX();
+        robot.y = follower.getPose().getY();
+        robot.heading = follower.getPose().getHeading();
+        robot.lastTurretAngle = robot.axon.getCurrentAngle();
     }
 
     @Override

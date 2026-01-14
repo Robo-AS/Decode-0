@@ -17,7 +17,7 @@ public class upperBlueDEMO extends OpMode {
     private Follower follower;
     private double y_distance, x_distance, distance, ty, tx, CAMERA_HEIGHT = 0.4, CAMERA_ANGLE = 18, pos;
     public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
-    public double TARGET_ANGLE = -9;
+    public double TARGET_ANGLE = -4;
 
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
@@ -118,7 +118,7 @@ public class upperBlueDEMO extends OpMode {
                 break;
             case 3:
                 if (!hasWaitElapsed(500)) break;
-                robot.intake.setPower(1);
+                robot.intake.setPower(0.75);
                 startWait();
                 pathSubState = 4;
                 break;
@@ -142,7 +142,7 @@ public class upperBlueDEMO extends OpMode {
                 break;
             case 7:
                 if (!hasWaitElapsed(500)) break;
-                robot.intake.setPower(1);
+                robot.intake.setPower(0.75);
                 startWait();
                 pathSubState = 8;
                 break;
@@ -320,9 +320,14 @@ public class upperBlueDEMO extends OpMode {
         distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
 
         robot.flywheel.loopAuto(1800);
-        robot.servoY.setPosition(0.4);
+        pos = getServoYPositionFromDistance(y_distance);
+        robot.servoY.setPosition(pos);
 
-        robot.turret.loopAuto(TARGET_ANGLE);
+        robot.turret.loop(20);
+        robot.x = follower.getPose().getX();
+        robot.y = follower.getPose().getY();
+        robot.heading = follower.getPose().getHeading();
+        robot.lastTurretAngle = robot.axon.getCurrentAngle();
 
         telemetry.addData("Path State", pathState);
         telemetry.addData("Path Timer (ms)", pathTimeoutTimer.getElapsedTime());

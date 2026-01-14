@@ -4,16 +4,21 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
+import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
-@TeleOp(name = "Pinpoint Turret Angle Test", group = "Test")
+@TeleOp(name = "Pinpoint Turret Logic Test", group = "Test")
 public class PinpointTargetTest extends CommandOpMode {
 
     private final Robot robot = Robot.getInstance();
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
+    public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
     public static boolean targetRedGoal = false;
 
     @Override
@@ -25,33 +30,40 @@ public class PinpointTargetTest extends CommandOpMode {
 
     @Override
     public void run() {
+        double x_input = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
+        double y_input = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
+        double turn_input = (Math.pow(gamepad1.right_stick_x, 3) + liniarCoefTerm * gamepad1.right_stick_x) * constantTerm;
+
+        PoseRR drive = new PoseRR(-x_input, y_input, -turn_input);
+        robot.mecanum.set(drive, 0);
+
         robot.pinpoint.update();
+        Pose2D pose = robot.pinpoint.getPosition();
 
-        double x = robot.pinpoint.getPosX(DistanceUnit.INCH);
-        double y = robot.pinpoint.getPosY(DistanceUnit.INCH);
-        double heading = robot.pinpoint.getHeading(AngleUnit.RADIANS);
+        double robotX = pose.getX(DistanceUnit.INCH);
+        double robotY = pose.getY(DistanceUnit.INCH);
+        double robotHeading = pose.getHeading(AngleUnit.RADIANS);
 
-        // FIELD TARGET
         double goalX = targetRedGoal ? 144 : 0;
         double goalY = 144;
 
-        // 1. Field angle toward target
-        double fieldAngleDeg =
-                Math.toDegrees(Math.atan2(goalY - y, goalX - x));
+        double angleToGoalField = Math.atan2(goalY - robotY, goalX - robotX);
+        double relativeAngleRad = angleToGoalField - robotHeading;
 
-        // 2. Convert to robot-local angle (Pinpoint frame)
-        double localAngle = fieldAngleDeg - Math.toDegrees(heading);
+        double turretAngle = -Math.toDegrees(AngleUnit.normalizeRadians(relativeAngleRad)) + 90;
 
-        // 3. Convert Pinpoint left/right to YOUR turret's left/right
-        double turretAngle = -localAngle;
+        if(turretAngle > 100) turretAngle = 100;
+        else if(turretAngle < -100) turretAngle = -100;
 
-        // 4. Normalize
-        turretAngle = ((turretAngle + 180) % 360 + 360) % 360 - 180;
+        robot.turret.loopAuto(turretAngle);
 
-        telemetry.addData("Robot X (in)", x);
-        telemetry.addData("Robot Y (in)", y);
-        telemetry.addData("Heading (deg)", Math.toDegrees(heading));
-        telemetry.addData("Turret Target Angle (deg)", turretAngle);
+        if (gamepad1.options) robot.pinpoint.resetPosAndIMU();
+
+        telemetry.addData("Target Goal", targetRedGoal ? "RED" : "BLUE");
+        telemetry.addData("Robot X", robotX);
+        telemetry.addData("Robot Y", robotY);
+        telemetry.addData("Robot Heading (deg)", Math.toDegrees(robotHeading));
+        telemetry.addData("Turret Target Angle", turretAngle);
         telemetry.update();
     }
 }
