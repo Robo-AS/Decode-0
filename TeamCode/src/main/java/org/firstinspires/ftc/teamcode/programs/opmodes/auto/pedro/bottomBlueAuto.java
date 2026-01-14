@@ -288,6 +288,10 @@ public class bottomBlueAuto extends OpMode {
         robot.y = follower.getPose().getY();
         robot.heading = follower.getPose().getHeading();
         robot.lastTurretAngle = robot.axon.getCurrentAngle();
+
+        telemetry.addData("Path State", pathState);
+        telemetry.addData("Path Timer (ms)", pathTimeoutTimer.getElapsedTime());
+        telemetry.update();
     }
 
     @Override
