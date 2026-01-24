@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.programs.CustomPathingLibrary;
 /**
  * Advanced Trajectory Follower with:
  * - Frenet frame error decomposition (tangent/normal to path)
+ * - SPECIAL HANDLING for turn-in-place (uses world frame when v≈0)
  * - Feedforward from trajectory (velocity, acceleration, curvature)
  * - Feedback PID on position and heading errors
  * - Pure pursuit fallback for recovery when far from path
@@ -40,6 +41,13 @@ public class TrajectoryFollower {
     // Recovery thresholds
     private double purePursuitThreshold = 6.0;  // Use pure pursuit if cross-track error exceeds this (in)
     private double maxRecoverySpeed = 30.0;     // Max speed during recovery (in/s)
+
+    // Turn-in-place detection threshold
+    private static final double TURN_IN_PLACE_VEL_THRESHOLD = 2.0;  // in/s
+
+    // Turn-in-place position holding gain reduction factor
+    // During turns, we use softer position gains to prevent overcorrection
+    private static final double TURN_POSITION_GAIN_FACTOR = 0.15;  // 15% of normal gains
 
     // ==================== COMPONENTS ====================
 
@@ -308,87 +316,127 @@ public class TrajectoryFollower {
         double dy = ref.pose.y - currentPose.y;
         double distanceError = Math.hypot(dx, dy);
 
-        // Check if we need to switch to recovery mode
-        // Decompose error into tangent/normal frame first
-        double tx = ref.tangent.x;
-        double ty = ref.tangent.y;
-        double tMag = Math.hypot(tx, ty);
-        if (tMag < 1e-6) {
-            tx = Math.cos(ref.pose.heading);
-            ty = Math.sin(ref.pose.heading);
-        } else {
-            tx /= tMag;
-            ty /= tMag;
-        }
-        double nx = -ty;
-        double ny = tx;
-
-        double longError = dx * tx + dy * ty;   // Along path
-        double latError = dx * nx + dy * ny;    // Cross track
-
-        // Switch to recovery if too far from path
-        if (Math.abs(latError) > purePursuitThreshold) {
-            state = FollowState.RECOVERING;
-            wasInRecovery = true;
-            updateRecovery(currentPose, elapsed, dt);
-            return;
-        }
-
         // Heading error (shortest angle)
         double headingError = normalizeAngle(ref.pose.heading - currentPose.heading);
 
-        // Store for telemetry
-        lastLongError = longError;
-        lastLatError = latError;
-        lastHeadingError = headingError;
+        // ============================================================
+        // DETECT TURN-IN-PLACE MODE
+        // When ref.v is near zero, we're doing a turn-in-place.
+        // In this case, use WORLD FRAME for position correction,
+        // not the rotating Frenet frame.
+        // ============================================================
+        boolean isTurnInPlace = Math.abs(ref.v) < TURN_IN_PLACE_VEL_THRESHOLD;
 
-        // --- FEEDFORWARD ---
-        double vComp = DriveConstants.getVoltageCompFactor();
+        double vxRobot, vyRobot, omegaCmd;
 
-        // Velocity feedforward (along path tangent in world frame)
-        double vffWorld_x = ref.v * tx * kFFVel;
-        double vffWorld_y = ref.v * ty * kFFVel;
+        if (isTurnInPlace) {
+            // ==================== TURN-IN-PLACE MODE ====================
+            // ONLY correct heading - NO position correction at all
+            // Position drift during turns is acceptable and will be fixed after the turn
 
-        // Acceleration feedforward
-        vffWorld_x += ref.a * tx * kFFAccel;
-        vffWorld_y += ref.a * ty * kFFAccel;
+            // Store errors for telemetry (in world frame)
+            lastLongError = dx;
+            lastLatError = dy;
+            lastHeadingError = headingError;
 
-        // Angular feedforward
-        double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
+            // --- FEEDFORWARD ---
+            double vComp = DriveConstants.getVoltageCompFactor();
+            double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
+            omegaFF *= vComp;
 
-        // Apply voltage compensation to feedforward
-        vffWorld_x *= vComp;
-        vffWorld_y *= vComp;
-        omegaFF *= vComp;
+            // --- FEEDBACK ---
+            // ONLY heading feedback - ZERO position correction
+            double omegaFB = pidH.update(0, -headingError, 0, dt);
 
-        // --- FEEDBACK ---
-        // PID on longitudinal error (along path)
-        double vLongFB = pidLong.update(0, -longError, 0, dt);
+            // NO position correction during turns
+            vxRobot = 0.0;
+            vyRobot = 0.0;
 
-        // PID on lateral error (cross track)
-        double vLatFB = pidLat.update(0, -latError, 0, dt);
+            // Combine feedforward and feedback for omega
+            omegaCmd = omegaFF + omegaFB;
 
-        // PID on heading error
-        double omegaFB = pidH.update(0, -headingError, 0, dt);
+        } else {
+            // ==================== NORMAL PATH FOLLOWING MODE ====================
+            // Use Frenet frame (tangent/normal to path)
 
-        // Cross-track to heading coupling (helps robot point toward path)
-        omegaFB += kCrossTrackToOmega * latError;
+            // Decompose error into tangent/normal frame
+            double tx = ref.tangent.x;
+            double ty = ref.tangent.y;
+            double tMag = Math.hypot(tx, ty);
+            if (tMag < 1e-6) {
+                tx = Math.cos(ref.pose.heading);
+                ty = Math.sin(ref.pose.heading);
+            } else {
+                tx /= tMag;
+                ty /= tMag;
+            }
+            double nx = -ty;
+            double ny = tx;
 
-        // --- COMBINE FEEDFORWARD + FEEDBACK ---
-        // Feedback is in Frenet frame, convert to world
-        double vFB_world_x = vLongFB * tx + vLatFB * nx;
-        double vFB_world_y = vLongFB * ty + vLatFB * ny;
+            double longError = dx * tx + dy * ty;   // Along path
+            double latError = dx * nx + dy * ny;    // Cross track
 
-        // Total world-frame velocity command
-        double vxWorld = vffWorld_x + vFB_world_x;
-        double vyWorld = vffWorld_y + vFB_world_y;
-        double omegaCmd = omegaFF + omegaFB;
+            // Switch to recovery if too far from path
+            if (Math.abs(latError) > purePursuitThreshold) {
+                state = FollowState.RECOVERING;
+                wasInRecovery = true;
+                updateRecovery(currentPose, elapsed, dt);
+                return;
+            }
 
-        // --- CONVERT TO ROBOT FRAME ---
-        double cos = Math.cos(currentPose.heading);
-        double sin = Math.sin(currentPose.heading);
-        double vxRobot = vxWorld * cos + vyWorld * sin;
-        double vyRobot = -vxWorld * sin + vyWorld * cos;
+            // Store for telemetry
+            lastLongError = longError;
+            lastLatError = latError;
+            lastHeadingError = headingError;
+
+            // --- FEEDFORWARD ---
+            double vComp = DriveConstants.getVoltageCompFactor();
+
+            // Velocity feedforward (along path tangent in world frame)
+            double vffWorld_x = ref.v * tx * kFFVel;
+            double vffWorld_y = ref.v * ty * kFFVel;
+
+            // Acceleration feedforward
+            vffWorld_x += ref.a * tx * kFFAccel;
+            vffWorld_y += ref.a * ty * kFFAccel;
+
+            // Angular feedforward
+            double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
+
+            // Apply voltage compensation to feedforward
+            vffWorld_x *= vComp;
+            vffWorld_y *= vComp;
+            omegaFF *= vComp;
+
+            // --- FEEDBACK ---
+            // PID on longitudinal error (along path)
+            double vLongFB = pidLong.update(0, -longError, 0, dt);
+
+            // PID on lateral error (cross track)
+            double vLatFB = pidLat.update(0, -latError, 0, dt);
+
+            // PID on heading error
+            double omegaFB = pidH.update(0, -headingError, 0, dt);
+
+            // Cross-track to heading coupling (helps robot point toward path)
+            omegaFB += kCrossTrackToOmega * latError;
+
+            // --- COMBINE FEEDFORWARD + FEEDBACK ---
+            // Feedback is in Frenet frame, convert to world
+            double vFB_world_x = vLongFB * tx + vLatFB * nx;
+            double vFB_world_y = vLongFB * ty + vLatFB * ny;
+
+            // Total world-frame velocity command
+            double vxWorld = vffWorld_x + vFB_world_x;
+            double vyWorld = vffWorld_y + vFB_world_y;
+            omegaCmd = omegaFF + omegaFB;
+
+            // --- CONVERT TO ROBOT FRAME ---
+            double cos = Math.cos(currentPose.heading);
+            double sin = Math.sin(currentPose.heading);
+            vxRobot = vxWorld * cos + vyWorld * sin;
+            vyRobot = -vxWorld * sin + vyWorld * cos;
+        }
 
         // --- APPLY LIMITS ---
         // Slew rate limiting
@@ -533,8 +581,17 @@ public class TrajectoryFollower {
         double posError = Math.hypot(dx, dy);
         double headingError = normalizeAngle(settleTarget.heading - currentPose.heading);
 
+        // Detect if this was a turn-in-place trajectory (no significant translation)
+        // by checking if the end state had zero linear velocity
+        boolean wasTurnInPlace = (endState != null && Math.abs(endState.v) < TURN_IN_PLACE_VEL_THRESHOLD);
+
         // Check if settled
-        boolean posOK = posError < DriveConstants.END_POSITION_TOLERANCE;
+        // For turn-in-place, use looser position tolerance since position wasn't the goal
+        double posTolerance = wasTurnInPlace ?
+                DriveConstants.END_POSITION_TOLERANCE * 3.0 :  // 3x tolerance for turns
+                DriveConstants.END_POSITION_TOLERANCE;
+
+        boolean posOK = posError < posTolerance;
         boolean headOK = Math.abs(headingError) < DriveConstants.END_HEADING_TOLERANCE;
 
         if (posOK && headOK) {
@@ -564,12 +621,25 @@ public class TrajectoryFollower {
         double exRobot = dx * cos + dy * sin;
         double eyRobot = -dx * sin + dy * cos;
 
-        // Proportional control (softer gains for settling)
-        double kpSettle = 3.0;
-        double kpHeadSettle = 2.5;
+        // Use MUCH softer position gains for turn-in-place
+        // For turns, we only care about heading - position correction should be minimal
+        double kpSettle, kpHeadSettle, maxPosCorrection;
 
-        double vxCmd = clamp(kpSettle * exRobot, -15.0, 15.0);
-        double vyCmd = clamp(kpSettle * eyRobot, -15.0, 15.0);
+        if (wasTurnInPlace) {
+            // NO position correction for turn-in-place settling
+            // Only correct heading - position drift during turn is acceptable
+            kpSettle = 0.0;          // ZERO position correction
+            kpHeadSettle = 2.0;      // Slightly softer heading correction
+            maxPosCorrection = 0.0;  // No position correction at all
+        } else {
+            // Normal gains for path following
+            kpSettle = 3.0;
+            kpHeadSettle = 2.5;
+            maxPosCorrection = 15.0;
+        }
+
+        double vxCmd = clamp(kpSettle * exRobot, -maxPosCorrection, maxPosCorrection);
+        double vyCmd = clamp(kpSettle * eyRobot, -maxPosCorrection, maxPosCorrection);
         double omegaCmd = clamp(kpHeadSettle * headingError, -Math.toRadians(90), Math.toRadians(90));
 
         // Slew limit

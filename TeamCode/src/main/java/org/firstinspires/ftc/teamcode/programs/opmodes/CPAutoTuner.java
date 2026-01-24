@@ -220,11 +220,16 @@ public class CPAutoTuner extends LinearOpMode {
         lastTestName = "Turn (90° CCW)";
         localizer.setPose(0, 0, 0);
         sleep(50);
+        TrajectoryConstraints slowTurnConstraints = new TrajectoryConstraints(
+                50, 50, 60, 200, 60  // Normal translation constraints
+        );
+        slowTurnConstraints.maxAngVel = 1.5;      // Very slow: ~86°/sec
+        slowTurnConstraints.maxAngAccel = 1.5;
 
         Trajectory traj = TurnInPlace.buildRelative(
                 new Pose2d(0, 0, 0),
                 Math.toRadians(90),
-                getConstraints()
+                slowTurnConstraints
         );
 
         follower.setTrajectory(traj, getRuntime(), false);
@@ -329,6 +334,27 @@ public class CPAutoTuner extends LinearOpMode {
     // ==================== TELEMETRY ====================
     private void displayTelemetry() {
         Pose2d pose = localizer.getPose();
+
+        // Add these during the turn (in the main loop, showing continuously)
+        telemetry.addData("State", follower.getStateString());
+        telemetry.addData("Vx Cmd", "%.3f", follower.getVxCmd());
+        telemetry.addData("Vy Cmd", "%.3f", follower.getVyCmd());
+        telemetry.addData("Omega Cmd", "%.3f", follower.getOmegaCmd());
+        telemetry.addData("Long Err", "%.3f", follower.getLongError());
+        telemetry.addData("Lat Err", "%.3f", follower.getLatError());
+        telemetry.addData("Head Err", "%.3f", Math.toDegrees(follower.getHeadingError()));
+
+// Also add current pose
+        telemetry.addData("X", "%.2f", pose.x);
+        telemetry.addData("Y", "%.2f", pose.y);
+        telemetry.addData("Heading", "%.1f", Math.toDegrees(pose.heading));
+
+        telemetry.addData("Vx Cmd", "%.2f", follower.getVxCmd());
+        telemetry.addData("Vy Cmd", "%.2f", follower.getVyCmd());
+        telemetry.addData("Omega Cmd", "%.2f", follower.getOmegaCmd());
+        telemetry.addData("Long Error", "%.2f", follower.getLongError());
+        telemetry.addData("Lat Error", "%.2f", follower.getLatError());
+        telemetry.addData("State", follower.getStateString());
 
         telemetry.addLine("════════ CUSTOMPATHING TUNER ════════");
         telemetry.addData("Mode", mode);
