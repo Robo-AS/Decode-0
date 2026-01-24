@@ -17,19 +17,19 @@ public final class DriveConstants {
      * Distance between left and right wheel centers (inches).
      * Measure carefully - this affects turning accuracy!
      */
-    public static double TRACKWIDTH_IN = 14.0;
+    public static double TRACKWIDTH_IN = 13.78;
 
     /**
      * Distance between front and rear wheel centers (inches).
      * For square drivetrains, this equals TRACKWIDTH.
      */
-    public static double WHEELBASE_IN = 14.0;
+    public static double WHEELBASE_IN = 10.63;
 
     /**
      * Wheel radius in inches.
      * goBILDA mecanum wheels are typically 96mm (3.78") or 104mm (4.09") diameter.
      */
-    public static double WHEEL_RADIUS_IN = 1.89; // 96mm diameter / 2
+    public static double WHEEL_RADIUS_IN = 2.05; // 96mm diameter / 2
 
     // ==================== VELOCITY/ACCELERATION LIMITS ====================
 
@@ -95,7 +95,7 @@ public final class DriveConstants {
      * This is your motor's max RPM converted to wheel speed.
      * Example: 312 RPM motor, 96mm wheel = 312/60 * π * 3.78 ≈ 62 in/s
      */
-    public static double MAX_WHEEL_SPEED_IN_S = 60.0;
+    public static double MAX_WHEEL_SPEED_IN_S = 80.709;
 
     // ==================== PIDF GAINS ====================
     //

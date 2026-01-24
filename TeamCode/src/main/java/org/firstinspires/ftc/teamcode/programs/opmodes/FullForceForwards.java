@@ -28,14 +28,14 @@ import Pinpoint_Blocks_Driver.GoBildaPinpointDriver;
  * - LEFT_BUMPER: Reset pose to origin
  * - RIGHT_BUMPER: Emergency stop
  */
-@Autonomous(name = "CustomPathing Tuner", group = "Tuning")
-public class CPAutoTuner extends LinearOpMode {
+@Autonomous(name = "FullForceForwards", group = "Tuning")
+public class FullForceForwards extends LinearOpMode {
 
     // ==================== HARDWARE ====================
     private MecanumDrive drive;
     private GoBildaPinpointLocalizer localizer;
     private TrajectoryFollower follower;
-    private int change = 1;
+    ElapsedTime timer = new ElapsedTime();
 
     // ==================== TUNING STATE ====================
     private enum TuningMode {
@@ -135,27 +135,19 @@ public class CPAutoTuner extends LinearOpMode {
 
     // ==================== INPUT HANDLING ====================
     private void handleInput() {
-        if (gamepad1.start && change==-1)
-        {
-            change = 1;
-        }
-        if (gamepad1.back && change==1)
-        {
-            change  = -1;
-        }
-
         // Emergency stop
         if (gamepad1.right_bumper) {
-            follower.cancel();
-            drive.stop();
-            mode = TuningMode.IDLE;
-            return;
+            timer.reset();
+            drive.setPowers(1, 1, 1, 1);
+        }
+        if (timer.seconds()>=1.0)
+        {
+            drive.setPowers(0, 0, 0, 0);
         }
 
         // Reset pose
-        if (gamepad1.left_bumper && buttonTimer.seconds() > BUTTON_DEBOUNCE) {
-            localizer.setPose(0, 0, 0);
-            buttonTimer.reset();
+        if (gamepad1.left_bumper) {
+            drive.setPowers(0, 0, 0, 0);
         }
 
         // Only allow new tests when idle
@@ -206,7 +198,7 @@ public class CPAutoTuner extends LinearOpMode {
         sleep(50);
 
         Trajectory traj = new TrajectoryBuilder()
-                .line(new Vector2d(0, 0), new Vector2d(48*change, 0))
+                .line(new Vector2d(0, 0), new Vector2d(48, 0))
                 .buildTangentHeading(getConstraints(), 0.5, 0.0);
 
         follower.setTrajectory(traj, getRuntime(), false);
@@ -219,7 +211,7 @@ public class CPAutoTuner extends LinearOpMode {
         sleep(50);
 
         Trajectory traj = new TrajectoryBuilder()
-                .line(new Vector2d(0, 0), new Vector2d(0, 48*change))
+                .line(new Vector2d(0, 0), new Vector2d(0, 48))
                 .buildFixedHeading(getConstraints(), Math.toRadians(0.0));
 
         follower.setTrajectory(traj, getRuntime(), false);
@@ -238,7 +230,7 @@ public class CPAutoTuner extends LinearOpMode {
 
         Trajectory traj = TurnInPlace.buildRelative(
                 new Pose2d(0, 0, 0),
-                Math.toRadians(90*change),
+                Math.toRadians(90),
                 slowTurnConstraints
         );
 
@@ -344,8 +336,6 @@ public class CPAutoTuner extends LinearOpMode {
     // ==================== TELEMETRY ====================
     private void displayTelemetry() {
         Pose2d pose = localizer.getPose();
-
-        telemetry.addData("Change: ", change);
 
         // Add these during the turn (in the main loop, showing continuously)
         telemetry.addData("State", follower.getStateString());
