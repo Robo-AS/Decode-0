@@ -581,9 +581,20 @@ public class TrajectoryFollower {
         double posError = Math.hypot(dx, dy);
         double headingError = normalizeAngle(settleTarget.heading - currentPose.heading);
 
-        // Detect if this was a turn-in-place trajectory (no significant translation)
-        // by checking if the end state had zero linear velocity
-        boolean wasTurnInPlace = (endState != null && Math.abs(endState.v) < TURN_IN_PLACE_VEL_THRESHOLD);
+        // Detect if this was a turn-in-place trajectory
+        // Check if trajectory had minimal TRANSLATION (not velocity, since end velocity is always 0)
+        // A turn-in-place has the same start and end position
+        boolean wasTurnInPlace = false;
+        if (traj != null && !traj.allStates().isEmpty()) {
+            Trajectory.State startState = traj.allStates().get(0);
+            Trajectory.State endState = traj.allStates().get(traj.allStates().size() - 1);
+            double trajDistance = Math.hypot(
+                    endState.pose.x - startState.pose.x,
+                    endState.pose.y - startState.pose.y
+            );
+            // If trajectory moved less than 2 inches total, it's a turn-in-place
+            wasTurnInPlace = trajDistance < 2.0;
+        }
 
         // Check if settled
         // For turn-in-place, use looser position tolerance since position wasn't the goal
