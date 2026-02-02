@@ -2,15 +2,12 @@ package org.firstinspires.ftc.teamcode.programs.CustomPathingLibrary;
 
 /**
  * Advanced Trajectory Follower with:
- * - Frenet frame error decomposition (tangent/normal to path)
- * - SPECIAL HANDLING for turn-in-place (uses world frame when v≈0)
- * - Feedforward from trajectory (velocity, acceleration, curvature)
- * - Feedback PID on position and heading errors
- * - Pure pursuit fallback for recovery when far from path
- * - Adaptive lookahead based on velocity
- * - Robust settling with timeout protection
- * - Slew rate limiting for smooth commands
- * - Disturbance rejection and path re-acquisition
+ * - UNIFIED trajectory type detection (classified ONCE when set)
+ * - Proper handling for each trajectory type (translation, turn-in-place, combined)
+ * - Full self-correction capability (overshoot, undershoot, disturbances)
+ * - Frenet frame for path following, world frame for turns
+ * - Pure pursuit recovery when far off path
+ * - Robust settling with appropriate gains per trajectory type
  */
 public class TrajectoryFollower {
 
@@ -21,33 +18,42 @@ public class TrajectoryFollower {
         Pose2d getPose();
     }
 
+    // ==================== TRAJECTORY TYPE ====================
+
+    /**
+     * Classification of trajectory types - determined ONCE when trajectory is set.
+     * This ensures consistent handling throughout tracking and settling.
+     */
+    public enum TrajectoryType {
+        TURN_IN_PLACE,      // Pure rotation, no translation (< 2" movement)
+        TRANSLATION,        // Pure translation with minimal rotation
+        COMBINED            // Both significant translation and rotation
+    }
+
     // ==================== CONFIGURATION ====================
 
     // Feedforward coefficients
-    private double kFFVel = 1.0;      // Velocity feedforward gain
-    private double kFFAccel = 0.0;    // Acceleration feedforward gain
-    private double kFFOmega = 1.0;    // Angular velocity feedforward gain
-    private double kFFAlpha = 0.05;   // Angular acceleration feedforward gain (seconds)
+    private double kFFVel = 1.0;
+    private double kFFAccel = 0.0;
+    private double kFFOmega = 1.0;
+    private double kFFAlpha = 0.05;
 
     // Cross-coupling gains
-    private double kCrossTrackToOmega = 0.0;  // Convert lateral error to heading correction
+    private double kCrossTrackToOmega = 0.0;
 
     // Pure pursuit
     private double lookaheadBase = DriveConstants.LOOKAHEAD_DISTANCE;
     private double lookaheadMin = DriveConstants.MIN_LOOKAHEAD;
     private double lookaheadMax = DriveConstants.MAX_LOOKAHEAD;
-    private double lookaheadVelScale = 0.15;  // lookahead = base + vel * scale
+    private double lookaheadVelScale = 0.15;
 
     // Recovery thresholds
-    private double purePursuitThreshold = 6.0;  // Use pure pursuit if cross-track error exceeds this (in)
-    private double maxRecoverySpeed = 30.0;     // Max speed during recovery (in/s)
+    private double purePursuitThreshold = 6.0;
+    private double maxRecoverySpeed = 30.0;
 
-    // Turn-in-place detection threshold
-    private static final double TURN_IN_PLACE_VEL_THRESHOLD = 2.0;  // in/s
-
-    // Turn-in-place position holding gain reduction factor
-    // During turns, we use softer position gains to prevent overcorrection
-    private static final double TURN_POSITION_GAIN_FACTOR = 0.15;  // 15% of normal gains
+    // Trajectory type detection thresholds
+    private static final double MIN_TRANSLATION_DISTANCE = 2.0;  // inches
+    private static final double MIN_ROTATION_ANGLE = Math.toRadians(10);  // radians
 
     // ==================== COMPONENTS ====================
 
@@ -55,9 +61,9 @@ public class TrajectoryFollower {
     private final MecanumDrive drive;
 
     // PID controllers
-    private final AdvancedPIDF pidLong;  // Longitudinal (along-path) error
-    private final AdvancedPIDF pidLat;   // Lateral (cross-track) error
-    private final AdvancedPIDF pidH;     // Heading error
+    private final AdvancedPIDF pidLong;
+    private final AdvancedPIDF pidLat;
+    private final AdvancedPIDF pidH;
 
     // Slew rate limiters
     private final SlewRateLimiter slewVx;
@@ -67,13 +73,22 @@ public class TrajectoryFollower {
     // ==================== STATE ====================
 
     public Trajectory traj = null;
-    private double t0 = 0.0;           // Trajectory start time
+    private double t0 = 0.0;
     private double lastUpdateTime = 0.0;
+
+    // Trajectory classification (set ONCE when trajectory is assigned)
+    private TrajectoryType trajectoryType = TrajectoryType.TRANSLATION;
+
+    // Cached trajectory info
+    private Pose2d trajStartPose = null;
+    private Pose2d trajEndPose = null;
+    private double trajTotalDistance = 0.0;
+    private double trajTotalRotation = 0.0;
 
     // End state cache
     public Trajectory.State endState = null;
 
-    // Settle state machine
+    // State machine
     private enum FollowState { TRACKING, RECOVERING, SETTLING, FINISHED }
     private FollowState state = FollowState.FINISHED;
 
@@ -91,7 +106,7 @@ public class TrajectoryFollower {
         this.poseSupplier = supplier;
         this.drive = drive;
 
-        // Initialize PID controllers with tuned gains
+        // Initialize PID controllers
         pidLong = new AdvancedPIDF(DriveConstants.KP_X, DriveConstants.KI_X,
                 DriveConstants.KD_X, DriveConstants.KF_X);
         pidLat = new AdvancedPIDF(DriveConstants.KP_Y, DriveConstants.KI_Y,
@@ -108,11 +123,9 @@ public class TrajectoryFollower {
 
         // Configure integral limits and zones
         pidLong.setIntegralLimit(5.0);
-        pidLong.setIntegralZone(3.0);  // Only integrate when close
-
+        pidLong.setIntegralZone(3.0);
         pidLat.setIntegralLimit(5.0);
         pidLat.setIntegralZone(2.0);
-
         pidH.setIntegralLimit(2.0);
         pidH.setIntegralZone(Math.toRadians(15));
 
@@ -122,9 +135,9 @@ public class TrajectoryFollower {
         pidH.setOutputLimits(-DriveConstants.MAX_ANG_VEL_RAD_S, DriveConstants.MAX_ANG_VEL_RAD_S);
 
         // Configure error deadbands
-        pidLong.setErrorDeadband(0.1);  // in
-        pidLat.setErrorDeadband(0.1);   // in
-        pidH.setErrorDeadband(Math.toRadians(0.5));  // rad
+        pidLong.setErrorDeadband(0.1);
+        pidLat.setErrorDeadband(0.1);
+        pidH.setErrorDeadband(Math.toRadians(0.5));
 
         // Initialize slew rate limiters
         slewVx = new SlewRateLimiter(DriveConstants.MAX_DVX_IN_S2);
@@ -176,9 +189,6 @@ public class TrajectoryFollower {
         return this;
     }
 
-    /**
-     * Update PID gains dynamically (for live tuning).
-     */
     public void setGains(double kpX, double kiX, double kdX,
                          double kpY, double kiY, double kdY,
                          double kpH, double kiH, double kdH) {
@@ -191,10 +201,7 @@ public class TrajectoryFollower {
 
     /**
      * Set a new trajectory to follow.
-     *
-     * @param trajectory  The trajectory to follow
-     * @param nowSec  Current time in seconds
-     * @param alignToNearest  If true, find closest point on path and start there
+     * Automatically classifies the trajectory type for proper handling.
      */
     public void setTrajectory(Trajectory trajectory, double nowSec, boolean alignToNearest) {
         this.traj = trajectory;
@@ -215,9 +222,23 @@ public class TrajectoryFollower {
         wasInRecovery = false;
 
         if (trajectory != null && !trajectory.allStates().isEmpty()) {
-            // Cache end state
+            // Cache start and end states
+            Trajectory.State startState = trajectory.allStates().get(0);
             endState = trajectory.allStates().get(trajectory.allStates().size() - 1);
-            settleTarget = endState.pose;
+
+            trajStartPose = startState.pose;
+            trajEndPose = endState.pose;
+            settleTarget = trajEndPose;
+
+            // Calculate trajectory characteristics
+            trajTotalDistance = Math.hypot(
+                    trajEndPose.x - trajStartPose.x,
+                    trajEndPose.y - trajStartPose.y
+            );
+            trajTotalRotation = Math.abs(normalizeAngle(trajEndPose.heading - trajStartPose.heading));
+
+            // CLASSIFY TRAJECTORY TYPE (done ONCE, used everywhere)
+            trajectoryType = classifyTrajectory(trajTotalDistance, trajTotalRotation);
 
             // Determine start time
             if (alignToNearest) {
@@ -228,7 +249,28 @@ public class TrajectoryFollower {
             }
         } else {
             endState = null;
+            trajStartPose = null;
+            trajEndPose = null;
+            trajTotalDistance = 0;
+            trajTotalRotation = 0;
+            trajectoryType = TrajectoryType.TRANSLATION;
             t0 = nowSec;
+        }
+    }
+
+    /**
+     * Classify trajectory type based on total distance and rotation.
+     */
+    private TrajectoryType classifyTrajectory(double distance, double rotation) {
+        boolean hasTranslation = distance >= MIN_TRANSLATION_DISTANCE;
+        boolean hasRotation = rotation >= MIN_ROTATION_ANGLE;
+
+        if (!hasTranslation && hasRotation) {
+            return TrajectoryType.TURN_IN_PLACE;
+        } else if (hasTranslation && !hasRotation) {
+            return TrajectoryType.TRANSLATION;
+        } else {
+            return TrajectoryType.COMBINED;
         }
     }
 
@@ -247,58 +289,39 @@ public class TrajectoryFollower {
     public boolean isFinished(double nowSec) {
         if (traj == null) return true;
         if (state == FollowState.FINISHED) return true;
-
-        // Time-based completion
         double elapsed = nowSec - t0;
-        if (elapsed >= traj.duration() + DriveConstants.SETTLE_TIMEOUT) {
-            return true;
-        }
-
-        return false;
+        return elapsed >= traj.duration() + DriveConstants.SETTLE_TIMEOUT;
     }
 
-    /**
-     * Check if robot has settled at endpoint.
-     */
     public boolean isSettled() {
         return state == FollowState.FINISHED;
     }
 
     // ==================== MAIN UPDATE LOOP ====================
 
-    /**
-     * Call every control loop iteration.
-     */
     public void update(double nowSec) {
-        // Calculate dt
         double dt = Math.max(0.001, nowSec - lastUpdateTime);
         lastUpdateTime = nowSec;
 
-        // Handle null trajectory
         if (traj == null) {
             drive.setPowers(0, 0, 0, 0);
             state = FollowState.FINISHED;
             return;
         }
 
-        // Get current pose
         Pose2d currentPose = poseSupplier.getPose();
         double elapsed = nowSec - t0;
 
-        // State machine
         switch (state) {
             case TRACKING:
                 updateTracking(currentPose, elapsed, dt);
                 break;
-
             case RECOVERING:
                 updateRecovery(currentPose, elapsed, dt);
                 break;
-
             case SETTLING:
                 updateSettling(currentPose, nowSec, dt);
                 break;
-
             case FINISHED:
                 drive.setPowers(0, 0, 0, 0);
                 break;
@@ -308,151 +331,56 @@ public class TrajectoryFollower {
     // ==================== TRACKING STATE ====================
 
     private void updateTracking(Pose2d currentPose, double elapsed, double dt) {
-        // Get reference state from trajectory
         Trajectory.State ref = traj.sample(elapsed);
 
         // Calculate errors in world frame
         double dx = ref.pose.x - currentPose.x;
         double dy = ref.pose.y - currentPose.y;
-        double distanceError = Math.hypot(dx, dy);
-
-        // Heading error (shortest angle)
         double headingError = normalizeAngle(ref.pose.heading - currentPose.heading);
-
-        // ============================================================
-        // DETECT TURN-IN-PLACE MODE
-        // When ref.v is near zero, we're doing a turn-in-place.
-        // In this case, use WORLD FRAME for position correction,
-        // not the rotating Frenet frame.
-        // ============================================================
-        boolean isTurnInPlace = Math.abs(ref.v) < TURN_IN_PLACE_VEL_THRESHOLD;
 
         double vxRobot, vyRobot, omegaCmd;
 
-        if (isTurnInPlace) {
-            // ==================== TURN-IN-PLACE MODE ====================
-            // ONLY correct heading - NO position correction at all
-            // Position drift during turns is acceptable and will be fixed after the turn
+        // Handle based on trajectory type
+        switch (trajectoryType) {
+            case TURN_IN_PLACE:
+                // TURN IN PLACE: Only heading control, no position correction
+                lastLongError = dx;
+                lastLatError = dy;
+                lastHeadingError = headingError;
 
-            // Store errors for telemetry (in world frame)
-            lastLongError = dx;
-            lastLatError = dy;
-            lastHeadingError = headingError;
+                double vComp = DriveConstants.getVoltageCompFactor();
+                double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
+                omegaFF *= vComp;
 
-            // --- FEEDFORWARD ---
-            double vComp = DriveConstants.getVoltageCompFactor();
-            double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
-            omegaFF *= vComp;
+                double omegaFB = pidH.update(0, -headingError, 0, dt);
 
-            // --- FEEDBACK ---
-            // ONLY heading feedback - ZERO position correction
-            double omegaFB = pidH.update(0, -headingError, 0, dt);
+                // NO position correction during turn
+                vxRobot = 0.0;
+                vyRobot = 0.0;
+                omegaCmd = omegaFF + omegaFB;
+                break;
 
-            // NO position correction during turns
-            vxRobot = 0.0;
-            vyRobot = 0.0;
-
-            // Combine feedforward and feedback for omega
-            omegaCmd = omegaFF + omegaFB;
-
-        } else {
-            // ==================== NORMAL PATH FOLLOWING MODE ====================
-            // Use Frenet frame (tangent/normal to path)
-
-            // Decompose error into tangent/normal frame
-            double tx = ref.tangent.x;
-            double ty = ref.tangent.y;
-            double tMag = Math.hypot(tx, ty);
-            if (tMag < 1e-6) {
-                tx = Math.cos(ref.pose.heading);
-                ty = Math.sin(ref.pose.heading);
-            } else {
-                tx /= tMag;
-                ty /= tMag;
-            }
-            double nx = -ty;
-            double ny = tx;
-
-            double longError = dx * tx + dy * ty;   // Along path
-            double latError = dx * nx + dy * ny;    // Cross track
-
-            // Switch to recovery if too far from path
-            if (Math.abs(latError) > purePursuitThreshold) {
-                state = FollowState.RECOVERING;
-                wasInRecovery = true;
-                updateRecovery(currentPose, elapsed, dt);
-                return;
-            }
-
-            // Store for telemetry
-            lastLongError = longError;
-            lastLatError = latError;
-            lastHeadingError = headingError;
-
-            // --- FEEDFORWARD ---
-            double vComp = DriveConstants.getVoltageCompFactor();
-
-            // Velocity feedforward (along path tangent in world frame)
-            double vffWorld_x = ref.v * tx * kFFVel;
-            double vffWorld_y = ref.v * ty * kFFVel;
-
-            // Acceleration feedforward
-            vffWorld_x += ref.a * tx * kFFAccel;
-            vffWorld_y += ref.a * ty * kFFAccel;
-
-            // Angular feedforward
-            double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
-
-            // Apply voltage compensation to feedforward
-            vffWorld_x *= vComp;
-            vffWorld_y *= vComp;
-            omegaFF *= vComp;
-
-            // --- FEEDBACK ---
-            // PID on longitudinal error (along path)
-            double vLongFB = pidLong.update(0, -longError, 0, dt);
-
-            // PID on lateral error (cross track)
-            double vLatFB = pidLat.update(0, -latError, 0, dt);
-
-            // PID on heading error
-            double omegaFB = pidH.update(0, -headingError, 0, dt);
-
-            // Cross-track to heading coupling (helps robot point toward path)
-            omegaFB += kCrossTrackToOmega * latError;
-
-            // --- COMBINE FEEDFORWARD + FEEDBACK ---
-            // Feedback is in Frenet frame, convert to world
-            double vFB_world_x = vLongFB * tx + vLatFB * nx;
-            double vFB_world_y = vLongFB * ty + vLatFB * ny;
-
-            // Total world-frame velocity command
-            double vxWorld = vffWorld_x + vFB_world_x;
-            double vyWorld = vffWorld_y + vFB_world_y;
-            omegaCmd = omegaFF + omegaFB;
-
-            // --- CONVERT TO ROBOT FRAME ---
-            double cos = Math.cos(currentPose.heading);
-            double sin = Math.sin(currentPose.heading);
-            vxRobot = vxWorld * cos + vyWorld * sin;
-            vyRobot = -vxWorld * sin + vyWorld * cos;
+            case TRANSLATION:
+            case COMBINED:
+            default:
+                // TRANSLATION or COMBINED: Full position and heading control
+                vxRobot = updateTranslationTracking(currentPose, ref, dx, dy, headingError, dt);
+                vyRobot = lastVyCmd;  // Set by updateTranslationTracking
+                omegaCmd = lastOmegaCmd;  // Set by updateTranslationTracking
+                break;
         }
 
-        // --- APPLY LIMITS ---
-        // Slew rate limiting
+        // Apply limits
         vxRobot = slewVx.filter(vxRobot, dt);
         vyRobot = slewVy.filter(vyRobot, dt);
         omegaCmd = slewOmega.filter(omegaCmd, dt);
 
-        // Velocity magnitude limiting
         double vMag = Math.hypot(vxRobot, vyRobot);
         if (vMag > DriveConstants.MAX_VEL_IN_S) {
             double scale = DriveConstants.MAX_VEL_IN_S / vMag;
             vxRobot *= scale;
             vyRobot *= scale;
         }
-
-        // Angular velocity limiting
         omegaCmd = clamp(omegaCmd, -DriveConstants.MAX_ANG_VEL_RAD_S, DriveConstants.MAX_ANG_VEL_RAD_S);
 
         // Store for telemetry
@@ -460,7 +388,7 @@ public class TrajectoryFollower {
         lastVyCmd = vyRobot;
         lastOmegaCmd = omegaCmd;
 
-        // --- OUTPUT TO DRIVE ---
+        // Output to drive
         double[] powers = new double[4];
         MecanumKinematics.toWheelPowersPrioritized(
                 vxRobot, vyRobot, omegaCmd,
@@ -469,36 +397,107 @@ public class TrajectoryFollower {
         );
         drive.setPowers(powers[0], powers[1], powers[2], powers[3]);
 
-        // --- CHECK FOR SETTLING ---
-        boolean pastEnd = elapsed >= traj.duration();
-        if (pastEnd) {
+        // Check for settling
+        if (elapsed >= traj.duration()) {
             state = FollowState.SETTLING;
             settleStartTime = lastUpdateTime;
         }
     }
 
-    // ==================== RECOVERY STATE (PURE PURSUIT) ====================
+    /**
+     * Handle translation tracking (used for TRANSLATION and COMBINED types).
+     * Returns vxRobot; also sets lastVyCmd and lastOmegaCmd.
+     */
+    private double updateTranslationTracking(Pose2d currentPose, Trajectory.State ref,
+                                             double dx, double dy, double headingError, double dt) {
+        // Decompose error into Frenet frame (tangent/normal)
+        double tx = ref.tangent.x;
+        double ty = ref.tangent.y;
+        double tMag = Math.hypot(tx, ty);
+        if (tMag < 1e-6) {
+            tx = Math.cos(ref.pose.heading);
+            ty = Math.sin(ref.pose.heading);
+        } else {
+            tx /= tMag;
+            ty /= tMag;
+        }
+        double nx = -ty;
+        double ny = tx;
+
+        double longError = dx * tx + dy * ty;
+        double latError = dx * nx + dy * ny;
+
+        // Check for recovery mode
+        if (Math.abs(latError) > purePursuitThreshold) {
+            state = FollowState.RECOVERING;
+            wasInRecovery = true;
+            return 0;
+        }
+
+        lastLongError = longError;
+        lastLatError = latError;
+        lastHeadingError = headingError;
+
+        // Feedforward
+        double vComp = DriveConstants.getVoltageCompFactor();
+        double vffWorld_x = ref.v * tx * kFFVel + ref.a * tx * kFFAccel;
+        double vffWorld_y = ref.v * ty * kFFVel + ref.a * ty * kFFAccel;
+        double omegaFF = ref.omega * kFFOmega + ref.alpha * kFFAlpha;
+
+        vffWorld_x *= vComp;
+        vffWorld_y *= vComp;
+        omegaFF *= vComp;
+
+        // Feedback
+        double vLongFB = pidLong.update(0, -longError, 0, dt);
+        double vLatFB = pidLat.update(0, -latError, 0, dt);
+        double omegaFB = pidH.update(0, -headingError, 0, dt);
+        omegaFB += kCrossTrackToOmega * latError;
+
+        // Combine
+        double vFB_world_x = vLongFB * tx + vLatFB * nx;
+        double vFB_world_y = vLongFB * ty + vLatFB * ny;
+
+        double vxWorld = vffWorld_x + vFB_world_x;
+        double vyWorld = vffWorld_y + vFB_world_y;
+        double omegaCmd = omegaFF + omegaFB;
+
+        // Convert to robot frame
+        double cos = Math.cos(currentPose.heading);
+        double sin = Math.sin(currentPose.heading);
+        double vxRobot = vxWorld * cos + vyWorld * sin;
+        double vyRobot = -vxWorld * sin + vyWorld * cos;
+
+        lastVyCmd = vyRobot;
+        lastOmegaCmd = omegaCmd;
+
+        return vxRobot;
+    }
+
+    // ==================== RECOVERY STATE ====================
 
     private void updateRecovery(Pose2d currentPose, double elapsed, double dt) {
-        // Find closest point on trajectory
-        double closestT = traj.closestTimeTo(currentPose);
+        // Turn-in-place trajectories don't use recovery mode
+        // If disturbed during turn, just continue turning
+        if (trajectoryType == TrajectoryType.TURN_IN_PLACE) {
+            state = FollowState.TRACKING;
+            return;
+        }
 
-        // Calculate adaptive lookahead
+        double closestT = traj.closestTimeTo(currentPose);
         Trajectory.State closestState = traj.sample(closestT);
+
         double lookahead = lookaheadBase + closestState.v * lookaheadVelScale;
         lookahead = clamp(lookahead, lookaheadMin, lookaheadMax);
 
-        // Get lookahead point
         double lookaheadT = Math.min(closestT + lookahead / Math.max(1, closestState.v), traj.duration());
         Trajectory.State targetState = traj.sample(lookaheadT);
 
-        // Vector to target
         double dx = targetState.pose.x - currentPose.x;
         double dy = targetState.pose.y - currentPose.y;
         double dist = Math.hypot(dx, dy);
 
-        // Check if we've rejoined the path
-        // Project error onto path normal
+        // Check if rejoined path
         double tx = targetState.tangent.x;
         double ty = targetState.tangent.y;
         double tMag = Math.hypot(tx, ty);
@@ -507,50 +506,38 @@ public class TrajectoryFollower {
         double latError = dx * nx + dy * ny;
 
         if (Math.abs(latError) < purePursuitThreshold * 0.5) {
-            // Rejoined path, return to tracking
             state = FollowState.TRACKING;
-            // Re-sync time to current path position
             t0 = lastUpdateTime - closestT;
             return;
         }
 
-        // Pure pursuit: drive toward target point
+        // Pure pursuit toward target
         double targetHeading = Math.atan2(dy, dx);
         double headingError = normalizeAngle(targetHeading - currentPose.heading);
+        double endHeadingError = normalizeAngle(targetState.pose.heading - currentPose.heading);
 
-        // Desired heading for target
-        double desiredEndHeading = targetState.pose.heading;
-        double endHeadingError = normalizeAngle(desiredEndHeading - currentPose.heading);
-
-        // Speed proportional to distance, capped
         double speed = Math.min(maxRecoverySpeed, dist * 2.0);
-        speed = Math.max(5.0, speed);  // Minimum recovery speed
+        speed = Math.max(5.0, speed);
 
-        // World-frame velocity toward target
         double vxWorld = (dist > 0.1) ? (dx / dist) * speed : 0;
         double vyWorld = (dist > 0.1) ? (dy / dist) * speed : 0;
 
-        // Angular velocity to correct heading
         double omegaCmd = pidH.update(0, -headingError * 0.5 - endHeadingError * 0.5, 0, dt);
 
-        // Convert to robot frame
         double cos = Math.cos(currentPose.heading);
         double sin = Math.sin(currentPose.heading);
         double vxRobot = vxWorld * cos + vyWorld * sin;
         double vyRobot = -vxWorld * sin + vyWorld * cos;
 
-        // Apply slew limiting
         vxRobot = slewVx.filter(vxRobot, dt);
         vyRobot = slewVy.filter(vyRobot, dt);
         omegaCmd = slewOmega.filter(omegaCmd, dt);
 
-        // Store for telemetry
         lastVxCmd = vxRobot;
         lastVyCmd = vyRobot;
         lastOmegaCmd = omegaCmd;
         lastLatError = latError;
 
-        // Output
         double[] powers = new double[4];
         MecanumKinematics.toWheelPowersPrioritized(
                 vxRobot, vyRobot, omegaCmd,
@@ -559,7 +546,6 @@ public class TrajectoryFollower {
         );
         drive.setPowers(powers[0], powers[1], powers[2], powers[3]);
 
-        // Check for timeout
         if (elapsed > traj.duration() + DriveConstants.SETTLE_TIMEOUT) {
             state = FollowState.SETTLING;
             settleStartTime = lastUpdateTime;
@@ -575,32 +561,29 @@ public class TrajectoryFollower {
             return;
         }
 
-        // Calculate errors to target
         double dx = settleTarget.x - currentPose.x;
         double dy = settleTarget.y - currentPose.y;
         double posError = Math.hypot(dx, dy);
         double headingError = normalizeAngle(settleTarget.heading - currentPose.heading);
 
-        // Detect if this was a turn-in-place trajectory
-        // Check if trajectory had minimal TRANSLATION (not velocity, since end velocity is always 0)
-        // A turn-in-place has the same start and end position
-        boolean wasTurnInPlace = false;
-        if (traj != null && !traj.allStates().isEmpty()) {
-            Trajectory.State startState = traj.allStates().get(0);
-            Trajectory.State endState = traj.allStates().get(traj.allStates().size() - 1);
-            double trajDistance = Math.hypot(
-                    endState.pose.x - startState.pose.x,
-                    endState.pose.y - startState.pose.y
-            );
-            // If trajectory moved less than 2 inches total, it's a turn-in-place
-            wasTurnInPlace = trajDistance < 2.0;
+        // SAFETY: If pushed very far off target during settling, go back to recovery
+        // (except for turn-in-place which doesn't care about position)
+        if (trajectoryType != TrajectoryType.TURN_IN_PLACE && posError > purePursuitThreshold * 2) {
+            state = FollowState.RECOVERING;
+            wasInRecovery = true;
+            return;
         }
 
-        // Check if settled
-        // For turn-in-place, use looser position tolerance since position wasn't the goal
-        double posTolerance = wasTurnInPlace ?
-                DriveConstants.END_POSITION_TOLERANCE * 3.0 :  // 3x tolerance for turns
-                DriveConstants.END_POSITION_TOLERANCE;
+        // Tolerances based on trajectory type
+        double posTolerance;
+        switch (trajectoryType) {
+            case TURN_IN_PLACE:
+                posTolerance = DriveConstants.END_POSITION_TOLERANCE * 5.0;  // Very loose for turns
+                break;
+            default:
+                posTolerance = DriveConstants.END_POSITION_TOLERANCE;
+                break;
+        }
 
         boolean posOK = posError < posTolerance;
         boolean headOK = Math.abs(headingError) < DriveConstants.END_HEADING_TOLERANCE;
@@ -613,60 +596,55 @@ public class TrajectoryFollower {
                 return;
             }
         } else {
-            // Reset settle timer if we leave the window
             settleStartTime = nowSec;
         }
 
-        // Check for timeout
-        double totalSettleTime = nowSec - settleStartTime;
-        if (totalSettleTime > DriveConstants.SETTLE_TIMEOUT) {
+        if ((nowSec - settleStartTime) > DriveConstants.SETTLE_TIMEOUT) {
             state = FollowState.FINISHED;
             drive.setPowers(0, 0, 0, 0);
             return;
         }
 
-        // P control to settle at target
-        // Convert world error to robot frame
+        // Convert to robot frame
         double cos = Math.cos(currentPose.heading);
         double sin = Math.sin(currentPose.heading);
         double exRobot = dx * cos + dy * sin;
         double eyRobot = -dx * sin + dy * cos;
 
-        // Use MUCH softer position gains for turn-in-place
-        // For turns, we only care about heading - position correction should be minimal
+        // Gains based on trajectory type
         double kpSettle, kpHeadSettle, maxPosCorrection;
-
-        if (wasTurnInPlace) {
-            // NO position correction for turn-in-place settling
-            // Only correct heading - position drift during turn is acceptable
-            kpSettle = 0.0;          // ZERO position correction
-            kpHeadSettle = 2.0;      // Slightly softer heading correction
-            maxPosCorrection = 0.0;  // No position correction at all
-        } else {
-            // Normal gains for path following
-            kpSettle = 3.0;
-            kpHeadSettle = 2.5;
-            maxPosCorrection = 15.0;
+        switch (trajectoryType) {
+            case TURN_IN_PLACE:
+                // Turn: NO position correction, only heading
+                kpSettle = 0.0;
+                kpHeadSettle = 2.0;
+                maxPosCorrection = 0.0;
+                break;
+            case TRANSLATION:
+            case COMBINED:
+            default:
+                // Translation: Full correction
+                kpSettle = 3.0;
+                kpHeadSettle = 2.5;
+                maxPosCorrection = 15.0;
+                break;
         }
 
         double vxCmd = clamp(kpSettle * exRobot, -maxPosCorrection, maxPosCorrection);
         double vyCmd = clamp(kpSettle * eyRobot, -maxPosCorrection, maxPosCorrection);
         double omegaCmd = clamp(kpHeadSettle * headingError, -Math.toRadians(90), Math.toRadians(90));
 
-        // Slew limit
         vxCmd = slewVx.filter(vxCmd, dt);
         vyCmd = slewVy.filter(vyCmd, dt);
         omegaCmd = slewOmega.filter(omegaCmd, dt);
 
-        // Store for telemetry
         lastVxCmd = vxCmd;
         lastVyCmd = vyCmd;
         lastOmegaCmd = omegaCmd;
-        lastLatError = eyRobot;
         lastLongError = exRobot;
+        lastLatError = eyRobot;
         lastHeadingError = headingError;
 
-        // Output
         double[] powers = new double[4];
         MecanumKinematics.toWheelPowersPrioritized(
                 vxCmd, vyCmd, omegaCmd,
@@ -690,18 +668,16 @@ public class TrajectoryFollower {
 
     // ==================== TELEMETRY GETTERS ====================
 
-    public double getElapsed(double nowSec) {
-        return nowSec - t0;
-    }
+    public double getElapsed(double nowSec) { return nowSec - t0; }
 
     public Trajectory.State getCurrentRef(double nowSec) {
         if (traj == null) return null;
         return traj.sample(nowSec - t0);
     }
 
-    public String getStateString() {
-        return state.toString();
-    }
+    public String getStateString() { return state.toString(); }
+    public String getTrajectoryTypeString() { return trajectoryType.toString(); }
+    public TrajectoryType getTrajectoryType() { return trajectoryType; }
 
     public double getLongError() { return lastLongError; }
     public double getLatError() { return lastLatError; }
