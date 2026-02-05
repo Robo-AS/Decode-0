@@ -10,7 +10,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.programs.utils.RTPAxon;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-
 @Config
 @TeleOp(name = "Turret PID Tuning", group = "Tuning")
 public class TurretPIDTuning extends OpMode {
@@ -24,30 +23,41 @@ public class TurretPIDTuning extends OpMode {
     public static double targetAngle = 0.0;
 
     FtcDashboard dashboard;
+    private double lastP = 0.0, lastI = 0.0, lastD = 0.0;
 
     @Override
     public void init() {
         robot.initializeHardware(hardwareMap);
         turret = robot.axon;
         turret.initialize();
+
+        turret.updatePIDCoeffs(kP, kI, kD);
+        lastP = kP;
+        lastI = kI;
+        lastD = kD;
+
         dashboard = FtcDashboard.getInstance();
     }
 
     @Override
     public void loop() {
-        turret.updatePIDCoeffs(kP, kI, kD);
+        if (kP != lastP || kI != lastI || kD != lastD) {
+            turret.updatePIDCoeffs(kP, kI, kD);
+            lastP = kP;
+            lastI = kI;
+            lastD = kD;
+        }
 
         turret.setTargetRotation(targetAngle);
-
         turret.update();
 
         TelemetryPacket packet = new TelemetryPacket();
-        packet.put("currentAngle", turret.getTotalRotation());
+        packet.put("currentAngle", turret.getCurrentAngle());
         packet.put("targetAngle", targetAngle);
-        packet.put("power", turret.getPower());
+        packet.put("error", targetAngle - turret.getCurrentAngle());
         dashboard.sendTelemetryPacket(packet);
 
-        telemetry.addData("Current Angle", turret.getTotalRotation());
+        telemetry.addData("Current Angle", turret.getCurrentAngle());
         telemetry.addData("Target Angle", targetAngle);
         telemetry.addData("Power", turret.getPower());
         telemetry.update();

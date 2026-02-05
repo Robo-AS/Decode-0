@@ -17,12 +17,17 @@ import com.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.blockServoBarrier;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.freeServoBarrier;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
+import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
+
 @Config
 @TeleOp(name = "Velocity Test", group = "OpModes")
 public class SettingVelocityTest extends CommandOpMode {
@@ -30,7 +35,10 @@ public class SettingVelocityTest extends CommandOpMode {
     private GamepadEx gamepadEx;
     public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
     public Pose3D botpose;
-    public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double downY = 0, upY = 0.8, maxDistance = 0.004, minDistance = 0.2704;
+
+    double exponentialJoystickCoord_X_TURN, exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y;
+    public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
     FtcDashboard dashboard;
 
     public static double kP = 0.002;
@@ -60,7 +68,7 @@ public class SettingVelocityTest extends CommandOpMode {
 
         robot.limelight.start();
         robot.limelight.setPollRateHz(100);
-        robot.limelight.pipelineSwitch(1);
+        robot.limelight.pipelineSwitch(0);
 
         feedforward = new SimpleMotorFeedforward(kS, kV);
         pid_Flywheel = new PIDFController(kP, kI, kD, 0);
@@ -71,25 +79,39 @@ public class SettingVelocityTest extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new setServoYPosition(0.5));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new startIntake(1),
-                new WaitCommand(2000),
-                new stopIntake()
+                new startIntakeFront(1),
+                new startIntakeBack(1),
+                new WaitCommand(1500),
+                new stopIntakeFront(),
+                new stopIntakeBack()
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new setServoLauncherPosition(1),
-                new WaitCommand(250),
-                new setServoLauncherPosition(0)
+                new freeServoBarrier(),
+                new WaitCommand(100),
+                new startIntakeFront(1),
+                new startIntakeBack(1),
+                new WaitCommand(1500),
+                new stopIntakeFront(),
+                new stopIntakeBack(),
+                new blockServoBarrier()
         ));
+
     }
 
     @Override
     public void run() {
         CommandScheduler.getInstance().run();
 
+        exponentialJoystickCoord_X_TURN = (Math.pow(gamepad1.right_stick_x, 3) + liniarCoefTerm * gamepad1.right_stick_x) * constantTerm;
+        exponentialJoystickCoord_X_FORWARD = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
+        exponentialJoystickCoord_Y = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
+
+        double turnSpeed =  -exponentialJoystickCoord_X_TURN;
+        PoseRR drive = new PoseRR(-exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y, turnSpeed);
+        robot.mecanum.set(drive, 0);
+
         LLResult result = robot.limelight.getLatestResult();
-        YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
-        robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
         ta = result.getTa();
         ty = result.getTy();
@@ -102,6 +124,8 @@ public class SettingVelocityTest extends CommandOpMode {
 
         pos = getServoYPositionFromDistance(y_distance);
         robot.servoY.setPosition(pos);
+
+        robot.turret.loop(20, false);
 
         currentVelocity = flyWheel1.getVelocity();
 
@@ -122,17 +146,17 @@ public class SettingVelocityTest extends CommandOpMode {
 
     public double getServoYPositionFromDistance(double distance)
     {
-        if(distance < maxDistance) return 0.6;
-        if(distance > minDistance) return 0.2;
+        if(distance < maxDistance) return 0.8;
+        if(distance > minDistance) return 0;
 
         double ratio = (minDistance - distance) / (minDistance - maxDistance);
         return downY + ratio * (upY - downY);
     }
 }
 
-//0.027 3100
-//0.0668 1900
-//0.09 1700
-//0.182 1500
-//0.0562 1950
-//0.0454 2800
+//0.1507 1700
+//0.0452 2200
+//0.2041
+//0.1133 1900
+//0.0782 2000
+//0.065 2000

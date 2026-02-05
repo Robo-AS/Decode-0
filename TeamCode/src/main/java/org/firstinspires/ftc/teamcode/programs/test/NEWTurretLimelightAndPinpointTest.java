@@ -17,10 +17,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
-@TeleOp(name = "Pinpoint and Limelight Turret Test", group = "OpModes")
-public class PinpointAndLimelightTest extends CommandOpMode {
+@TeleOp(name = "!!NEW Pinpoint and Limelight Turret Test!!", group = "OpModes")
+public class NEWTurretLimelightAndPinpointTest extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -39,8 +40,8 @@ public class PinpointAndLimelightTest extends CommandOpMode {
         CommandScheduler.getInstance().reset();
 
         gamepadEx = new GamepadEx(gamepad1);
-        robot.initializeHardware(hardwareMap);
-        robot.initialize();
+        robot.initializeTurretHardware(hardwareMap);
+        robot.initializeTurret();
 
         robot.limelight.start();
         robot.limelight.setPollRateHz(100);
@@ -78,47 +79,7 @@ public class PinpointAndLimelightTest extends CommandOpMode {
 
         robot.turret.loop(20, false);
 
-        if(result != null && result.isValid()) {
-            botpose = result.getBotpose_MT2();
-            ta = result.getTa();
-            tx = result.getTx();
-            ty = result.getTy();
-
-            y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-            x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-            distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
-            targetAngle = tx;
-
-            boolean seesTargetID = false;
-
-            for(LLResultTypes.FiducialResult apriltag : result.getFiducialResults()){
-                if(apriltag.getFiducialId() == 20){
-                    seesTargetID = true;
-                    break;
-                }
-            }
-
-            if(seesTargetID){
-                robot.flywheel.loop(distance);
-                pos = getServoYPositionFromDistance(y_distance);
-                robot.servoY.setPosition(pos);
-            }
-            else{
-                robot.flywheel.loop(0.0627);
-            }
-
-            telemetry.addData("Distance", distance);
-            telemetry.addData("Velocity", -robot.launcher1.getVelocity());
-            telemetry.update();
-        }
-    }
-
-    public double getServoYPositionFromDistance(double distance)
-    {
-        if(distance < maxDistance) return 0.6;
-        if(distance > minDistance) return 0.1;
-
-        double ratio = (minDistance - distance) / (minDistance - maxDistance);
-        return downY + ratio * (upY - downY);
+        telemetry.addData("Target Angle", TurretCR.targetAngle);
+        telemetry.update();
     }
 }

@@ -15,9 +15,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.setServoLauncherPosition;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.blockServoBarrier;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.freeServoBarrier;
+import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.reloadCurrentPipeline;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 @TeleOp(name = "Drive BLUE", group = "OpModes")
@@ -30,7 +35,7 @@ public class driveBlue extends CommandOpMode {
 
     public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
     public Pose3D botpose;
-    public double downY = 0.1, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double downY = 0, upY = 0.8, maxDistance = 0.004, minDistance = 0.2704;
 
     public double CAMERA_ANGLE = 18;
     public double CAMERA_HEIGHT = 0.4;
@@ -45,25 +50,36 @@ public class driveBlue extends CommandOpMode {
 
         robot.limelight.start();
         robot.limelight.setPollRateHz(100);
-        robot.limelight.pipelineSwitch(1);
+        robot.limelight.pipelineSwitch(0);
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new startIntake(1),
+                new startIntakeFront(1),
+                new startIntakeBack(1),
                 new WaitCommand(1500),
-                new stopIntake()
+                new stopIntakeFront(),
+                new stopIntakeBack()
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(new SequentialCommandGroup(
-                new startIntake(-1),
+                new startIntakeFront(-1),
+                new startIntakeBack(-1),
                 new WaitCommand(300),
-                new stopIntake()
+                new stopIntakeFront(),
+                new stopIntakeBack()
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new setServoLauncherPosition(0.45), //AICI RARES
-                new WaitCommand(300),
-                new setServoLauncherPosition(0) //AICI RARES
+                new freeServoBarrier(),
+                new WaitCommand(100),
+                new startIntakeFront(1),
+                new startIntakeBack(1),
+                new WaitCommand(1500),
+                new stopIntakeFront(),
+                new stopIntakeBack(),
+                new blockServoBarrier()
         ));
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new reloadCurrentPipeline());
     }
 
     @Override
@@ -81,10 +97,8 @@ public class driveBlue extends CommandOpMode {
         robot.pinpoint.update();
 
         LLResult result = robot.limelight.getLatestResult();
-        YawPitchRollAngles orientation = robot.imu.getRobotYawPitchRollAngles();
-        robot.limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
 
-        robot.turret.loop(20);
+        robot.turret.loop(20, false);
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
@@ -117,14 +131,15 @@ public class driveBlue extends CommandOpMode {
 
             telemetry.addData("Distance", distance);
             telemetry.addData("Velocity", -robot.launcher1.getVelocity());
+          //  telemetry.addData("Target Angle", TurretCR.targetAngle);
             telemetry.update();
         }
     }
 
     public double getServoYPositionFromDistance(double distance)
     {
-        if(distance < maxDistance) return 0.6;
-        if(distance > minDistance) return 0.1;
+        if(distance < maxDistance) return 0.8;
+        if(distance > minDistance) return 0;
 
         double ratio = (minDistance - distance) / (minDistance - maxDistance);
         return downY + ratio * (upY - downY);

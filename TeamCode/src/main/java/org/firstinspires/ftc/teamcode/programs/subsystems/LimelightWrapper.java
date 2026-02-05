@@ -26,7 +26,7 @@ public class LimelightWrapper extends SubsystemBase {
     private final double cameraHeightM = 0.30;
 
     public void useAprilTagPipeline() {
-        limelight.pipelineSwitch(1);
+        limelight.pipelineSwitch(0);
         currentPipeline = 1;
     }
 
@@ -95,14 +95,6 @@ public class LimelightWrapper extends SubsystemBase {
             tagId = tag.getFiducialId();
             tagTx = tag.getTargetXDegreesNoCrosshair();
             tagTy = tag.getTargetYDegreesNoCrosshair();
-        }
-
-        if(currentPipeline == 0) {
-            Robot.getInstance().telemetry.addData("number of artifacts", artifactList.size());
-            Robot.getInstance().telemetry.update();
-        } else if(currentPipeline == 1) {
-            Robot.getInstance().telemetry.addData("AprilTag id ", tagId);
-            Robot.getInstance().telemetry.update();
         }
     }
 

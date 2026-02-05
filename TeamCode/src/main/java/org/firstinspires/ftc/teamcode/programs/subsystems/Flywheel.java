@@ -12,11 +12,11 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class Flywheel extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
-    public static double kP = 0.002;
+    public static double kP = 0.0075;
     public static double kI = 0;
-    public static double kD = 0.00001;
-    public static double kS = 0.0435;
-    public static double kV = 0.000275;
+    public static double kD = 0.0000025;
+    public static double kS = 0.07;
+    public static double kV = 0.00025;
 
     public InterpLUT vel = new InterpLUT();
 
@@ -37,7 +37,7 @@ public class Flywheel extends SubsystemBase {
     }
 
     public void loop(double distance) {
-        currentVelocity = -flyWheel1.getVelocity();
+        currentVelocity = flyWheel1.getVelocity();
         targetVelocity = vel.get(distance);
 
         pid_Flywheel.setPIDF(kP, kI, kD, 0);
@@ -52,7 +52,7 @@ public class Flywheel extends SubsystemBase {
     }
 
     public void loopAuto(double velocity){
-        currentVelocity = -flyWheel1.getVelocity();
+        currentVelocity = flyWheel1.getVelocity();
         targetVelocity = velocity;
 
         pid_Flywheel.setPIDF(kP, kI, kD, 0);
@@ -73,11 +73,11 @@ public class Flywheel extends SubsystemBase {
         vel.add(0.01701, 3300);
         vel.add(0.022, 3300);
         vel.add(0.0356, 2450);
-        vel.add(0.0466, 2100);
-        vel.add(0.0627, 1900);
-        vel.add(0.08, 1600);
+        vel.add(0.0466, 2200);
+        vel.add(0.0627, 2000);
+        vel.add(0.08, 1700);
         vel.add(0.1028, 1600);
-        vel.add(0.1429, 1500);
+        vel.add(0.1429, 1600);
         vel.add(0.206, 1600);
         vel.add(0.3, 1600);
         vel.add(0.4, 1600);
@@ -86,9 +86,20 @@ public class Flywheel extends SubsystemBase {
 
 }
 
-//0.027 3100
-//0.0668 1900
-//0.09 1700
-//0.182 1500
-//0.0562 1950
-//0.0454 2800
+/*
+        WORKING
+
+        vel = new InterpLUT();
+        vel.add(0, 3300);
+        vel.add(0.01701, 3300);
+        vel.add(0.022, 3300);
+        vel.add(0.0356, 2450);
+        vel.add(0.0466, 2100);
+        vel.add(0.0627, 1900);
+        vel.add(0.08, 1600);
+        vel.add(0.1028, 1600);
+        vel.add(0.1429, 1500);
+        vel.add(0.206, 1600);
+        vel.add(0.3, 1600);
+        vel.add(0.4, 1600);
+        vel.createLUT();*/

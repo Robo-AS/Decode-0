@@ -30,7 +30,7 @@ public class FlywheelPIDTuning extends OpMode {
     public static double kV = 0;
 
     public static double targetVelocity = 0, currentVelocity = 0;
-    public double downY = 0.2, upY = 0.6, maxDistance = 0.004, minDistance = 0.2704;
+    public double downY = 0, upY = 1, maxDistance = 0.004, minDistance = 0.2704;
     double f = 0;
     private DcMotorEx flyWheel1, flyWheel2;
     FtcDashboard dashboard;
@@ -55,7 +55,7 @@ public class FlywheelPIDTuning extends OpMode {
     @Override
     public void loop() {
 
-        currentVelocity = -flyWheel1.getVelocity();
+        currentVelocity = flyWheel1.getVelocity();
 
         pid_Flywheel.setPIDF(kP, kI, kD, f);
         feedforward = new SimpleMotorFeedforward(kS, kV);

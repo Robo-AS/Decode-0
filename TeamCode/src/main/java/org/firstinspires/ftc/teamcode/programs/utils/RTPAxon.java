@@ -1,61 +1,47 @@
 package org.firstinspires.ftc.teamcode.programs.utils;
 
-import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class RTPAxon {
-    private final AnalogInput servoEncoder;
+    private final DcMotorEx encoderMotor;
     private final CRServo servo;
-    private boolean rtp;
+    private boolean rtp = true;
     private double power;
-    private double maxPower;
-    private Direction direction;
-    private double previousAngle;
+    private double maxPower = 0.4;
+    private Direction direction = Direction.FORWARD;
     private double totalRotation;
     private double targetRotation;
-    private double encoderZero = 0;
-    private final double gearRatio = 1.5;
+    private final double TICKS_PER_REV = 8192.0;
+    private final double gearRatio = 1;
 
-    private double kP;
-    private double kI;
-    private double kD;
-    private double integralSum;
-    private double lastError;
-    private double maxIntegralSum;
+    private double kP = 0.0;
+    private double kI = 0.0;
+    private double kD = 0.0;
+    private double integralSum = 0.0;
+    private double lastError = 0.0;
+    private double maxIntegralSum = 1.0;
     private ElapsedTime pidTimer;
-
-    public double STARTPOS;
-    public int ntry = 0;
-    public int cliffs = 0;
-    public double homeAngle;
 
     public enum Direction {
         FORWARD,
         REVERSE
     }
 
-    public RTPAxon(CRServo servo, AnalogInput encoder) {
-        this.rtp = true;
+    public RTPAxon(CRServo servo, DcMotorEx encoderMotor) {
         this.servo = servo;
-        this.servoEncoder = encoder;
-        this.direction = Direction.FORWARD;
-        initialize(0);
-    }
-
-    public RTPAxon(CRServo servo, AnalogInput encoder, Direction direction) {
-        this.rtp = true;
-        this.servo = servo;
-        this.servoEncoder = encoder;
-        this.direction = direction;
+        this.encoderMotor = encoderMotor;
         initialize(0);
     }
 
     public void updatePIDCoeffs(double kP, double kI, double kD) {
-        this.kP = kP;
-        this.kI = kI;
-        this.kD = kD;
-        resetPID();
+        if (this.kP != kP || this.kI != kI || this.kD != kD) {
+            this.kP = kP;
+            this.kI = kI;
+            this.kD = kD;
+            resetPID();
+        }
     }
 
     public void initialize() {
@@ -64,41 +50,11 @@ public class RTPAxon {
 
     public void initialize(double startingAngle) {
         servo.setPower(0);
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException ignored) { }
-
-        ntry = 0;
-        double raw;
-        do {
-            raw = getRawAngle();
-            ntry++;
-            if (ntry > 50) break;
-        } while (Math.abs(raw) < 0.01);
-
-        this.encoderZero = raw - (startingAngle * gearRatio);
-
-        this.previousAngle = startingAngle;
         this.totalRotation = startingAngle;
         this.targetRotation = startingAngle;
-        this.cliffs = 0;
-
-        kP = 0.015;
-        kI = 0.0005;
-        kD = 0.0025;
-        integralSum = 0.0;
-        lastError = 0.0;
-        maxIntegralSum = 100.0;
         pidTimer = new ElapsedTime();
         pidTimer.reset();
-
-        maxPower = 0.25;
-    }
-
-    private double getRawAngle() {
-        if (servoEncoder == null) return 0;
-        return (servoEncoder.getVoltage() / 3.3) *
-                (direction.equals(Direction.REVERSE) ? -360 : 360);
+        resetPID();
     }
 
     public void setDirection(Direction direction) {
@@ -121,37 +77,21 @@ public class RTPAxon {
 
     public void setTargetRotation(double target) {
         targetRotation = target;
-        lastError = 0;
-        pidTimer.reset();
     }
 
     public double getCurrentAngle() {
-        double encoderAngle = getRawAngle() - encoderZero;
-        return encoderAngle / gearRatio;
+        double encoderDegrees = (encoderMotor.getCurrentPosition() / TICKS_PER_REV) * 360.0;
+        if (direction == Direction.REVERSE) encoderDegrees *= -1;
+        return encoderDegrees / gearRatio;
     }
-
-    public double getTotalRotation() { return totalRotation; }
 
     public void resetPID() {
         integralSum = 0;
         lastError = 0;
-        pidTimer.reset();
     }
 
     public synchronized void update() {
-        double currentAngle = getCurrentAngle();
-        double angleDifference = currentAngle - previousAngle;
-
-        if (angleDifference > 180) {
-            angleDifference -= 360;
-            cliffs--;
-        } else if (angleDifference < -180) {
-            angleDifference += 360;
-            cliffs++;
-        }
-
-        totalRotation = (currentAngle) + cliffs * 360;
-        previousAngle = currentAngle;
+        totalRotation = getCurrentAngle();
 
         if (!rtp) return;
 
@@ -169,10 +109,10 @@ public class RTPAxon {
         double derivative = (error - lastError) / dt;
         lastError = error;
 
-        double output = kP * error + kI * integralSum + kD * derivative;
+        double output = (kP * error) + (kI * integralSum) + (kD * derivative);
 
         if (Math.abs(error) > 0.5) {
-            setPower(-output);
+            setPower(output);
         } else {
             setPower(0);
         }

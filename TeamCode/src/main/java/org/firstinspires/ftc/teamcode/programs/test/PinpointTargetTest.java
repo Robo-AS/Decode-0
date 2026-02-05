@@ -50,10 +50,10 @@ public class PinpointTargetTest extends CommandOpMode {
         double angleToGoalField = Math.atan2(goalY - robotY, goalX - robotX);
         double relativeAngleRad = angleToGoalField - robotHeading;
 
-        double turretAngle = -Math.toDegrees(AngleUnit.normalizeRadians(relativeAngleRad)) + 90;
+        double turretAngle = Math.toDegrees(AngleUnit.normalizeRadians(relativeAngleRad)) - 90;
 
-        if(turretAngle > 100) turretAngle = 100;
-        else if(turretAngle < -100) turretAngle = -100;
+        if(turretAngle > 180) turretAngle = 180;
+        else if(turretAngle < -180) turretAngle = -180;
 
         robot.turret.loopAuto(turretAngle);
 

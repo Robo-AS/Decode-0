@@ -4,10 +4,10 @@ import com.arcrobotics.ftclib.command.InstantCommand;
 
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-public class stopIntake extends InstantCommand {
-    public stopIntake(){
+public class startIntakeBack extends InstantCommand {
+    public startIntakeBack(double power) {
         super(
-                () -> Robot.getInstance().intake.setPower(0)
+                () -> Robot.getInstance().intakeBack.setPower(power)
         );
     }
 }
