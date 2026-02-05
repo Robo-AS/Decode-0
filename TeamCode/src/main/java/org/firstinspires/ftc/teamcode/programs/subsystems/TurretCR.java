@@ -59,13 +59,13 @@ public class TurretCR extends SubsystemBase {
             double goalX = targetRedGoal ? 144 : 0;
             double goalY = 144;
 
+            //trig
             double angleToGoalField = Math.atan2(goalY - robotY, goalX - robotX);
             double relativeAngleRad = AngleUnit.normalizeRadians(angleToGoalField - robotHeading);
 
-            // Calculate the angle in degrees first
+            // calculate the angle in degrees
             double calculatedAngle = Math.toDegrees(relativeAngleRad) - 90;
 
-            // Your preferred if-else clamping logic in DEGREES
             if (calculatedAngle > MAX_ANGLE) {
                 targetAngle = MAX_ANGLE;
             } else if (calculatedAngle < -MAX_ANGLE) {
@@ -78,7 +78,7 @@ public class TurretCR extends SubsystemBase {
             targetAngle = 0;
         }
 
-        // Final safety check to ensure targetAngle is never NaN or out of bounds
+        //safety check
         if (targetAngle > MAX_ANGLE) targetAngle = MAX_ANGLE;
         if (targetAngle < -MAX_ANGLE) targetAngle = -MAX_ANGLE;
     }
