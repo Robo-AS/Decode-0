@@ -14,15 +14,19 @@ public class RTPAxon {
     private double totalRotation;
     private double targetRotation;
     private final double TICKS_PER_REV = 8192.0;
-    private final double gearRatio = 1;
+    private final double gearRatio = 1.0;
 
     private double kP = 0.0;
     private double kI = 0.0;
     private double kD = 0.0;
+    private double kS = 0.0;
+
     private double integralSum = 0.0;
     private double lastError = 0.0;
     private double maxIntegralSum = 1.0;
     private ElapsedTime pidTimer;
+
+    private final double POSITION_TOLERANCE = 0.5;
 
     public enum Direction {
         FORWARD,
@@ -35,17 +39,14 @@ public class RTPAxon {
         initialize(0);
     }
 
-    public void updatePIDCoeffs(double kP, double kI, double kD) {
-        if (this.kP != kP || this.kI != kI || this.kD != kD) {
+    public void updatePIDCoeffs(double kP, double kI, double kD, double kS) {
+        if (this.kP != kP || this.kI != kI || this.kD != kD || this.kS != kS) {
             this.kP = kP;
             this.kI = kI;
             this.kD = kD;
+            this.kS = kS;
             resetPID();
         }
-    }
-
-    public void initialize() {
-        initialize(0);
     }
 
     public void initialize(double startingAngle) {
@@ -57,26 +58,9 @@ public class RTPAxon {
         resetPID();
     }
 
-    public void setDirection(Direction direction) {
-        this.direction = direction;
-    }
-
     public void setPower(double power) {
         this.power = Math.max(-maxPower, Math.min(maxPower, power));
         servo.setPower(this.power * (direction == Direction.REVERSE ? -1 : 1));
-    }
-
-    public double getPower() { return power; }
-
-    public void setMaxPower(double maxPower) { this.maxPower = maxPower; }
-
-    public void setRtp(boolean rtp) {
-        this.rtp = rtp;
-        if (rtp) resetPID();
-    }
-
-    public void setTargetRotation(double target) {
-        targetRotation = target;
     }
 
     public double getCurrentAngle() {
@@ -90,6 +74,12 @@ public class RTPAxon {
         lastError = 0;
     }
 
+    public void setTargetRotation(double target) {
+        targetRotation = target;
+    }
+
+    public double getPower() { return power; }
+
     public synchronized void update() {
         totalRotation = getCurrentAngle();
 
@@ -98,23 +88,24 @@ public class RTPAxon {
         double dt = pidTimer.seconds();
         pidTimer.reset();
 
-        if (dt < 0.0001 || dt > 0.5) return;
+        if (dt < 0.0001 || dt > 0.2) return;
 
         double error = targetRotation - totalRotation;
-        integralSum += error * dt;
-        integralSum = Math.max(-maxIntegralSum, Math.min(maxIntegralSum, integralSum));
 
-        if (Math.abs(error) < 2.0) integralSum *= 0.95;
+        if (Math.abs(error) > POSITION_TOLERANCE) {
+            integralSum += error * dt;
+            integralSum = Math.max(-maxIntegralSum, Math.min(maxIntegralSum, integralSum));
 
-        double derivative = (error - lastError) / dt;
-        lastError = error;
+            double derivative = (error - lastError) / dt;
+            lastError = error;
 
-        double output = (kP * error) + (kI * integralSum) + (kD * derivative);
+            double pidOutput = (kP * error) + (kI * integralSum) + (kD * derivative);
+            double ffOutput = Math.signum(error) * kS;
 
-        if (Math.abs(error) > 0.5) {
-            setPower(output);
+            setPower(pidOutput + ffOutput);
         } else {
             setPower(0);
+            resetPID();
         }
     }
 }

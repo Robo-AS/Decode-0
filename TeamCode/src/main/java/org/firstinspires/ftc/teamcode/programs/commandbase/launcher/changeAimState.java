@@ -4,11 +4,10 @@ import com.arcrobotics.ftclib.command.InstantCommand;
 
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-public class freeServoBarrier extends InstantCommand {
-    public freeServoBarrier()
-    {
+public class changeAimState extends InstantCommand {
+    public changeAimState(){
         super(
-                () -> Robot.getInstance().servoBarrier.setPosition(0.5)
+                () -> Robot.getInstance().limelightAimOnly = !Robot.getInstance().limelightAimOnly
         );
     }
 }

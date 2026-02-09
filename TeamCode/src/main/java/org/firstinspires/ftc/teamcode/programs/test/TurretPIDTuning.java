@@ -20,6 +20,7 @@ public class TurretPIDTuning extends OpMode {
     public static double kP = 0.0;
     public static double kI = 0.0;
     public static double kD = 0.0;
+    public static double kS = 0.0;
     public static double targetAngle = 0.0;
 
     FtcDashboard dashboard;
@@ -29,9 +30,9 @@ public class TurretPIDTuning extends OpMode {
     public void init() {
         robot.initializeHardware(hardwareMap);
         turret = robot.axon;
-        turret.initialize();
+        turret.initialize(0);
 
-        turret.updatePIDCoeffs(kP, kI, kD);
+        turret.updatePIDCoeffs(kP, kI, kD, kS);
         lastP = kP;
         lastI = kI;
         lastD = kD;
@@ -42,7 +43,7 @@ public class TurretPIDTuning extends OpMode {
     @Override
     public void loop() {
         if (kP != lastP || kI != lastI || kD != lastD) {
-            turret.updatePIDCoeffs(kP, kI, kD);
+            turret.updatePIDCoeffs(kP, kI, kD, kS);
             lastP = kP;
             lastI = kI;
             lastD = kD;

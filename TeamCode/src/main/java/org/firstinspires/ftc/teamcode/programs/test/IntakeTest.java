@@ -53,6 +53,5 @@ public class IntakeTest extends CommandOpMode {
     public void run() {
         CommandScheduler.getInstance().run();
 
-        Robot.getInstance().getInstanceLimelight().loop();
     }
 }

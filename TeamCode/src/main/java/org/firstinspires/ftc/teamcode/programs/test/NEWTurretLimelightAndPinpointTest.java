@@ -13,6 +13,7 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
@@ -80,6 +81,10 @@ public class NEWTurretLimelightAndPinpointTest extends CommandOpMode {
         robot.turret.loop(20, false);
 
         telemetry.addData("Target Angle", TurretCR.targetAngle);
+        telemetry.addData("Current Angle", robot.axon.getCurrentAngle());
+        telemetry.addData("X", Robot.pinpoint.getPosX(DistanceUnit.INCH));
+        telemetry.addData("Y", Robot.pinpoint.getPosY(DistanceUnit.INCH));
+        telemetry.addData("Heading", Math.toDegrees(Robot.pinpoint.getHeading(AngleUnit.RADIANS)));
         telemetry.update();
     }
 }

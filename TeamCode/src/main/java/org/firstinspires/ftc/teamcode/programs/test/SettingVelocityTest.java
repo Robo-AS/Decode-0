@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.programs.test;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
@@ -14,9 +15,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.solverslib.controller.PIDFController;
 import com.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
@@ -24,7 +23,6 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFron
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.blockServoBarrier;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.freeServoBarrier;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
-
 import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
@@ -41,11 +39,11 @@ public class SettingVelocityTest extends CommandOpMode {
     public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
     FtcDashboard dashboard;
 
-    public static double kP = 0.002;
-    public static double kI =0;
-    public static double kD = 0.00001;
-    public static double kS = 0.0435;
-    public static double kV = 0.000275;
+    public static double kP = 0.0065;
+    public static double kI = 0;
+    public static double kD = 0.0000025;
+    public static double kS = 0.05;
+    public static double kV = 0.00025;
 
     private DcMotorEx flyWheel1, flyWheel2;
 
@@ -96,7 +94,6 @@ public class SettingVelocityTest extends CommandOpMode {
                 new stopIntakeBack(),
                 new blockServoBarrier()
         ));
-
     }
 
     @Override
@@ -107,25 +104,25 @@ public class SettingVelocityTest extends CommandOpMode {
         exponentialJoystickCoord_X_FORWARD = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
         exponentialJoystickCoord_Y = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
 
-        double turnSpeed =  -exponentialJoystickCoord_X_TURN;
+        double turnSpeed = -exponentialJoystickCoord_X_TURN;
         PoseRR drive = new PoseRR(-exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y, turnSpeed);
         robot.mecanum.set(drive, 0);
 
         LLResult result = robot.limelight.getLatestResult();
 
-        ta = result.getTa();
-        ty = result.getTy();
-        tx = result.getTx();
+        if (result != null && result.isValid()) {
+            ta = result.getTa();
+            ty = result.getTy();
+            tx = result.getTx();
 
-        y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-        x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-        distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
-        targetAngle = tx;
+            y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
+            x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
+            distance = Math.sqrt(x_distance * x_distance + y_distance * y_distance);
+            targetAngle = tx;
 
-        pos = getServoYPositionFromDistance(y_distance);
-        robot.servoY.setPosition(pos);
-
-        robot.turret.loop(20, false);
+            pos = getServoYPositionFromDistance(y_distance);
+            robot.servoY.setPosition(pos);
+        }
 
         currentVelocity = flyWheel1.getVelocity();
 
@@ -139,24 +136,30 @@ public class SettingVelocityTest extends CommandOpMode {
         flyWheel1.setPower(power);
         flyWheel2.setPower(power);
 
+        TelemetryPacket packet = new TelemetryPacket();
+        packet.put("Target Velocity", targetVelocity);
+        packet.put("Current Velocity", currentVelocity);
+        packet.put("Error", targetVelocity - currentVelocity);
+        dashboard.sendTelemetryPacket(packet);
+
         telemetry.addData("Distance", distance);
         telemetry.addData("Velocity", currentVelocity);
         telemetry.update();
     }
 
-    public double getServoYPositionFromDistance(double distance)
-    {
-        if(distance < maxDistance) return 0.8;
-        if(distance > minDistance) return 0;
-
+    public double getServoYPositionFromDistance(double distance) {
+        if (distance < maxDistance) return 0.8;
+        if (distance > minDistance) return 0;
         double ratio = (minDistance - distance) / (minDistance - maxDistance);
         return downY + ratio * (upY - downY);
     }
 }
 
-//0.1507 1700
-//0.0452 2200
-//0.2041
-//0.1133 1900
-//0.0782 2000
-//0.065 2000
+//0.0045 2300
+//0.0049 2400
+//0.1105 1800
+//0.1262 1700
+//0.0655 1750
+//0.0182 2000
+//0.0414 1900
+//0.0233 1900

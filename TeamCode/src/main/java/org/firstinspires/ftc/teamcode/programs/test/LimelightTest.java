@@ -8,8 +8,6 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.switchToAprilTagPipeline;
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.switchToArtifactPipeline;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @TeleOp(name = "Limelight Test", group = "OpModes")
@@ -33,9 +31,5 @@ public class LimelightTest extends CommandOpMode {
     public void run() {
         CommandScheduler.getInstance().run();
 
-        Robot.getInstance().getInstanceLimelight().loop();
-
-        gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(new switchToAprilTagPipeline());
-        gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new switchToArtifactPipeline());
     }
 }

@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
+import com.arcrobotics.ftclib.command.ParallelCommandGroup;
+import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -15,11 +17,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.liftServoIntake;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.lowerServoIntake;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.blockServoBarrier;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.changeAimState;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.freeServoBarrier;
 import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.reloadCurrentPipeline;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
@@ -61,25 +66,37 @@ public class driveBlue extends CommandOpMode {
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(new SequentialCommandGroup(
+                new liftServoIntake(),
                 new startIntakeFront(-1),
                 new startIntakeBack(-1),
                 new WaitCommand(300),
                 new stopIntakeFront(),
-                new stopIntakeBack()
+                new stopIntakeBack(),
+                new lowerServoIntake()
         ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new freeServoBarrier(),
-                new WaitCommand(100),
-                new startIntakeFront(1),
-                new startIntakeBack(1),
-                new WaitCommand(1500),
-                new stopIntakeFront(),
-                new stopIntakeBack(),
-                new blockServoBarrier()
-        ));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
+                .whileHeld(
+                        new SequentialCommandGroup(
+                                new freeServoBarrier(),
+                                new ParallelCommandGroup(
+                                        new startIntakeBack(1),
+                                        new startIntakeFront(1)
+                                )
+                        )
+                )
+                .whenReleased(
+                        new SequentialCommandGroup(
+                            new blockServoBarrier(),
+                            new ParallelCommandGroup(
+                                    new stopIntakeBack(),
+                                    new stopIntakeFront()
+                            )
+                        )
+                );
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new reloadCurrentPipeline());
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new changeAimState());
     }
 
     @Override
@@ -98,7 +115,12 @@ public class driveBlue extends CommandOpMode {
 
         LLResult result = robot.limelight.getLatestResult();
 
-        robot.turret.loop(20, false);
+        if(Robot.getInstance().limelightAimOnly == true) {
+            TurretCR.targetAngle = 0;
+            robot.turret.loopLimelight(20);
+        }else{
+            robot.turret.loop(20, false);
+        }
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();
@@ -131,7 +153,8 @@ public class driveBlue extends CommandOpMode {
 
             telemetry.addData("Distance", distance);
             telemetry.addData("Velocity", -robot.launcher1.getVelocity());
-          //  telemetry.addData("Target Angle", TurretCR.targetAngle);
+            telemetry.addData("Target Angle", TurretCR.targetAngle);
+            telemetry.addData("Limelight Only Aim", Robot.getInstance().limelightAimOnly);
             telemetry.update();
         }
     }

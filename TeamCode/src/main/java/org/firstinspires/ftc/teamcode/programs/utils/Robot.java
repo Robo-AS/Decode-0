@@ -9,13 +9,11 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
-import org.firstinspires.ftc.teamcode.programs.subsystems.LimelightWrapper;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 
@@ -27,19 +25,20 @@ public class Robot {
     private static HardwareMap hardwareMap;
     public Mecanum mecanum = null;
     public Limelight3A limelight = null;
-    public LimelightWrapper llwrapped = null;
     public TurretCR turret = null;
     public RTPAxon axon = null;
     public Flywheel flywheel = null;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intakeFront, intakeBack;
     public DcMotorEx launcher1, launcher2;
-    public Servo servoY, servoBarrier;
+    public Servo servoY, servoBarrier, servoIntake;
     public CRServo servoX;
     public List<DcMotorEx> motors;
     public static MultipleTelemetry telemetry;
     public static GoBildaPinpointDriver pinpoint = null;
 
     public double x = 0, y = 0, heading = 0, lastTurretAngle = 0;
+
+    public boolean limelightAimOnly = false;
 
     public static Robot getInstance() {
         if (instance == null) {
@@ -71,10 +70,6 @@ public class Robot {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.start();
 
-        llwrapped = new LimelightWrapper();
-        llwrapped.initializeHardware(hardwareMap);
-        llwrapped.initialize();
-
         intakeFront = hardwareMap.get(DcMotorEx.class, "intakeFront");
         intakeBack = hardwareMap.get(DcMotorEx.class, "intakeBack");
         intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -97,9 +92,14 @@ public class Robot {
         flywheel = new Flywheel();
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
+        servoIntake = hardwareMap.get(Servo.class, "servoIntake");
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         pinpoint.resetPosAndIMU();
+        pinpoint.setEncoderResolution(
+                GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD
+        );
+
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
@@ -109,8 +109,8 @@ public class Robot {
         limelight.start();
 
         intakeFront = hardwareMap.get(DcMotorEx.class, "intakeFront");
-        intakeFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        intakeFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        intakeBack = hardwareMap.get(DcMotorEx.class, "intakeBack");
+        intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
@@ -122,14 +122,13 @@ public class Robot {
         launcher1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         servoY = hardwareMap.get(Servo.class, "servoY");
+        servoX = hardwareMap.get(CRServo.class, "servoX");
+        axon = new RTPAxon(servoX, intakeFront);
 
+        turret = new TurretCR();
         flywheel = new Flywheel();
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
-
-        servoX = hardwareMap.get(CRServo.class, "servoX");
-        axon = new RTPAxon(servoX, rightFront);
-        turret = new TurretCR();
     }
 
     public void initializeTurretHardware(HardwareMap hardwareMap){
@@ -164,6 +163,7 @@ public class Robot {
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         pinpoint.resetPosAndIMU();
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
     }
 
     public void initializeControlHub(HardwareMap hardwareMap){
@@ -184,33 +184,118 @@ public class Robot {
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
     }
 
+    public void initializeTest() {
+
+        mecanum.initialize();
+
+        pinpoint.resetPosAndIMU();
+
+        // Encoder resolution (MUST be set every init)
+        pinpoint.setEncoderResolution(
+                GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD
+        );
+
+        // Pod offsets (measured from robot center)
+        pinpoint.setOffsets(
+                7.12,   // X pod is RIGHT of center → negative
+                -130.6,    // Y pod is BEHIND center → negative
+                DistanceUnit.MM
+        );
+
+        // Encoder directions
+        pinpoint.setEncoderDirections(
+                GoBildaPinpointDriver.EncoderDirection.FORWARD,
+                GoBildaPinpointDriver.EncoderDirection.REVERSED
+        );
+
+        // ZERO pose for testing
+        pinpoint.setPosition(new Pose2D(
+                DistanceUnit.MM,
+                0,
+                0,
+                AngleUnit.RADIANS,
+                0
+        ));
+
+        pinpoint.update();
+    }
+
     public void initialize() {
         mecanum.initialize();
 
-        pinpoint.setOffsets(13.5, 13.5, DistanceUnit.CM);
-        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD,
-                GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        mecanum.initialize();
 
-        double pinpointHeading = Math.toRadians(90) - this.heading;
-        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, this.x, this.y, AngleUnit.RADIANS, pinpointHeading));
+        pinpoint.resetPosAndIMU();
+
+        // Encoder resolution (MUST be set every init)
+        pinpoint.setEncoderResolution(
+                GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD
+        );
+
+        // Pod offsets (measured from robot center)
+        pinpoint.setOffsets(
+                7.12,   // X pod is RIGHT of center → negative
+                -130.6,    // Y pod is BEHIND center → negative
+                DistanceUnit.MM
+        );
+
+        // Encoder directions
+        pinpoint.setEncoderDirections(
+                GoBildaPinpointDriver.EncoderDirection.FORWARD,
+                GoBildaPinpointDriver.EncoderDirection.REVERSED
+        );
+
+        // ZERO pose for testing
+        pinpoint.setPosition(new Pose2D(
+                DistanceUnit.MM,
+                0,
+                0,
+                AngleUnit.RADIANS,
+                0
+        ));
+
         pinpoint.update();
 
         flywheel.initialize();
         axon.initialize(lastTurretAngle);
         turret.initialize();
-        servoY.setPosition(0.5);
+        servoY.setPosition(1);
+        servoBarrier.setPosition(0.35);
     }
 
     public void initializeTurret(){
         mecanum.initialize();
 
-        pinpoint.setOffsets(13.5, 13.5, DistanceUnit.CM);
-        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD,
-                GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        pinpoint.resetPosAndIMU();
 
-        double pinpointHeading = Math.toRadians(90) - this.heading;
-        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, this.x, this.y, AngleUnit.RADIANS, pinpointHeading));
-        pinpoint.update();
+        // Encoder resolution (MUST be set every init)
+        pinpoint.setEncoderResolution(
+                GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD
+        );
+
+        // Pod offsets (measured from robot center)
+        pinpoint.setOffsets(
+                7.12,   // X pod is RIGHT of center → negative
+                -130.6,    // Y pod is BEHIND center → negative
+                DistanceUnit.MM
+        );
+
+        // Encoder directions
+        pinpoint.setEncoderDirections(
+                GoBildaPinpointDriver.EncoderDirection.FORWARD,
+                GoBildaPinpointDriver.EncoderDirection.REVERSED
+        );
+
+        // ZERO pose for testing
+        pinpoint.setPosition(new Pose2D(
+                DistanceUnit.MM,
+                0,
+                0,
+                AngleUnit.RADIANS,
+                0
+        ));
+
+        pinpoint.initialize ();
 
         axon.initialize(lastTurretAngle);
         turret.initialize();
@@ -234,14 +319,6 @@ public class Robot {
         return (turret == null) ? new TurretCR() : turret;
     }
 
-    public LimelightWrapper getInstanceLimelight(){
-        if(llwrapped == null) {
-            llwrapped = new LimelightWrapper();
-            llwrapped.initializeHardware(hardwareMap);
-        }
-        return llwrapped;
-    }
-
     public Flywheel getInstanceFlywheel(){
         if(flywheel == null) flywheel = new Flywheel();
         return flywheel;
@@ -250,10 +327,8 @@ public class Robot {
     public static HardwareMap getInstanceHardwareMap(){
         return hardwareMap;
     }
-    public static MultipleTelemetry getInstanceTelemetry(){
-        return telemetry;
-    }
     public static GoBildaPinpointDriver getInstancePinpoint() {
         return pinpoint;
     }
+
 }

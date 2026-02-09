@@ -12,20 +12,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
-@TeleOp(name = "Pinpoint Turret Logic Test", group = "Test")
-public class PinpointTargetTest extends CommandOpMode {
+@TeleOp(name = "Pinpoint Localization Test", group = "Test")
+public class PinpointLocalizationTest extends CommandOpMode {
 
     private final Robot robot = Robot.getInstance();
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
     public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
-    public static boolean targetRedGoal = false;
 
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
         robot.initializeHardware(hardwareMap);
-        robot.initialize();
+        robot.initializeTest();
     }
 
     @Override
@@ -37,33 +36,15 @@ public class PinpointTargetTest extends CommandOpMode {
         PoseRR drive = new PoseRR(-x_input, y_input, -turn_input);
         robot.mecanum.set(drive, 0);
 
-        Robot.pinpoint.update();
-        Pose2D pose = Robot.pinpoint.getPosition();
+        robot.pinpoint.update();
 
-        double robotX = pose.getX(DistanceUnit.INCH);
-        double robotY = pose.getY(DistanceUnit.INCH);
-        double robotHeading = pose.getHeading(AngleUnit.RADIANS);
+        Pose2D pose = robot.pinpoint.getPosition();
 
-        double goalX = targetRedGoal ? 144 : 0;
-        double goalY = 144;
-
-        double angleToGoalField = Math.atan2(goalY - robotY, goalX - robotX);
-        double relativeAngleRad = angleToGoalField - robotHeading;
-
-        double turretAngle = Math.toDegrees(AngleUnit.normalizeRadians(relativeAngleRad)) - 90;
-
-        if(turretAngle > 180) turretAngle = 180;
-        else if(turretAngle < -180) turretAngle = -180;
-
-        robot.turret.loopAuto(turretAngle);
-
-        if (gamepad1.options) robot.pinpoint.resetPosAndIMU();
-
-        telemetry.addData("Target Goal", targetRedGoal ? "RED" : "BLUE");
-        telemetry.addData("Robot X", robotX);
-        telemetry.addData("Robot Y", robotY);
-        telemetry.addData("Robot Heading (deg)", Math.toDegrees(robotHeading));
-        telemetry.addData("Turret Target Angle", turretAngle);
+        telemetry.addData("X",pose.getX(DistanceUnit.INCH));
+        telemetry.addData("Y", pose.getY(DistanceUnit.INCH));
+        telemetry.addData("Heading", pose.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("Raw X ticks", robot.pinpoint.getEncoderX());
+        telemetry.addData("Raw Y ticks", robot.pinpoint.getEncoderY());
         telemetry.update();
     }
 }
