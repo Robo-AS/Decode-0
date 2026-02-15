@@ -38,7 +38,7 @@ public class Robot {
 
     public double x = 0, y = 0, heading = 0, lastTurretAngle = 0;
 
-    public boolean limelightAimOnly = false;
+    public boolean shootFar = false, limelightOnlyAim = true;
 
     public static Robot getInstance() {
         if (instance == null) {
@@ -129,6 +129,7 @@ public class Robot {
         flywheel = new Flywheel();
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
+        servoIntake = hardwareMap.get(Servo.class, "servoIntake");
     }
 
     public void initializeTurretHardware(HardwareMap hardwareMap){
@@ -242,7 +243,7 @@ public class Robot {
         // Encoder directions
         pinpoint.setEncoderDirections(
                 GoBildaPinpointDriver.EncoderDirection.FORWARD,
-                GoBildaPinpointDriver.EncoderDirection.REVERSED
+                GoBildaPinpointDriver.EncoderDirection.FORWARD
         );
 
         // ZERO pose for testing

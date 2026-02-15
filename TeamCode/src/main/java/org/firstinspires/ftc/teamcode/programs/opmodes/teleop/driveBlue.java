@@ -5,7 +5,6 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
-import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -14,157 +13,146 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.liftServoIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.lowerServoIntake;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.blockServoBarrier;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.changeAimState;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.freeServoBarrier;
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.reloadCurrentPipeline;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.*;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.*;
+import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
+
 @TeleOp(name = "Drive BLUE", group = "OpModes")
 public class driveBlue extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
-    private final FtcDashboard dashboard = FtcDashboard.getInstance();
-    double exponentialJoystickCoord_X_TURN, exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y;
-    public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
 
-    public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
-    public Pose3D botpose;
-    public double downY = 0, upY = 0.8, maxDistance = 0.004, minDistance = 0.2704;
+    private static final double STICK_EXPONENT = 3.0;
+    private static final double CONSTANT_TERM = 0.6;
+    private static final double LINEAR_COEF = 0.7;
+    private static final double CAMERA_ANGLE = 18.0;
+    private static final double CAMERA_HEIGHT = 0.4;
+    private static final double MIN_DIST = 0.2704;
+    private static final double MAX_DIST = 0.004;
 
-    public double CAMERA_ANGLE = 18;
-    public double CAMERA_HEIGHT = 0.4;
+    private long lastLLUpdate = 0;
+    private double currentDistance = 0;
+
     @Override
     public void initialize() {
-        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
-        CommandScheduler.getInstance().reset();
-
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
         robot.initialize();
 
         robot.limelight.start();
-        robot.limelight.setPollRateHz(100);
         robot.limelight.pipelineSwitch(0);
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new startIntakeFront(1),
-                new startIntakeBack(1),
-                new WaitCommand(1500),
-                new stopIntakeFront(),
-                new stopIntakeBack()
-        ));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .whileHeld(new SequentialCommandGroup(
+                        new liftServoIntake(),
+                        new ParallelCommandGroup(new startIntakeBack(1), new startIntakeFront(1))
+                ))
+                .whenReleased(new SequentialCommandGroup(
+                        new lowerServoIntake(),
+                        new ParallelCommandGroup(new stopIntakeBack(), new stopIntakeFront())
+                ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(new SequentialCommandGroup(
-                new liftServoIntake(),
-                new startIntakeFront(-1),
-                new startIntakeBack(-1),
-                new WaitCommand(300),
-                new stopIntakeFront(),
-                new stopIntakeBack(),
-                new lowerServoIntake()
-        ));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.Y)
+                .whenPressed(new SequentialCommandGroup(
+                        new ParallelCommandGroup(new startIntakeFront(-1), new startIntakeBack(-1)),
+                        new WaitCommand(300),
+                        new ParallelCommandGroup(new stopIntakeFront(), new stopIntakeBack())
+                ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whileHeld(
-                        new SequentialCommandGroup(
-                                new freeServoBarrier(),
-                                new ParallelCommandGroup(
-                                        new startIntakeBack(1),
-                                        new startIntakeFront(1)
-                                )
-                        )
-                )
-                .whenReleased(
-                        new SequentialCommandGroup(
-                            new blockServoBarrier(),
-                            new ParallelCommandGroup(
-                                    new stopIntakeBack(),
-                                    new stopIntakeFront()
-                            )
-                        )
-                );
+                .whileHeld(new ParallelCommandGroup(
+                        new freeServoBarrier(),
+                        new startIntakeBack(1),
+                        new startIntakeFront(1)
+                ))
+                .whenReleased(new ParallelCommandGroup(
+                        new blockServoBarrier(),
+                        new stopIntakeBack(),
+                        new stopIntakeFront()
+                ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.X).whenPressed(new reloadCurrentPipeline());
+        new com.arcrobotics.ftclib.command.button.Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
+                .whenActive(new SequentialCommandGroup(
+                        new changeLauncherVelocityState(true),
+                        new setServoYPosition(1),
+                        new WaitCommand(1200),
+                        new freeServoBarrier(),
+                        new ParallelCommandGroup(new startIntakeBack(1), new startIntakeFront(1))
+                ))
+                .whenInactive(new ParallelCommandGroup(
+                        new changeLauncherVelocityState(false),
+                        new blockServoBarrier(),
+                        new stopIntakeBack(),
+                        new stopIntakeFront()
+                ));
+
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new changeAimState());
     }
 
     @Override
     public void run() {
-        CommandScheduler.getInstance().run();
+        super.run();
 
-        exponentialJoystickCoord_X_TURN = (Math.pow(gamepad1.right_stick_x, 3) + liniarCoefTerm * gamepad1.right_stick_x) * constantTerm;
-        exponentialJoystickCoord_X_FORWARD = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
-        exponentialJoystickCoord_Y = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
+        double x = (Math.pow(gamepad1.left_stick_x, STICK_EXPONENT) + LINEAR_COEF * gamepad1.left_stick_x) * CONSTANT_TERM;
+        double y = (Math.pow(gamepad1.left_stick_y, STICK_EXPONENT) + LINEAR_COEF * gamepad1.left_stick_y) * CONSTANT_TERM;
+        double rx = (Math.pow(gamepad1.right_stick_x, STICK_EXPONENT) + LINEAR_COEF * gamepad1.right_stick_x) * CONSTANT_TERM;
 
-        double turnSpeed =  -exponentialJoystickCoord_X_TURN;
-        PoseRR drive = new PoseRR(-exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y, turnSpeed);
-        robot.mecanum.set(drive, 0);
-
+        robot.mecanum.set(new PoseRR(-x, y, -rx), 0);
         robot.pinpoint.update();
 
-        LLResult result = robot.limelight.getLatestResult();
-
-        if(Robot.getInstance().limelightAimOnly == true) {
-            TurretCR.targetAngle = 0;
-            robot.turret.loopLimelight(20);
-        }else{
-            robot.turret.loop(20, false);
+        if (System.currentTimeMillis() - lastLLUpdate > 25) {
+            LLResult result = robot.limelight.getLatestResult();
+            lastLLUpdate = System.currentTimeMillis();
+            if (result != null && result.isValid()) {
+                processVision(result);
+            }
         }
 
-        if(result != null && result.isValid()) {
-            botpose = result.getBotpose_MT2();
-            ta = result.getTa();
-            tx = result.getTx();
-            ty = result.getTy();
+        if(Robot.getInstance().limelightOnlyAim)
+            robot.turret.loop(TurretCR.TurretState.LIMELIGHT_LOCK, 20, false);
+        else
+            robot.turret.loop(TurretCR.TurretState.GOAL_LOCK, 20, false);
 
-            y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-            x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-            distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
-            targetAngle = tx;
+        if (robot.shootFar) {
+            robot.flywheel.loopAuto(2400);
+        } else if (isLimelightOffline()) {
+            robot.flywheel.loopAuto(1900);
+        }
 
-            boolean seesTargetID = false;
+        telemetry.addData("Turret Angle", TurretCR.targetAngle);
+        telemetry.addData("Distance", currentDistance);
+        telemetry.addData("Flywheel Velocity", robot.flywheel.getCurrentVelocity());
+        telemetry.update();
+    }
 
-            for(LLResultTypes.FiducialResult apriltag : result.getFiducialResults()){
-                if(apriltag.getFiducialId() == 20){
-                    seesTargetID = true;
-                    break;
-                }
+    private void processVision(LLResult result) {
+        double tx = result.getTx();
+        double ty = result.getTy();
+        double distY = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
+        double distX = Math.sqrt(distY * distY + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
+        currentDistance = Math.sqrt(distX * distX + distY * distY);
+
+        boolean targetFound = false;
+        if (result.getFiducialResults() != null) {
+            for (LLResultTypes.FiducialResult fr : result.getFiducialResults()) {
+                if (fr.getFiducialId() == 20) { targetFound = true; break; }
             }
+        }
 
-            if(seesTargetID){
-                robot.flywheel.loop(distance);
-                pos = getServoYPositionFromDistance(y_distance);
-                robot.servoY.setPosition(pos);
-            }
-            else{
-                robot.flywheel.loop(0.0627);
-            }
-
-            telemetry.addData("Distance", distance);
-            telemetry.addData("Velocity", -robot.launcher1.getVelocity());
-            telemetry.addData("Target Angle", TurretCR.targetAngle);
-            telemetry.addData("Limelight Only Aim", Robot.getInstance().limelightAimOnly);
-            telemetry.update();
+        if (targetFound) {
+            robot.flywheel.loop(currentDistance);
+            double sPos = (currentDistance < MAX_DIST) ? 1.0 : (currentDistance > MIN_DIST) ? 0.0 : (MIN_DIST - currentDistance) / (MIN_DIST - MAX_DIST);
+            robot.servoY.setPosition(sPos);
         }
     }
 
-    public double getServoYPositionFromDistance(double distance)
-    {
-        if(distance < maxDistance) return 0.8;
-        if(distance > minDistance) return 0;
-
-        double ratio = (minDistance - distance) / (minDistance - maxDistance);
-        return downY + ratio * (upY - downY);
+    private boolean isLimelightOffline() {
+        LLResult res = robot.limelight.getLatestResult();
+        return res == null || !res.isValid();
     }
 }

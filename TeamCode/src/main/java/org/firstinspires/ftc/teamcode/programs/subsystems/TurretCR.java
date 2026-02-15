@@ -1,30 +1,38 @@
 package org.firstinspires.ftc.teamcode.programs.subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.robotcore.util.Range;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.utils.RTPAxon;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
+import java.util.TreeMap;
+
 public class TurretCR extends SubsystemBase {
 
     private final Robot robot = Robot.getInstance();
     private final Limelight3A limelight;
-    private RTPAxon axon;
+    private final RTPAxon axon;
 
-    public static double targetAngle = 0.0, lastValidTx = 0.0;
-    private boolean wasSeeingTarget = false;
+    public enum TurretState {
+        GOAL_LOCK,
+        LIMELIGHT_LOCK,
+        MANUAL
+    }
 
-    public static double kP = 0.0125525225005054325;
-    public static double kI = 0;
-    public static double kD = 0.001;
-    public static double kS = 0.075;
-    public static double MAX_ANGLE = 90, MIN_ANGLE = -360;
-    public static double MAX_TX_JUMP = 3.0;
+    private TurretState currentState = TurretState.GOAL_LOCK;
+    public static double targetAngle = 0.0;
+
+    public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
+    public static double MAX_ANGLE = 90.0, MIN_ANGLE = -360.0;
+
+    private final TreeMap<Double, Double> goalAdjustmentLUT = new TreeMap<>();
 
     public TurretCR() {
         this.limelight = robot.limelight;
@@ -32,122 +40,100 @@ public class TurretCR extends SubsystemBase {
     }
 
     public void initialize() {
-        limelight.start();
-        limelight.pipelineSwitch(0);
-        limelight.setPollRateHz(100);
         axon.initialize(0);
+        setupLUT();
     }
 
-    private void updateHeadings(int targetID, boolean targetRedGoal) {
+    private void setupLUT() {
+        goalAdjustmentLUT.put(-Math.PI/2, -4.0);
+        goalAdjustmentLUT.put(-Math.PI/4, -2.0);
+        goalAdjustmentLUT.put(0.0, 0.0);
+        goalAdjustmentLUT.put(Math.PI/4, 2.0);
+        goalAdjustmentLUT.put(Math.PI/2, 4.0);
+    }
+
+    private double getLUTAdjustment(double input) {
+        Double lowKey = goalAdjustmentLUT.floorKey(input);
+        Double highKey = goalAdjustmentLUT.ceilingKey(input);
+        if (lowKey == null) return goalAdjustmentLUT.get(highKey);
+        if (highKey == null || lowKey.equals(highKey)) return goalAdjustmentLUT.get(lowKey);
+        return goalAdjustmentLUT.get(lowKey) + (input - lowKey) * (goalAdjustmentLUT.get(highKey) - goalAdjustmentLUT.get(lowKey)) / (highKey - lowKey);
+    }
+
+    private void updateGoalLock(boolean isRedAlliance) {
+        if (robot.pinpoint == null) return;
+
+        Pose2D pose = robot.pinpoint.getPosition();
+        double robotX = pose.getX(DistanceUnit.INCH);
+        double robotY = pose.getY(DistanceUnit.INCH);
+        double robotHeading = pose.getHeading(AngleUnit.RADIANS);
+
+        double goalX = isRedAlliance ? 144.0 : 0.0;
+        double goalY = 144.0;
+
+        double adjustment = getLUTAdjustment(AngleUnit.normalizeRadians(robotHeading));
+
+        double deltaX = (goalX + adjustment) - robotX;
+        double deltaY = goalY - robotY;
+
+        double angleToGoalField = Math.atan2(deltaY, deltaX);
+        double relativeAngleRad = AngleUnit.normalizeRadians(angleToGoalField - robotHeading);
+
+        targetAngle = Math.toDegrees(relativeAngleRad);
+    }
+
+    private void updateLimelight(int targetID) {
         LLResult ll = limelight.getLatestResult();
-        boolean seesTargetID = false;
 
-        if (ll != null && ll.isValid() && !ll.getFiducialResults().isEmpty()) {
-            for (LLResultTypes.FiducialResult apriltag : ll.getFiducialResults()) {
-                if (apriltag.getFiducialId() == targetID) {
-                    seesTargetID = true;
-                    break;
+        if (ll != null && ll.isValid()) {
+            boolean found = false;
+            if (ll.getFiducialResults() != null) {
+                for (LLResultTypes.FiducialResult ft : ll.getFiducialResults()) {
+                    if (ft.getFiducialId() == targetID) {
+                        found = true;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (ll != null && ll.isValid() && seesTargetID) {
-            double currentTx = ll.getTx();
-
-            if (!wasSeeingTarget) {
-                lastValidTx = currentTx;
-                wasSeeingTarget = true;
-            } else if (Math.abs(currentTx - lastValidTx) < MAX_TX_JUMP) {
-                lastValidTx = currentTx;
-            }
-
-            targetAngle = axon.getCurrentAngle() - lastValidTx;
-
-        } else if (robot.pinpoint != null) {
-            wasSeeingTarget = false;
-            Pose2D pose = robot.pinpoint.getPosition();
-            double robotX = pose.getX(DistanceUnit.INCH);
-            double robotY = pose.getY(DistanceUnit.INCH);
-            double robotHeading = pose.getHeading(AngleUnit.RADIANS);
-
-            double goalX = targetRedGoal ? 144.0 : 0.0;
-            double goalY = 144.0;
-
-            double deltaX = goalX - robotX;
-            double deltaY = goalY - robotY;
-
-            double angleToGoalField = Math.atan2(deltaY, deltaX);
-            double relativeAngleRad = AngleUnit.normalizeRadians(angleToGoalField - robotHeading);
-            double relativeDegrees = Math.toDegrees(relativeAngleRad);
-
-            double TURRET_MOUNTING_OFFSET;
-
-            if (robotX >= 70) {
-                if (robotY >= 10 && robotY < 72) {
-                    TURRET_MOUNTING_OFFSET = -53.0;
-                    double increaseValue = 1 + (robotY - 10) * 0.0645;
-                    TURRET_MOUNTING_OFFSET -= increaseValue;
-                } else {
-                    TURRET_MOUNTING_OFFSET = -55.0;
-                    double decreaseValue = 5 + (robotY - 72) * ((1.0 - 5.0) / (110.0 - 72.0));
-                    TURRET_MOUNTING_OFFSET += decreaseValue;
-                }
+            if (found) {
+                targetAngle = axon.getCurrentAngle() - ll.getTx();
             } else {
-                TURRET_MOUNTING_OFFSET = -73.0;
-                if (robotY >= 10 && robotY < 72) {
-                    double pullLeftValue = (robotY - 10) * 0.08;
-                    TURRET_MOUNTING_OFFSET -= pullLeftValue;
-                } else {
-                    double secondaryPullLeft = 5 + (robotY - 72) * 0.12;
-                    TURRET_MOUNTING_OFFSET -= secondaryPullLeft;
-                }
+                targetAngle = 0.0;
             }
-
-            if (Math.abs(relativeDegrees + TURRET_MOUNTING_OFFSET - targetAngle) > 0.5)
-                targetAngle = relativeDegrees + TURRET_MOUNTING_OFFSET;
+        } else {
+            targetAngle = 0.0;
         }
-
-        double normalized = AngleUnit.normalizeDegrees(targetAngle);
-        if (normalized > 90) normalized -= 360;
-        targetAngle = Math.max(MIN_ANGLE, Math.min(normalized, MAX_ANGLE));
     }
 
-    public void loop(int targetID, boolean targetRedGoal) {
-        updateHeadings(targetID, targetRedGoal);
-        applyToHardware();
-    }
-
-    public void loopAuto(double target) {
-        double normalized = AngleUnit.normalizeDegrees(target);
-        if (normalized > 90) normalized -= 360;
-        targetAngle = Math.max(MIN_ANGLE, Math.min(normalized, MAX_ANGLE));
-        applyToHardware();
-    }
-
-    public void loopLimelight(int targetID) {
-        LLResult ll = limelight.getLatestResult();
-        boolean seesTargetID = false;
-
-        if (ll != null && ll.isValid() && !ll.getFiducialResults().isEmpty()) {
-            for (LLResultTypes.FiducialResult apriltag : ll.getFiducialResults()) {
-                if (apriltag.getFiducialId() == targetID) {
-                    seesTargetID = true;
-                    break;
-                }
-            }
+    public void loop(TurretState mode, int targetID, boolean isRed) {
+        this.currentState = mode;
+        switch (currentState) {
+            case GOAL_LOCK: updateGoalLock(isRed); break;
+            case LIMELIGHT_LOCK: updateLimelight(targetID); break;
+            case MANUAL: break;
         }
-
-        if (ll != null && ll.isValid() && seesTargetID) {
-            targetAngle = axon.getCurrentAngle() - ll.getTx();
-        }
-
-        targetAngle = Math.max(MIN_ANGLE, Math.min(targetAngle, MAX_ANGLE));
         applyToHardware();
     }
 
     private void applyToHardware() {
+        double normalized = AngleUnit.normalizeDegrees(targetAngle);
+        if (normalized > 90.0) {
+            normalized -= 360.0;
+        }
+
+        targetAngle = Range.clip(normalized, MIN_ANGLE, MAX_ANGLE);
+
         axon.updatePIDCoeffs(kP, kI, kD, kS);
         axon.setTargetRotation(targetAngle);
         axon.update();
     }
+
+    public void loopAuto(double target){
+        targetAngle = target;
+        applyToHardware();
+    }
+
+    @Override
+    public void periodic() {}
 }

@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 public class lowerServoIntake extends InstantCommand {
     public lowerServoIntake(){
         super(
-                () -> Robot.getInstance().servoIntake.setPosition(0.75)
+                () -> Robot.getInstance().servoIntake.setPosition(1)
         );
     }
 }

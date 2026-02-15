@@ -9,11 +9,11 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class Flywheel extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
-    public static double kP = 0.002;
+    public static double kP = 0.003;
     public static double kI = 0;
     public static double kD = 0;
     public static double kS = 0.05;
-    public static double kV = 0.00025;
+    public static double kV = 0.0003;
 
     private double smoothedDistance = 0.0627;
     private final double LOOKUP_FILTER = 0.1;
@@ -67,20 +67,28 @@ public class Flywheel extends SubsystemBase {
         flyWheel2.setPower(power);
     }
 
+    public double getCurrentVelocity(){
+        return currentVelocity;
+    }
+
     public void initializeVelInterpLUT() {
         vel = new InterpLUT();
 
 
-        vel.add(0.0000, 2400);
-        vel.add(0.0045, 2400);
+        vel.add(0.0000, 2500);
+        vel.add(0.0045, 2500);
         vel.add(0.0049, 2400);
-        vel.add(0.0182, 2000);
-        vel.add(0.0233, 1900);
-        vel.add(0.0414, 1900);
-        vel.add(0.0655, 1750);
-        vel.add(0.1105, 1750);
+        vel.add(0.0112, 2150);
+        vel.add(0.0182, 1900);
+        vel.add(0.0233, 1800);
+        vel.add(0.0414, 1800);
+        vel.add(0.0655, 1700);
+        vel.add(0.1105, 1700);
         vel.add(0.1262, 1700);
         vel.add(0.5000, 1700);
+        vel.add(1, 1700);
+        vel.add(2, 1700);
+        vel.add(20, 1700);
 
         vel.createLUT();
     }

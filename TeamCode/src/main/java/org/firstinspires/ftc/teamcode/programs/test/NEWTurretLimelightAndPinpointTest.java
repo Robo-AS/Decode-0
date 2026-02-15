@@ -78,7 +78,7 @@ public class NEWTurretLimelightAndPinpointTest extends CommandOpMode {
 
         LLResult result = robot.limelight.getLatestResult();
 
-        robot.turret.loop(20, false);
+       // robot.turret.loop(20);
 
         telemetry.addData("Target Angle", TurretCR.targetAngle);
         telemetry.addData("Current Angle", robot.axon.getCurrentAngle());

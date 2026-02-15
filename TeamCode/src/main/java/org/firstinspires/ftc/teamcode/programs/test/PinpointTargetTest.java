@@ -47,23 +47,38 @@ public class PinpointTargetTest extends CommandOpMode {
         double goalX = targetRedGoal ? 144 : 0;
         double goalY = 144;
 
-        double angleToGoalField = Math.atan2(goalY - robotY, goalX - robotX);
-        double relativeAngleRad = angleToGoalField - robotHeading;
+        double deltaX = goalX - robotX;
+        double deltaY = goalY - robotY;
 
-        double turretAngle = Math.toDegrees(AngleUnit.normalizeRadians(relativeAngleRad)) - 90;
+        double absoluteAngle = Math.atan2(deltaY, deltaX);
+        double relativeAngleRad = AngleUnit.normalizeRadians(absoluteAngle - robotHeading);
 
-        if(turretAngle > 180) turretAngle = 180;
-        else if(turretAngle < -180) turretAngle = -180;
+        double turretAngle = Math.toDegrees(relativeAngleRad) - 90;
+        double finalTurretAngle = AngleUnit.normalizeDegrees(turretAngle);
 
-        robot.turret.loopAuto(turretAngle);
+        double dynamicOffset = 0;
+
+        if (robotX <= 30) {
+            double clampedY = Math.max(30, Math.min(robotY, 110));
+            double t = (clampedY - 30) / (110 - 30);
+
+            dynamicOffset = -(15 + t * (45 - 15));
+
+            double xFade = Math.max(0, Math.min((35 - robotX) / 10.0, 1.0));
+            dynamicOffset *= xFade;
+        }
+
+        if (finalTurretAngle > 90) finalTurretAngle -= 360;
+        finalTurretAngle = Math.max(-360, Math.min(finalTurretAngle, 90));
+
+        robot.turret.loopAuto(finalTurretAngle - dynamicOffset);
 
         if (gamepad1.options) robot.pinpoint.resetPosAndIMU();
 
-        telemetry.addData("Target Goal", targetRedGoal ? "RED" : "BLUE");
         telemetry.addData("Robot X", robotX);
         telemetry.addData("Robot Y", robotY);
-        telemetry.addData("Robot Heading (deg)", Math.toDegrees(robotHeading));
-        telemetry.addData("Turret Target Angle", turretAngle);
+        telemetry.addData("Heading Deg", Math.toDegrees(robotHeading));
+        telemetry.addData("Turret Target", finalTurretAngle);
         telemetry.update();
     }
 }

@@ -60,7 +60,6 @@ public class TurretPIDTuning extends OpMode {
 
         telemetry.addData("Current Angle", turret.getCurrentAngle());
         telemetry.addData("Target Angle", targetAngle);
-        telemetry.addData("Power", turret.getPower());
         telemetry.update();
     }
 }

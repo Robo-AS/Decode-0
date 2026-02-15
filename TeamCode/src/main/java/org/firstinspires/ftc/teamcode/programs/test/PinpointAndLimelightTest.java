@@ -76,7 +76,7 @@ public class PinpointAndLimelightTest extends CommandOpMode {
 
         LLResult result = robot.limelight.getLatestResult();
 
-        robot.turret.loop(20, false);
+      //  robot.turret.loop(20);
 
         if(result != null && result.isValid()) {
             botpose = result.getBotpose_MT2();

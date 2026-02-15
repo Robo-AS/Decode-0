@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 public class bottomRedAuto extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
-    public double TARGET_ANGLE = -30.5;
+    public double TARGET_ANGLE = -23;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
@@ -27,22 +27,17 @@ public class bottomRedAuto extends OpMode {
 
     private final Pose startPose = new Pose(88, 8, Math.toRadians(90));
     private final Pose outtake = new Pose(88.000, 18.000, Math.toRadians(90));
-    private final Pose intake1 = new Pose(136.000, 8, Math.toRadians(0));
-    private final Pose intake2 = new Pose(104.000, 35.5, Math.toRadians(0));
-    private final Pose loaded2 = new Pose(127, 35.5, Math.toRadians(0));
+    private final Pose intake1 = new Pose(143.500, -3, Math.toRadians(0));
+    private final Pose intake2 = new Pose(105.5, 34.5, Math.toRadians(0));
+    private final Pose loaded2 = new Pose(145, 34.5, Math.toRadians(0));
     private final Pose leavePoint = new Pose(114, 18, Math.toRadians(0));
 
-    private PathChain launchPreload, get1, get2, throw2, loading2, leave;
+    private PathChain launchPreload, get1, get2, throw2, loading2, leave, backFromIntake1;
 
     public void buildPaths() {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
-                .build();
-
-        get1 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, intake1))
-                .setConstantHeadingInterpolation(intake1.getHeading())
                 .build();
 
         get2 = follower.pathBuilder()
@@ -57,6 +52,16 @@ public class bottomRedAuto extends OpMode {
 
         throw2 = follower.pathBuilder()
                 .addPath(new BezierLine(loaded2, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+
+        get1 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake1))
+                .setConstantHeadingInterpolation(intake1.getHeading())
+                .build();
+
+        backFromIntake1 = follower.pathBuilder()
+                .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
@@ -111,40 +116,25 @@ public class bottomRedAuto extends OpMode {
                 follower.followPath(launchPreload);
                 pathState = 0;
                 pathSubState = 0;
+                startWait();
                 break;
 
             case 0:
                 if (follower.isBusy()) break;
+                if(!hasWaitElapsed(1000)) break;
                 shootingSequence();
                 if (pathSubState <= 2) break;
 
                 pathSubState = 0;
-                follower.followPath(get1, true);
-                pathState = -2;
-                break;
-
-            case -2:
-                if (follower.getCurrentTValue() >= 0.8) {
-                    robot.intakeFront.setPower(1);
-                }
-                if (!follower.isBusy()) {
-                    follower.followPath(buildExitPath(), true);
-                    pathState = -3;
-                }
-                break;
-
-            case -3:
-                if (follower.isBusy()) break;
-                shootingSequence();
-                if (pathSubState <= 2) break;
-
-                pathSubState = 0;
+                robot.intakeBack.setPower(1);
+                robot.intakeFront.setPower(1);
                 follower.followPath(get2, true);
                 pathState = 1;
                 break;
 
             case 1:
                 if (follower.isBusy()) break;
+                robot.intakeBack.setPower(1);
                 robot.intakeFront.setPower(1);
                 follower.followPath(loading2, true);
                 pathTimeoutTimer.resetTimer();
@@ -153,13 +143,15 @@ public class bottomRedAuto extends OpMode {
 
             case 2:
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(1);
+                    robot.intakeFront.setPower(1);
                     follower.followPath(buildExitPath());
                     pathState = 3;
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.intakeFront.setPower(0);
+                robot.intakeBack.setPower(1);
+                robot.intakeFront.setPower(1);
                 follower.followPath(throw2, true);
                 pathState = 3;
                 break;
@@ -170,12 +162,38 @@ public class bottomRedAuto extends OpMode {
                 if (pathSubState <= 2) break;
 
                 pathSubState = 0;
-                TARGET_ANGLE = 0;
-                follower.followPath(leave);
+                robot.intakeBack.setPower(1);
+                robot.intakeFront.setPower(1);
+                follower.followPath(get1, true);
                 pathState = 4;
                 break;
 
             case 4:
+                if (follower.getCurrentTValue() >= 0.8) {
+                    robot.intakeBack.setPower(1);
+                    robot.intakeFront.setPower(1);
+                }
+                if (!follower.isBusy()) {
+                    follower.followPath(backFromIntake1, true);
+                    pathState = 5;
+                }
+
+                robot.intakeBack.setPower(1);
+                robot.intakeFront.setPower(1);
+                break;
+
+            case 5:
+                if (follower.isBusy()) break;
+                shootingSequence();
+                if (pathSubState <= 2) break;
+
+                pathSubState = 0;
+                TARGET_ANGLE = 0;
+                follower.followPath(leave);
+                pathState = 6;
+                break;
+
+            case 6:
                 if (follower.isBusy()) break;
                 reachedEnd = true;
                 break;
