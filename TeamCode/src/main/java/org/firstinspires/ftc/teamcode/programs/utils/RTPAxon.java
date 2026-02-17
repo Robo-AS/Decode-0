@@ -4,15 +4,15 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-
-public class RTPAxon { 
-    private final DcMotorEx encoderMotor; 
-    private final CRServo servo; 
+public class RTPAxon {
+    private final DcMotorEx encoderMotor;
+    private final CRServo servo;
     private PIDController pid_axon;
 
     private boolean rtp = true;
     private double power;
-    private double maxPower = 0.4;
+    private double maxPower = 1;
+
     private Direction direction = Direction.FORWARD;
 
     private double targetRotation;

@@ -15,7 +15,6 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import java.util.TreeMap;
 
 public class TurretCR extends SubsystemBase {
-
     private final Robot robot = Robot.getInstance();
     private final Limelight3A limelight;
     private final RTPAxon axon;
@@ -26,13 +25,16 @@ public class TurretCR extends SubsystemBase {
         MANUAL
     }
 
-    private TurretState currentState = TurretState.GOAL_LOCK;
+    public TurretState currentState = TurretState.GOAL_LOCK;
     public static double targetAngle = 0.0;
 
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
     public static double MAX_ANGLE = 90.0, MIN_ANGLE = -360.0;
 
     private final TreeMap<Double, Double> goalAdjustmentLUT = new TreeMap<>();
+
+    public static double filteredTargetAngle = 0.0;
+    private static final double ALPHA = 0.55;
 
     public TurretCR() {
         this.limelight = robot.limelight;
@@ -57,7 +59,8 @@ public class TurretCR extends SubsystemBase {
         Double highKey = goalAdjustmentLUT.ceilingKey(input);
         if (lowKey == null) return goalAdjustmentLUT.get(highKey);
         if (highKey == null || lowKey.equals(highKey)) return goalAdjustmentLUT.get(lowKey);
-        return goalAdjustmentLUT.get(lowKey) + (input - lowKey) * (goalAdjustmentLUT.get(highKey) - goalAdjustmentLUT.get(lowKey)) / (highKey - lowKey);
+        return goalAdjustmentLUT.get(lowKey) + (input - lowKey) *
+                (goalAdjustmentLUT.get(highKey) - goalAdjustmentLUT.get(lowKey)) / (highKey - lowKey);
     }
 
     private void updateGoalLock(boolean isRedAlliance) {
@@ -66,12 +69,28 @@ public class TurretCR extends SubsystemBase {
         Pose2D pose = robot.pinpoint.getPosition();
         double robotX = pose.getX(DistanceUnit.INCH);
         double robotY = pose.getY(DistanceUnit.INCH);
-        double robotHeading = pose.getHeading(AngleUnit.RADIANS);
+        double rawHeading = pose.getHeading(AngleUnit.RADIANS);
+
+        double robotHeading = AngleUnit.normalizeRadians(-rawHeading + Math.PI / 2);
 
         double goalX = isRedAlliance ? 144.0 : 0.0;
         double goalY = 144.0;
+        double velForward = robot.pinpoint.getVelX(DistanceUnit.INCH);
+        double velStrafe  = robot.pinpoint.getVelY(DistanceUnit.INCH);
 
-        double adjustment = getLUTAdjustment(AngleUnit.normalizeRadians(robotHeading));
+        double vx_field = velForward * Math.cos(robotHeading) - velStrafe * Math.sin(robotHeading);
+        double vy_field = velForward * Math.sin(robotHeading) + velStrafe * Math.cos(robotHeading);
+
+        double distToGoal = Math.hypot(goalX - robotX, goalY - robotY);
+        double projectileSpeed_in_per_s = 130.0;
+
+        if (distToGoal > 10.0 && Math.hypot(vx_field, vy_field) > 2.0) {
+            double timeOfFlight = distToGoal / projectileSpeed_in_per_s;
+            goalX += vx_field * timeOfFlight;
+            goalY += vy_field * timeOfFlight;
+        }
+
+        double adjustment = getLUTAdjustment(robotHeading);
 
         double deltaX = (goalX + adjustment) - robotX;
         double deltaY = goalY - robotY;
@@ -80,11 +99,13 @@ public class TurretCR extends SubsystemBase {
         double relativeAngleRad = AngleUnit.normalizeRadians(angleToGoalField - robotHeading);
 
         targetAngle = Math.toDegrees(relativeAngleRad);
+
+        filteredTargetAngle = ALPHA * targetAngle + (1 - ALPHA) * filteredTargetAngle;
+        targetAngle = filteredTargetAngle;
     }
 
     private void updateLimelight(int targetID) {
         LLResult ll = limelight.getLatestResult();
-
         if (ll != null && ll.isValid()) {
             boolean found = false;
             if (ll.getFiducialResults() != null) {
@@ -95,7 +116,6 @@ public class TurretCR extends SubsystemBase {
                     }
                 }
             }
-
             if (found) {
                 targetAngle = axon.getCurrentAngle() - ll.getTx();
             } else {
@@ -121,7 +141,6 @@ public class TurretCR extends SubsystemBase {
         if (normalized > 90.0) {
             normalized -= 360.0;
         }
-
         targetAngle = Range.clip(normalized, MIN_ANGLE, MAX_ANGLE);
 
         axon.updatePIDCoeffs(kP, kI, kD, kS);

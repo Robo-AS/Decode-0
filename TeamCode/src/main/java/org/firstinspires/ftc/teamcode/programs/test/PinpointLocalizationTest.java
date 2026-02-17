@@ -24,7 +24,7 @@ public class PinpointLocalizationTest extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
         robot.initializeHardware(hardwareMap);
-        robot.initializeTest();
+        robot.initialize();
     }
 
     @Override
