@@ -8,7 +8,7 @@ public class blockServoBarrier extends InstantCommand {
     public blockServoBarrier()
     {
         super(
-                () -> Robot.getInstance().servoBarrier.setPosition(0.35)
+                () -> Robot.getInstance().servoBarrier.setPosition(0.3)
         );
     }
 }

@@ -29,12 +29,9 @@ public class TurretCR extends SubsystemBase {
     public static double targetAngle = 0.0;
 
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
-    public static double MAX_ANGLE = 90.0, MIN_ANGLE = -360.0;
+    public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
 
     private final TreeMap<Double, Double> goalAdjustmentLUT = new TreeMap<>();
-
-    public static double filteredTargetAngle = 0.0;
-    private static final double ALPHA = 0.55;
 
     public TurretCR() {
         this.limelight = robot.limelight;
@@ -98,10 +95,7 @@ public class TurretCR extends SubsystemBase {
         double angleToGoalField = Math.atan2(deltaY, deltaX);
         double relativeAngleRad = AngleUnit.normalizeRadians(angleToGoalField - robotHeading);
 
-        targetAngle = Math.toDegrees(relativeAngleRad);
-
-        filteredTargetAngle = ALPHA * targetAngle + (1 - ALPHA) * filteredTargetAngle;
-        targetAngle = filteredTargetAngle;
+        targetAngle = -Math.toDegrees(relativeAngleRad);
     }
 
     private void updateLimelight(int targetID) {
@@ -117,7 +111,7 @@ public class TurretCR extends SubsystemBase {
                 }
             }
             if (found) {
-                targetAngle = axon.getCurrentAngle() - ll.getTx();
+                targetAngle = axon.getCurrentAngle() + ll.getTx();
             } else {
                 targetAngle = 0.0;
             }
@@ -138,8 +132,8 @@ public class TurretCR extends SubsystemBase {
 
     private void applyToHardware() {
         double normalized = AngleUnit.normalizeDegrees(targetAngle);
-        if (normalized > 90.0) {
-            normalized -= 360.0;
+        if (normalized < -90.0) {
+            normalized += 360.0;
         }
         targetAngle = Range.clip(normalized, MIN_ANGLE, MAX_ANGLE);
 

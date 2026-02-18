@@ -30,7 +30,7 @@ public class testRaresELenes extends CommandOpMode {
 
         gamepadEx = new GamepadEx(gamepad1);
 
-        robot.initializeControlHub(hardwareMap);
+        robot.initializeHardware(hardwareMap);
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(

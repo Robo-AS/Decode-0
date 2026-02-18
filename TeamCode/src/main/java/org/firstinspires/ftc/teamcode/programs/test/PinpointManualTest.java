@@ -12,8 +12,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
-@TeleOp(name = "Pinpoint Localization Test", group = "Test")
-public class PinpointLocalizationTest extends CommandOpMode {
+@TeleOp(name = "Pinpoint Manual Test", group = "Test")
+public class PinpointManualTest extends CommandOpMode {
 
     private final Robot robot = Robot.getInstance();
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -23,19 +23,11 @@ public class PinpointLocalizationTest extends CommandOpMode {
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
-        robot.initializeHardware(hardwareMap);
-        robot.initialize();
+        robot.initializePinpoint(hardwareMap);
     }
 
     @Override
     public void run() {
-        double x_input = (Math.pow(gamepad1.left_stick_x, 3) + liniarCoefTerm * gamepad1.left_stick_x) * constantTerm;
-        double y_input = (Math.pow(gamepad1.left_stick_y, 3) + liniarCoefTerm * gamepad1.left_stick_y) * constantTerm;
-        double turn_input = (Math.pow(gamepad1.right_stick_x, 3) + liniarCoefTerm * gamepad1.right_stick_x) * constantTerm;
-
-        PoseRR drive = new PoseRR(-x_input, y_input, -turn_input);
-        robot.mecanum.set(drive, 0);
-
         robot.pinpoint.update();
 
         Pose2D pose = robot.pinpoint.getPosition();

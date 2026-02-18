@@ -41,8 +41,8 @@ public class NEWTurretLimelightAndPinpointTest extends CommandOpMode {
         CommandScheduler.getInstance().reset();
 
         gamepadEx = new GamepadEx(gamepad1);
-        robot.initializeTurretHardware(hardwareMap);
-        robot.initializeTurret();
+        robot.initializeHardware(hardwareMap);
+        robot.initialize();
 
         robot.limelight.start();
         robot.limelight.setPollRateHz(100);
