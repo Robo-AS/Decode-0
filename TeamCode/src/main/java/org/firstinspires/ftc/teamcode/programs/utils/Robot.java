@@ -34,7 +34,7 @@ public class Robot {
     public CRServo servoX;
     public List<DcMotorEx> motors;
     public static MultipleTelemetry telemetry;
-    public static GoBildaPinpointDriver pinpoint = null;
+    public GoBildaPinpointDriver pinpoint;
 
     public double x = 0, y = 0, heading = 0, lastTurretAngle = 0;
     public boolean shootFar = false, limelightOnlyAim = false;
@@ -47,16 +47,13 @@ public class Robot {
     }
 
     private void configurePinpoint() {
-        if (pinpoint == null) return;
-        pinpoint.resetPosAndIMU();
+        pinpoint.setOffsets(131.16, -6.717, DistanceUnit.MM);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        pinpoint.setEncoderResolution(505.317, DistanceUnit.INCH);
-        pinpoint.setOffsets(131.16, 6.717, DistanceUnit.MM);
         pinpoint.setEncoderDirections(
                 GoBildaPinpointDriver.EncoderDirection.FORWARD,
-                GoBildaPinpointDriver.EncoderDirection.FORWARD
+                GoBildaPinpointDriver.EncoderDirection.REVERSED
         );
-        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0)); //placeholder pana imi da rares dimensiunile robotului
+        pinpoint.resetPosAndIMU();
     }
 
     public void initializeHardware(final HardwareMap hardwareMap){
@@ -105,7 +102,6 @@ public class Robot {
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        configurePinpoint();
     }
 
     public void initialize() {
@@ -169,10 +165,6 @@ public class Robot {
 
     public static HardwareMap getInstanceHardwareMap(){
         return hardwareMap;
-    }
-
-    public static GoBildaPinpointDriver getInstancePinpoint() {
-        return pinpoint;
     }
 
     public void initializePinpoint(HardwareMap hardwareMap){

@@ -18,12 +18,11 @@ public class GobildaPinpointExample extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
+        odo = hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
 
-        odo.setOffsets(131.16, 6.717, DistanceUnit.MM);
+        odo.setOffsets(131.16, -6.717, DistanceUnit.MM);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderResolution(19.894, DistanceUnit.MM);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
         odo.resetPosAndIMU();
 

@@ -5,9 +5,9 @@ import com.arcrobotics.ftclib.command.InstantCommand;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class changeAimState extends InstantCommand {
-    public changeAimState(){
+    public changeAimState(boolean aimState){
         super(
-                () -> Robot.getInstance().limelightOnlyAim = !Robot.getInstance().limelightOnlyAim
+                () -> Robot.getInstance().limelightOnlyAim = aimState
         );
     }
 }

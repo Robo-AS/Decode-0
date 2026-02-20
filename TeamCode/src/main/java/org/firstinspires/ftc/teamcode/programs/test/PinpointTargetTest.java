@@ -37,8 +37,8 @@ public class PinpointTargetTest extends CommandOpMode {
         PoseRR drive = new PoseRR(-x_input, y_input, -turn_input);
         robot.mecanum.set(drive, 0);
 
-        Robot.pinpoint.update();
-        Pose2D pose = Robot.pinpoint.getPosition();
+        Robot.getInstance().pinpoint.update();
+        Pose2D pose = Robot.getInstance().pinpoint.getPosition();
 
         double robotX = pose.getX(DistanceUnit.INCH);
         double robotY = pose.getY(DistanceUnit.INCH);

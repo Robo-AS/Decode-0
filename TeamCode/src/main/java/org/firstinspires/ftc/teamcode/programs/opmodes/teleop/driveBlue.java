@@ -25,7 +25,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
 import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.targetAngle;
 
-@TeleOp(name = "Drive BLUE - Corrected", group = "OpModes")
+@TeleOp(name = "Drive BLUE", group = "OpModes")
 public class driveBlue extends CommandOpMode {
 
     private final Robot robot = Robot.getInstance();
@@ -78,11 +78,13 @@ public class driveBlue extends CommandOpMode {
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(new ParallelCommandGroup(
+                        new changeAimState(true),
                         new freeServoBarrier(),
                         new startIntakeBack(1),
                         new startIntakeFront(1)
                 ))
                 .whenReleased(new ParallelCommandGroup(
+                        new changeAimState(false),
                         new blockServoBarrier(),
                         new stopIntakeBack(),
                         new stopIntakeFront()
@@ -103,8 +105,7 @@ public class driveBlue extends CommandOpMode {
                         new stopIntakeFront()
                 ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whenPressed(new changeAimState());
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new setServoYPosition(1));
     }
 
     @Override
@@ -145,29 +146,20 @@ public class driveBlue extends CommandOpMode {
 
     private void handleFlywheel() {
         if (robot.shootFar) {
-            robot.flywheel.loopAuto(2400);
+            robot.flywheel.loopAuto(2300);
         } else if (isLimelightOffline()) {
             robot.flywheel.loopAuto(1900);
         }
     }
 
     private void updateDriveTelemetry() {
-        telemetry.addLine("=== Odometry (Global) ===");
         if (robot.pinpoint != null) {
             Pose2D pos = robot.pinpoint.getPosition();
             telemetry.addData("X (Forward)", "%.1f in", pos.getX(DistanceUnit.INCH));
-            telemetry.addData("Y (Strafe)", "%.1f in", pos.getY(DistanceUnit.INCH));
-
-            double rawH = pos.getHeading(AngleUnit.RADIANS);
-            double corrH = AngleUnit.normalizeRadians(-rawH + Math.PI / 2);
-            telemetry.addData("Heading (Raw)", "%.1f deg", Math.toDegrees(rawH));
-            telemetry.addData("Heading (Field)", "%.1f deg", Math.toDegrees(corrH));
+            telemetry.addData("Y (Strafe)", "%.1f in", -pos.getY(DistanceUnit.INCH));
+            telemetry.addData("Angle to goal", robot.turret.getAngleToGoalField());
+            telemetry.addData("Distance", currentDistance);
         }
-
-        telemetry.addLine("=== Turret & Vision ===");
-        telemetry.addData("Target Angle", "%.2f deg", targetAngle);
-        telemetry.addData("Mode", robot.turret.currentState);
-        telemetry.addData("LL Distance", "%.3f", currentDistance);
 
         telemetry.addData("Loop Time", "%.1f ms", loopTimer.milliseconds());
         telemetry.update();

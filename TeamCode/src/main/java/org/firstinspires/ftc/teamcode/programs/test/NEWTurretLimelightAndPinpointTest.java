@@ -82,9 +82,9 @@ public class NEWTurretLimelightAndPinpointTest extends CommandOpMode {
 
         telemetry.addData("Target Angle", TurretCR.targetAngle);
         telemetry.addData("Current Angle", robot.axon.getCurrentAngle());
-        telemetry.addData("X", Robot.pinpoint.getPosX(DistanceUnit.INCH));
-        telemetry.addData("Y", Robot.pinpoint.getPosY(DistanceUnit.INCH));
-        telemetry.addData("Heading", Math.toDegrees(Robot.pinpoint.getHeading(AngleUnit.RADIANS)));
+        telemetry.addData("X", Robot.getInstance().pinpoint.getPosX(DistanceUnit.INCH));
+        telemetry.addData("Y", Robot.getInstance().pinpoint.getPosY(DistanceUnit.INCH));
+        telemetry.addData("Heading", Math.toDegrees(Robot.getInstance().pinpoint.getHeading(AngleUnit.RADIANS)));
         telemetry.update();
     }
 }
