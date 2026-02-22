@@ -15,9 +15,6 @@ public class Flywheel extends SubsystemBase {
     public static double kS = 0.05;
     public static double kV = 0.0003;
 
-    private double smoothedDistance = 0.0627;
-    private final double LOOKUP_FILTER = 0.1;
-
     public InterpLUT vel = new InterpLUT();
     private DcMotorEx flyWheel1, flyWheel2;
     private PIDFController pid_Flywheel;
@@ -34,10 +31,8 @@ public class Flywheel extends SubsystemBase {
     }
 
     public void loop(double distance) {
-        smoothedDistance = (LOOKUP_FILTER * distance) + ((1 - LOOKUP_FILTER) * smoothedDistance);
-
         currentVelocity = flyWheel1.getVelocity();
-        targetVelocity = vel.get(smoothedDistance);
+        targetVelocity = vel.get(distance);
 
         pid_Flywheel.setPIDF(kP, kI, kD, 0);
 
@@ -74,22 +69,29 @@ public class Flywheel extends SubsystemBase {
     public void initializeVelInterpLUT() {
         vel = new InterpLUT();
 
-
-        vel.add(0.0000, 2500);
-        vel.add(0.0045, 2500);
-        vel.add(0.0049, 2400);
-        vel.add(0.0112, 2150);
-        vel.add(0.0182, 1900);
-        vel.add(0.0233, 1800);
-        vel.add(0.0414, 1800);
-        vel.add(0.0655, 1700);
-        vel.add(0.1105, 1700);
-        vel.add(0.1262, 1700);
-        vel.add(0.5000, 1700);
-        vel.add(1, 1700);
-        vel.add(2, 1700);
-        vel.add(20, 1700);
+        vel.add(0.0000, 1600);
+        vel.add(55.8133, 1600);
+        vel.add(69.4260, 1675);
+        vel.add(76.2866, 1675);
+        vel.add(90.9241, 1800); //1750
+        vel.add(102.6444, 1850);
+        vel.add(118.0427, 1950);
+        vel.add(128.0427, 1950);
+        vel.add(133.0427, 1950);
+        vel.add(141.8654, 2300);
+        vel.add(300, 2300);
 
         vel.createLUT();
     }
 }
+
+/*
+55.8133 1600
+69.4260 1800
+76.2866 1800
+90.9241 1850
+102.6444 1900
+118.0427 2100
+130 2300
+141.8654 2350
+ */

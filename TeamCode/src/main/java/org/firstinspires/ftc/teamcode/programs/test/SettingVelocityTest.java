@@ -12,9 +12,12 @@ import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.util.Range;
 import com.solverslib.controller.PIDFController;
 import com.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
@@ -31,19 +34,20 @@ import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 public class SettingVelocityTest extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
     private GamepadEx gamepadEx;
-    public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
-    public Pose3D botpose;
-    public double downY = 0, upY = 0.8, maxDistance = 0.004, minDistance = 0.2704;
+    public double distance;
+    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20;
 
     double exponentialJoystickCoord_X_TURN, exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y;
     public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
     FtcDashboard dashboard;
 
-    public static double kP = 0.0065;
+    public static double kP = 0.003;
     public static double kI = 0;
-    public static double kD = 0.0000025;
+    public static double kD = 0;
     public static double kS = 0.05;
-    public static double kV = 0.00025;
+    public static double kV = 0.0003;
+
+    public boolean isRedAlliance = false;
 
     private DcMotorEx flyWheel1, flyWheel2;
 
@@ -64,17 +68,11 @@ public class SettingVelocityTest extends CommandOpMode {
         robot.initializeHardware(hardwareMap);
         robot.initialize();
 
-        robot.limelight.start();
-        robot.limelight.setPollRateHz(100);
-        robot.limelight.pipelineSwitch(0);
-
         feedforward = new SimpleMotorFeedforward(kS, kV);
         pid_Flywheel = new PIDFController(kP, kI, kD, 0);
 
         flyWheel1 = Robot.getInstance().launcher1;
         flyWheel2 = Robot.getInstance().launcher2;
-
-        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new setServoYPosition(0.5));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
                 new startIntakeFront(1),
@@ -108,21 +106,7 @@ public class SettingVelocityTest extends CommandOpMode {
         PoseRR drive = new PoseRR(-exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y, turnSpeed);
         robot.mecanum.set(drive, 0);
 
-        LLResult result = robot.limelight.getLatestResult();
-
-        if (result != null && result.isValid()) {
-            ta = result.getTa();
-            ty = result.getTy();
-            tx = result.getTx();
-
-            y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-            x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-            distance = Math.sqrt(x_distance * x_distance + y_distance * y_distance);
-            targetAngle = tx;
-
-            pos = getServoYPositionFromDistance(y_distance);
-            robot.servoY.setPosition(pos);
-        }
+        robot.pinpoint.update();
 
         currentVelocity = flyWheel1.getVelocity();
 
@@ -136,6 +120,17 @@ public class SettingVelocityTest extends CommandOpMode {
         flyWheel1.setPower(power);
         flyWheel2.setPower(power);
 
+        double goalY = isRedAlliance ? 152.0 : -8.75;
+        double goalX = 136.0;
+
+        Pose2D pose = robot.pinpoint.getPosition();
+        double robotX = pose.getX(DistanceUnit.INCH);
+        double robotY = -pose.getY(DistanceUnit.INCH);
+
+        distance = Math.hypot(goalY - robotY, goalX - robotX);
+
+        robot.servoY.setPosition(getServoYPositionFromDistance(distance));
+
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("Target Velocity", targetVelocity);
         packet.put("Current Velocity", currentVelocity);
@@ -148,18 +143,21 @@ public class SettingVelocityTest extends CommandOpMode {
     }
 
     public double getServoYPositionFromDistance(double distance) {
-        if (distance < maxDistance) return 0.8;
-        if (distance > minDistance) return 0;
-        double ratio = (minDistance - distance) / (minDistance - maxDistance);
+        double clippedDistance = Range.clip(distance, minDistance, maxDistance);
+
+        double ratio = (clippedDistance - minDistance) / (maxDistance - minDistance);
+
         return downY + ratio * (upY - downY);
     }
 }
 
-//0.0045 2300
-//0.0049 2400
-//0.1105 1800
-//0.1262 1700
-//0.0655 1750
-//0.0182 2000
-//0.0414 1900
-//0.0233 1900
+/*
+55.8133 1600
+69.4260 1800
+90.9241 1850
+102.6444 1900
+118.0427 2100
+76.2866 1800
+130 2300
+141.8654 2350
+ */

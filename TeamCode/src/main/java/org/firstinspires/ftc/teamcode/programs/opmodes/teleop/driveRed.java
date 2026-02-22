@@ -9,11 +9,10 @@ import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.*;
@@ -22,8 +21,6 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPo
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
-
-import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.targetAngle;
 
 @TeleOp(name = "Drive RED", group = "OpModes")
 public class driveRed extends CommandOpMode {
@@ -35,16 +32,13 @@ public class driveRed extends CommandOpMode {
     private static final double CONSTANT_TERM    = 0.6;
     private static final double LINEAR_COEF      = 0.7;
 
-    private static final double CAMERA_ANGLE     = 18.0;
-    private static final double CAMERA_HEIGHT    = 0.4;
-    private static final double MIN_DIST         = 0.2704;
-    private static final double MAX_DIST         = 0.004;
-
-    private long lastLLUpdate = 0;
-    private double currentDistance = 0;
+    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20;
+    private double robotX, robotY, distance;
     private ElapsedTime loopTimer = new ElapsedTime();
 
-    private final int RED_GOAL_ID = 24;
+    private double loopTimeSum = 0;
+    private int loopCount = 0;
+    private double avgHz = 0;
 
     @Override
     public void initialize() {
@@ -112,8 +106,8 @@ public class driveRed extends CommandOpMode {
 
     @Override
     public void run() {
-        super.run();
         loopTimer.reset();
+        super.run();
 
         robot.update();
 
@@ -127,21 +121,26 @@ public class driveRed extends CommandOpMode {
 
         robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
 
-        if (System.currentTimeMillis() - lastLLUpdate > 25) {
-            LLResult result = robot.limelight.getLatestResult();
-            lastLLUpdate = System.currentTimeMillis();
-            if (result != null && result.isValid()) {
-                processVision(result);
-            }
-        }
+        Pose2D pose = robot.pinpoint.getPosition();
+
+        robotX = pose.getX(DistanceUnit.INCH);
+        robotY = -pose.getY(DistanceUnit.INCH);
+
+        double goalY = 152.0;
+        double goalX = 136.0;
+
+        distance = Math.hypot(goalX - robotX,  goalY - robotY);
 
         boolean useLimelight = robot.limelightOnlyAim;
-
         robot.turret.loop(
                 useLimelight ? TurretCR.TurretState.LIMELIGHT_LOCK : TurretCR.TurretState.GOAL_LOCK,
-                RED_GOAL_ID,
-                true
+                24,
+                true,
+                robotX,
+                robotY
         );
+
+        robot.servoY.setPosition(getServoYPositionFromDistance(distance));
 
         handleFlywheel();
         updateDriveTelemetry();
@@ -150,54 +149,43 @@ public class driveRed extends CommandOpMode {
     private void handleFlywheel() {
         if (robot.shootFar) {
             robot.flywheel.loopAuto(2300);
-        } else if (isLimelightOffline()) {
-            robot.flywheel.loopAuto(1900);
+        } else {
+            robot.flywheel.loop(distance);
         }
     }
 
     private void updateDriveTelemetry() {
+        double currentLoopTime = loopTimer.milliseconds();
+
+        loopTimeSum += currentLoopTime;
+        loopCount++;
+        if (loopCount >= 10) {
+            avgHz = 1000.0 / (loopTimeSum / loopCount);
+            loopTimeSum = 0;
+            loopCount = 0;
+        }
+
         telemetry.addLine("=== DRIVE RED ACTIVE ===");
         if (robot.pinpoint != null) {
-            Pose2D pos = robot.pinpoint.getPosition();
-            telemetry.addData("X (Forward)", "%.1f in", pos.getX(DistanceUnit.INCH));
-            telemetry.addData("Y (Strafe)", "%.1f in", -pos.getY(DistanceUnit.INCH));
-            telemetry.addData("Distance", currentDistance);
+            telemetry.addData("X (Forward)", "%.1f in", robotX);
+            telemetry.addData("Y (Strafe)", "%.1f in", robotY);
+            telemetry.addData("Distance to Goal", "%.1f in", distance);
+            telemetry.addData("Target Angle", "%.1f deg", TurretCR.targetAngle);
         }
 
-        telemetry.addData("Target Angle", "%.2f deg", targetAngle);
-        telemetry.addData("Loop Time", "%.1f ms", loopTimer.milliseconds());
+        telemetry.addData("Loop Speed", "%.0f Hz", avgHz);
+        telemetry.addData("Loop Time", "%.1f ms", currentLoopTime);
         telemetry.update();
-    }
-
-    private void processVision(LLResult result) {
-        double tx = result.getTx();
-        double ty = result.getTy();
-
-        double distY = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-        double distX = Math.sqrt(distY * distY + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-        currentDistance = Math.sqrt(distX * distX + distY * distY);
-
-        boolean targetFound = false;
-        if (result.getFiducialResults() != null) {
-            for (LLResultTypes.FiducialResult fr : result.getFiducialResults()) {
-                if (fr.getFiducialId() == RED_GOAL_ID) {
-                    targetFound = true;
-                    break;
-                }
-            }
-        }
-
-        if (targetFound) {
-            robot.flywheel.loop(currentDistance);
-            double sPos = (currentDistance < MAX_DIST) ? 1.0 :
-                    (currentDistance > MIN_DIST) ? 0.0 :
-                            (MIN_DIST - currentDistance) / (MIN_DIST - MAX_DIST);
-            robot.servoY.setPosition(sPos);
-        }
     }
 
     private boolean isLimelightOffline() {
         LLResult res = robot.limelight.getLatestResult();
         return res == null || !res.isValid();
+    }
+
+    public double getServoYPositionFromDistance(double distance) {
+        double clippedDistance = Range.clip(distance, minDistance, maxDistance);
+        double ratio = (clippedDistance - minDistance) / (maxDistance - minDistance);
+        return downY + ratio * (upY - downY);
     }
 }

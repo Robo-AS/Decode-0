@@ -12,6 +12,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -37,8 +38,7 @@ public class driveBlue extends CommandOpMode {
 
     private static final double CAMERA_ANGLE     = 18.0;
     private static final double CAMERA_HEIGHT    = 0.4;
-    private static final double MIN_DIST         = 0.2704;
-    private static final double MAX_DIST         = 0.004;
+    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20, robotX, robotY, distance;
 
     private long lastLLUpdate = 0;
     private double currentDistance = 0;
@@ -78,13 +78,11 @@ public class driveBlue extends CommandOpMode {
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(new ParallelCommandGroup(
-                        new changeAimState(true),
                         new freeServoBarrier(),
                         new startIntakeBack(1),
                         new startIntakeFront(1)
                 ))
                 .whenReleased(new ParallelCommandGroup(
-                        new changeAimState(false),
                         new blockServoBarrier(),
                         new stopIntakeBack(),
                         new stopIntakeFront()
@@ -105,7 +103,7 @@ public class driveBlue extends CommandOpMode {
                         new stopIntakeFront()
                 ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new setServoYPosition(1));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
     }
 
     @Override
@@ -125,20 +123,26 @@ public class driveBlue extends CommandOpMode {
 
         robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
 
-        if (System.currentTimeMillis() - lastLLUpdate > 25) {
-            LLResult result = robot.limelight.getLatestResult();
-            lastLLUpdate = System.currentTimeMillis();
-            if (result != null && result.isValid()) {
-                processVision(result);
-            }
-        }
+        Pose2D pose = robot.pinpoint.getPosition();
+
+        robotX = pose.getX(DistanceUnit.INCH);
+        robotY = -pose.getY(DistanceUnit.INCH);
+
+        double goalY = -8.75;
+        double goalX = 136.0;
+
+        distance = Math.hypot(goalX - robotX,  goalY - robotY);
 
         boolean useLimelight = robot.limelightOnlyAim;
         robot.turret.loop(
                 useLimelight ? TurretCR.TurretState.LIMELIGHT_LOCK : TurretCR.TurretState.GOAL_LOCK,
                 20,
-                false
+                false,
+                robotX,
+                robotY
         );
+
+        robot.servoY.setPosition(getServoYPositionFromDistance(distance));
 
         handleFlywheel();
         updateDriveTelemetry();
@@ -147,53 +151,36 @@ public class driveBlue extends CommandOpMode {
     private void handleFlywheel() {
         if (robot.shootFar) {
             robot.flywheel.loopAuto(2300);
-        } else if (isLimelightOffline()) {
-            robot.flywheel.loopAuto(1900);
+        } else{
+            robot.flywheel.loop(distance);
         }
     }
 
     private void updateDriveTelemetry() {
         if (robot.pinpoint != null) {
-            Pose2D pos = robot.pinpoint.getPosition();
-            telemetry.addData("X (Forward)", "%.1f in", pos.getX(DistanceUnit.INCH));
-            telemetry.addData("Y (Strafe)", "%.1f in", -pos.getY(DistanceUnit.INCH));
-            telemetry.addData("Angle to goal", robot.turret.getAngleToGoalField());
-            telemetry.addData("Distance", currentDistance);
+            telemetry.addData("X (Forward)", "%.1f in", robotX);
+            telemetry.addData("Y (Strafe)", "%.1f in", robotY);
+            telemetry.addData("Target Angle", robot.turret.getTargetAngle());
+            telemetry.addData("Distance", distance);
         }
 
-        telemetry.addData("Loop Time", "%.1f ms", loopTimer.milliseconds());
+        double loopTimeMs = loopTimer.milliseconds();
+        double hz = (loopTimeMs > 0) ? (1000.0 / loopTimeMs) : 0;
+
+        telemetry.addData("Loop Time", "%.1f ms", hz);
         telemetry.update();
-    }
-
-    private void processVision(LLResult result) {
-        double tx = result.getTx();
-        double ty = result.getTy();
-
-        double distY = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-        double distX = Math.sqrt(distY * distY + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
-        currentDistance = Math.sqrt(distX * distX + distY * distY);
-
-        boolean targetFound = false;
-        if (result.getFiducialResults() != null) {
-            for (LLResultTypes.FiducialResult fr : result.getFiducialResults()) {
-                if (fr.getFiducialId() == 20) {
-                    targetFound = true;
-                    break;
-                }
-            }
-        }
-
-        if (targetFound) {
-            robot.flywheel.loop(currentDistance);
-            double sPos = (currentDistance < MAX_DIST) ? 1.0 :
-                    (currentDistance > MIN_DIST) ? 0.0 :
-                            (MIN_DIST - currentDistance) / (MIN_DIST - MAX_DIST);
-            robot.servoY.setPosition(sPos);
-        }
     }
 
     private boolean isLimelightOffline() {
         LLResult res = robot.limelight.getLatestResult();
         return res == null || !res.isValid();
+    }
+
+    public double getServoYPositionFromDistance(double distance) {
+        double clippedDistance = Range.clip(distance, minDistance, maxDistance);
+
+        double ratio = (clippedDistance - minDistance) / (maxDistance - minDistance);
+
+        return downY + ratio * (upY - downY);
     }
 }

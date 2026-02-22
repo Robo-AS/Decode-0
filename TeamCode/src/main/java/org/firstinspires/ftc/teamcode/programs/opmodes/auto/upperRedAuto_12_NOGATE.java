@@ -8,36 +8,34 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "AUTO MEET SUS SUB POARTA BLUE")
-public class upperBlueAuto extends OpMode {
+@Autonomous(name = "AUTO TRIUNGHI MARE 12 no gate RED")
+public class upperRedAuto_12_NOGATE extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
-    public double TARGET_ANGLE = 0;
-    private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
-    private final long PATH_TIMEOUT_MS = 4000;
+    private final long PATH_TIMEOUT_MS = 3000;
 
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
 
-    private final Pose startPose = new Pose(21.01067615658363, 124.01423487544484, Math.toRadians(144));
-    private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(135));
-    private final Pose alignToBalls1 = new Pose(44.09252669039146, 82.2135231316726, Math.toRadians(180));
-    private final Pose intake1 = new Pose(18, 82.2135231316726, Math.toRadians(180));
-    private final Pose alignToBalls2 = new Pose(45.09252669039146, 52, Math.toRadians(180));
-    private final Pose intake2 = new Pose(10, 52, Math.toRadians(180));
-    private final Pose alignToBalls3 = new Pose(52, 32, Math.toRadians(180));
-    private final Pose intake3 = new Pose(20, 32, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(31.430604982206404, 83.5729537366548, Math.toRadians(180));
-    private final Pose openGate = new Pose(11, 57, Math.toRadians(180));
+    // Mirrored Poses: X = 144 - X_blue, Y = Y_blue, Heading = 180 - Heading_blue
+    private final Pose startPose = new Pose(122.99, 124.01, Math.toRadians(36));
+    private final Pose outtake = new Pose(93.438, 92.754, Math.toRadians(0));
+    private final Pose alignToBalls1 = new Pose(99.91, 87.21, Math.toRadians(0));
+    private final Pose intake1 = new Pose(126, 87.21, Math.toRadians(0));
+    private final Pose alignToBalls2 = new Pose(98.91, 60, Math.toRadians(0));
+    private final Pose intake2 = new Pose(134, 60, Math.toRadians(0));
+    private final Pose alignToBalls3 = new Pose(92, 37, Math.toRadians(0));
+    private final Pose intake3 = new Pose(126, 37, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(112.57, 83.57, Math.toRadians(0));
 
-    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
+    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, align3, intaking3, outtaking3, leave;
 
     private void buildPaths() {
         launchPreload = follower.pathBuilder()
@@ -45,6 +43,24 @@ public class upperBlueAuto extends OpMode {
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
 
+        // Sequence for Ball 2
+        align2 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, alignToBalls2))
+                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
+                .build();
+
+        intaking2 = follower.pathBuilder()
+                .addPath(new BezierLine(alignToBalls2, intake2))
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .build();
+
+        outtaking2 = follower.pathBuilder()
+                // Mirrored control point: 144 - 60.75 = 83.25
+                .addPath(new BezierCurve(intake2, new Pose(83.25, 68.09), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+
+        // Sequence for Ball 1
         align1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
@@ -60,16 +76,7 @@ public class upperBlueAuto extends OpMode {
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
-        align2 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, alignToBalls2))
-                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
-                .build();
-
-        intaking2 = follower.pathBuilder()
-                .addPath(new BezierLine(alignToBalls2, intake2))
-                .setConstantHeadingInterpolation(intake2.getHeading())
-                .build();
-
+        // Sequence for Ball 3
         align3 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
@@ -81,23 +88,14 @@ public class upperBlueAuto extends OpMode {
                 .build();
 
         outtaking3 = follower.pathBuilder()
-                .addPath(new BezierLine(intake3, outtake))
-                .setConstantHeadingInterpolation(outtake.getHeading())
-                .build();
-
-        outtaking2 = follower.pathBuilder()
-                .addPath(new BezierCurve(openGate, new Pose(60.75786832740214, 68.09408185053384), outtake))
+                // Mirrored control point: 144 - 65 = 79
+                .addPath(new BezierCurve(intake3, new Pose(79, 50), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
         leave = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, leavePoint))
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
-                .build();
-
-        openDaGate = follower.pathBuilder()
-                .addPath(new BezierCurve(intake2, new Pose(44.188473309608554, 53.91614590747334), openGate))
-                .setConstantHeadingInterpolation(openGate.getHeading())
                 .build();
     }
 
@@ -108,30 +106,22 @@ public class upperBlueAuto extends OpMode {
                 .build();
     }
 
-    private void startWait() {
-        waitTimer.resetTimer();
-    }
-
-    private boolean hasWaitElapsed(long ms) {
-        return waitTimer.getElapsedTime() >= ms;
-    }
-
     private void shootingSequence() {
         switch (pathSubState) {
             case 0:
-                startWait();
+                waitTimer.resetTimer();
                 robot.intakeBack.setPower(1);
                 robot.intakeFront.setPower(1);
                 pathSubState = 1;
                 break;
             case 1:
-                if (!hasWaitElapsed(150)) break;
-                robot.servoBarrier.setPosition(0.48);
-                startWait();
+                if (waitTimer.getElapsedTime() < 150) break;
+                robot.servoBarrier.setPosition(0.5);
+                waitTimer.resetTimer();
                 pathSubState = 2;
                 break;
             case 2:
-                if (!hasWaitElapsed(2000)) break;
+                if (waitTimer.getElapsedTime() < 1500) break;
                 robot.servoBarrier.setPosition(0.35);
                 robot.intakeBack.setPower(0);
                 robot.intakeFront.setPower(0);
@@ -142,135 +132,123 @@ public class upperBlueAuto extends OpMode {
 
     private void autonomousPathUpdate() {
         switch (pathState) {
-            case 0:
+            case 0: // Preload
                 follower.followPath(launchPreload);
                 robot.servoIntake.setPosition(0.45);
                 pathState = 1;
-                pathSubState = 0;
+                waitTimer.resetTimer();
                 break;
-            case 1:
-                if (follower.isBusy()) break;
+
+            case 1: // Shoot Preload
+                if (follower.isBusy() || waitTimer.getElapsedTime() < 500) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                pathSubState = 0;
-                follower.followPath(align2);
-                pathState = 2;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(align2);
+                    pathState = 2;
+                }
                 break;
-            case 2:
+
+            case 2: // Align Ball 2
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking2, true);
                 pathTimeoutTimer.resetTimer();
                 pathState = 3;
                 break;
-            case 3:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
+
+            case 3: // Intake Ball 2
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.servoIntake.setPosition(0.45);
                     follower.followPath(buildExitPath());
                     pathState = 4;
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
-                follower.followPath(openDaGate, true);
-                pathState = -1;
-                break;
-            case -1:
-                if(follower.isBusy()) break;
                 follower.followPath(outtaking2);
                 pathState = 4;
+                waitTimer.resetTimer();
                 break;
-            case 4:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
-                if (follower.isBusy()) break;
+
+            case 4: // Shoot Ball 2
+                if (follower.isBusy() || waitTimer.getElapsedTime() < 500) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                pathSubState = 0;
-                follower.followPath(align1);
-                pathState = 5;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(align1);
+                    pathState = 5;
+                }
                 break;
-            case 5:
+
+            case 5: // Align Ball 1
+                if (follower.isBusy()) break;
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
-                if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 follower.followPath(intaking1);
                 pathTimeoutTimer.resetTimer();
                 pathState = 6;
                 break;
-            case 6:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
+
+            case 6: // Intake Ball 1
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.servoIntake.setPosition(0.45);
                     follower.followPath(buildExitPath());
                     pathState = 7;
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 follower.followPath(outtaking1);
                 pathState = 7;
+                waitTimer.resetTimer();
                 break;
-            case 7:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
-                if (follower.isBusy()) break;
+
+            case 7: // Shoot Ball 1
+                if (follower.isBusy() || waitTimer.getElapsedTime() < 500) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                robot.intakeFront.setPower(0);
-                robot.intakeBack.setPower(0);
-                pathSubState = 0;
-                follower.followPath(align3);
-                pathState = 8;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(align3);
+                    pathState = 8;
+                }
                 break;
-            case 8:
+
+            case 8: // Align Ball 3
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking3, true);
                 pathTimeoutTimer.resetTimer();
                 pathState = 9;
                 break;
-            case 9:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
+
+            case 9: // Intake Ball 3
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.servoIntake.setPosition(0.45);
                     follower.followPath(buildExitPath());
                     pathState = 10;
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 follower.followPath(outtaking3);
                 pathState = 10;
+                waitTimer.resetTimer();
                 break;
-            case 10:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
-                if (follower.isBusy()) break;
+
+            case 10: // Shoot Ball 3
+                if (follower.isBusy() || waitTimer.getElapsedTime() < 500) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                robot.intakeFront.setPower(0);
-                robot.intakeBack.setPower(0);
-                pathSubState = 0;
-                follower.followPath(leave);
-                pathState = 11;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(leave);
+                    pathState = 11;
+                }
                 break;
-            case 11:
+
+            case 11: // Finish
                 if (follower.isBusy()) break;
                 reachedEnd = true;
-                pathState = 12;
                 break;
         }
     }
+
 
     @Override
     public void init() {
@@ -279,16 +257,11 @@ public class upperBlueAuto extends OpMode {
         buildPaths();
         robot.initializeHardwareAuto(hardwareMap);
         robot.initializeAuto();
-        robot.servoBarrier.setPosition(0.425);
+        robot.servoBarrier.setPosition(0.35);
     }
 
     @Override
-    public void init_loop() {}
-
-    @Override
     public void start() {
-        opmodeTimer.resetTimer();
-        pathTimeoutTimer.resetTimer();
         pathState = 0;
         pathSubState = 0;
     }
@@ -298,17 +271,14 @@ public class upperBlueAuto extends OpMode {
         if (reachedEnd) return;
         follower.update();
         autonomousPathUpdate();
-        robot.flywheel.loopAuto(1800);
-        robot.servoY.setPosition(0.5);
-        robot.turret.loopAuto(2);
-        robot.x = follower.getPose().getX();
-        robot.y = follower.getPose().getY();
-        robot.heading = follower.getPose().getHeading();
+
+        robot.flywheel.loopAuto(1700);
+        robot.servoY.setPosition(0.7);
+        // turret.loopAuto isRedAlliance set to true
+        robot.turret.loopAuto(true, follower.getPose(), 144, 144);
+
         telemetry.addData("Path State", pathState);
         telemetry.addData("Sub State", pathSubState);
         telemetry.update();
     }
-
-    @Override
-    public void stop() {}
 }

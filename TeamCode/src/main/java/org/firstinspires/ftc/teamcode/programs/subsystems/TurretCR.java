@@ -1,17 +1,15 @@
 package org.firstinspires.ftc.teamcode.programs.subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
+import com.arcrobotics.ftclib.command.CommandScheduler;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.util.Range;
-
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.utils.RTPAxon;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
-
 import java.util.TreeMap;
 
 public class TurretCR extends SubsystemBase {
@@ -25,14 +23,15 @@ public class TurretCR extends SubsystemBase {
 
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
+    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20;
 
     double angleToGoalField;
-
     private final TreeMap<Double, Double> yInterpolationTable = new TreeMap<>();
 
     public TurretCR() {
         this.limelight = robot.limelight;
         this.axon = robot.axon;
+        CommandScheduler.getInstance().registerSubsystem(this);
     }
 
     public void initialize() {
@@ -41,26 +40,17 @@ public class TurretCR extends SubsystemBase {
         yInterpolationTable.put(136.0, 50.0);
     }
 
-    private double getInterpolatedOffset(double currentY) {
-        Double lowKey = yInterpolationTable.floorKey(currentY);
-        Double highKey = yInterpolationTable.ceilingKey(currentY);
-        if (lowKey == null) return yInterpolationTable.get(highKey);
-        if (highKey == null || lowKey.equals(highKey)) return yInterpolationTable.get(lowKey);
-        return yInterpolationTable.get(lowKey) + (currentY - lowKey) * (yInterpolationTable.get(highKey) - yInterpolationTable.get(lowKey)) / (highKey - lowKey);
+    @Override
+    public void periodic() {
+        applyToHardware();
     }
 
-    private void updateGoalLock(boolean isRedAlliance) {
-        if (robot.pinpoint == null) return;
-
-        Pose2D pose = robot.pinpoint.getPosition();
-        double robotX = pose.getX(DistanceUnit.INCH);
-        double robotY = -pose.getY(DistanceUnit.INCH);
-        double robotHeading = pose.getHeading(AngleUnit.RADIANS);
-
-        double goalY = isRedAlliance ? 152.0 : -8.75;
+    private void updateGoalLock(boolean isRedAlliance, double robotX, double robotY) {
+        double robotHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS);
+        double goalY = isRedAlliance ? 150 : -8;
         double goalX = 136.0;
 
-        if( (goalX - robotX) != 0)
+        if ((goalX - robotX) != 0)
             angleToGoalField = Math.atan((goalY - robotY) / (goalX - robotX));
         else
             angleToGoalField = 0;
@@ -68,9 +58,30 @@ public class TurretCR extends SubsystemBase {
         double diff = angleToGoalField + robotHeading;
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
-        diff = Math.toDegrees(diff);
-        targetAngle = diff;
 
+        targetAngle = Math.toDegrees(diff);
+    }
+
+    public void loopAuto(boolean isRedAlliance, Pose pedro, double gX, double gY) {
+        double robotHeading = pedro.getHeading() - Math.toRadians(90);
+        double robotX = pedro.getX();
+        double robotY = pedro.getY();
+
+        double goalX = gX;
+        double goalY = gY;
+
+        if ((goalY - robotY) != 0)
+            angleToGoalField = Math.atan((goalX - robotX) / (goalY - robotY));
+        else
+            angleToGoalField = 0;
+
+        double diff = angleToGoalField + robotHeading;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+
+        targetAngle = Math.toDegrees(diff);
+
+        applyToHardware();
     }
 
     private void updateLimelight(int targetID) {
@@ -88,10 +99,14 @@ public class TurretCR extends SubsystemBase {
         }
     }
 
-    public void loop(TurretState mode, int targetID, boolean isRed) {
+    public void loop(TurretState mode, int targetID, boolean isRed, double robotX, double robotY) {
         this.currentState = mode;
-        if (currentState == TurretState.GOAL_LOCK) updateGoalLock(isRed);
+        if (currentState == TurretState.GOAL_LOCK) updateGoalLock(isRed, robotX, robotY);
         else if (currentState == TurretState.LIMELIGHT_LOCK) updateLimelight(targetID);
+    }
+
+    public void loopAuto(double target){
+        targetAngle = target;
         applyToHardware();
     }
 
@@ -112,12 +127,6 @@ public class TurretCR extends SubsystemBase {
         axon.update();
     }
 
-    public void loopAuto(double target) {
-        targetAngle = target;
-        applyToHardware();
-    }
-
-    public double getAngleToGoalField(){
-        return angleToGoalField;
-    }
+    public double getAngleToGoalField() { return angleToGoalField; }
+    public double getTargetAngle() { return targetAngle; }
 }

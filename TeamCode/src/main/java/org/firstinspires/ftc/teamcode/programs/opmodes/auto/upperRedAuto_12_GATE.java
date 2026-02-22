@@ -8,13 +8,15 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "AUTO MEET SUS SUB POARTA RED")
-public class upperRedAuto extends OpMode {
+@Autonomous(name = "AUTO TRIUNGHI MARE 12 gate RED")
+public class upperRedAuto_12_GATE extends OpMode {
     private final Robot robot = Robot.getInstance();
     private Follower follower;
+    public double TARGET_ANGLE = 0;
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
@@ -24,16 +26,17 @@ public class upperRedAuto extends OpMode {
     private int pathState = 0;
     private int pathSubState = 0;
 
-    private final Pose startPose = new Pose(21.0106, 19.9858, Math.toRadians(-144));
-    private final Pose outtake = new Pose(50.562, 51.246, Math.toRadians(-140));
-    private final Pose alignToBalls1 = new Pose(47, 61.7865, Math.toRadians(-180));
-    private final Pose intake1 = new Pose(16, 61.7865, Math.toRadians(-180));
-    private final Pose alignToBalls2 = new Pose(45.0925, 90.0, Math.toRadians(-180));
-    private final Pose intake2 = new Pose(7, 90.0, Math.toRadians(-180));
-    private final Pose alignToBalls3 = new Pose(52, 112.0, Math.toRadians(-180));
-    private final Pose intake3 = new Pose(5, 112.0, Math.toRadians(-180));
-    private final Pose leavePoint = new Pose(31.4306, 60.427, Math.toRadians(-180));
-    private final Pose openGate = new Pose(11, 85.5, Math.toRadians(-180));
+    // Mirrored Poses: X = 144 - X_blue, Y = Y_blue, Heading = 180 - Heading_blue
+    private final Pose startPose = new Pose(122.989, 124.014, Math.toRadians(36));
+    private final Pose outtake = new Pose(93.438, 92.754, Math.toRadians(0));
+    private final Pose alignToBalls1 = new Pose(99.907, 82.214, Math.toRadians(0));
+    private final Pose intake1 = new Pose(126, 82.214, Math.toRadians(0));
+    private final Pose alignToBalls2 = new Pose(98.907, 60, Math.toRadians(0));
+    private final Pose intake2 = new Pose(134, 60, Math.toRadians(0));
+    private final Pose alignToBalls3 = new Pose(92, 32, Math.toRadians(0));
+    private final Pose intake3 = new Pose(134, 32, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(112.569, 83.573, Math.toRadians(0));
+    private final Pose openGate = new Pose(125, 64, Math.toRadians(0));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
 
@@ -84,7 +87,8 @@ public class upperRedAuto extends OpMode {
                 .build();
 
         outtaking2 = follower.pathBuilder()
-                .addPath(new BezierCurve(openGate, new Pose(60.7578, 75.9059), outtake))
+                // Mirrored control point: 144 - 60.758 = 83.242
+                .addPath(new BezierCurve(openGate, new Pose(83.242, 68.094), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
@@ -94,7 +98,8 @@ public class upperRedAuto extends OpMode {
                 .build();
 
         openDaGate = follower.pathBuilder()
-                .addPath(new BezierCurve(intake2, new Pose(44.1884, 90.0838), openGate))
+                // Mirrored control point: 144 - 24.128 = 119.872
+                .addPath(new BezierCurve(intake2, new Pose(119.872, 59.171), openGate))
                 .setConstantHeadingInterpolation(openGate.getHeading())
                 .build();
     }
@@ -106,30 +111,22 @@ public class upperRedAuto extends OpMode {
                 .build();
     }
 
-    private void startWait() {
-        waitTimer.resetTimer();
-    }
-
-    private boolean hasWaitElapsed(long ms) {
-        return waitTimer.getElapsedTime() >= ms;
-    }
-
     private void shootingSequence() {
         switch (pathSubState) {
             case 0:
-                startWait();
+                waitTimer.resetTimer();
                 robot.intakeBack.setPower(1);
                 robot.intakeFront.setPower(1);
                 pathSubState = 1;
                 break;
             case 1:
-                if (!hasWaitElapsed(150)) break;
-                robot.servoBarrier.setPosition(0.48);
-                startWait();
+                if (waitTimer.getElapsedTime() < 150) break;
+                robot.servoBarrier.setPosition(0.5);
+                waitTimer.resetTimer();
                 pathSubState = 2;
                 break;
             case 2:
-                if (!hasWaitElapsed(2000)) break;
+                if (waitTimer.getElapsedTime() < 2000) break;
                 robot.servoBarrier.setPosition(0.35);
                 robot.intakeBack.setPower(0);
                 robot.intakeFront.setPower(0);
@@ -144,36 +141,36 @@ public class upperRedAuto extends OpMode {
                 follower.followPath(launchPreload);
                 robot.servoIntake.setPosition(0.45);
                 pathState = 1;
-                pathSubState = 0;
                 break;
             case 1:
                 if (follower.isBusy()) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                pathSubState = 0;
-                follower.followPath(align2);
-                pathState = 2;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(align2);
+                    pathState = 2;
+                }
                 break;
             case 2:
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking2, true);
                 pathTimeoutTimer.resetTimer();
                 pathState = 3;
+                waitTimer.resetTimer();
                 break;
             case 3:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.servoIntake.setPosition(0.45);
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
                     follower.followPath(buildExitPath());
                     pathState = 4;
                     break;
                 }
-                if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
+                if (follower.isBusy() || waitTimer.getElapsedTime() < 2000) break;
+                robot.intakeFront.setPower(0);
+                robot.intakeBack.setPower(0);
                 follower.followPath(openDaGate, true);
                 pathState = -1;
                 break;
@@ -183,53 +180,47 @@ public class upperRedAuto extends OpMode {
                 pathState = 4;
                 break;
             case 4:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
                 if (follower.isBusy()) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                pathSubState = 0;
-                follower.followPath(align1);
-                pathState = 5;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(align1);
+                    pathState = 5;
+                }
                 break;
             case 5:
+                if (follower.isBusy()) break;
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
-                if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 follower.followPath(intaking1);
                 pathTimeoutTimer.resetTimer();
                 pathState = 6;
                 break;
             case 6:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.servoIntake.setPosition(0.45);
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
                     follower.followPath(buildExitPath());
                     pathState = 7;
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
+                robot.intakeFront.setPower(0);
+                robot.intakeBack.setPower(0);
                 follower.followPath(outtaking1);
                 pathState = 7;
                 break;
             case 7:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
                 if (follower.isBusy()) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                robot.intakeFront.setPower(0);
-                robot.intakeBack.setPower(0);
-                pathSubState = 0;
-                follower.followPath(align3);
-                pathState = 8;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(align3);
+                    pathState = 8;
+                }
                 break;
             case 8:
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking3, true);
@@ -237,35 +228,31 @@ public class upperRedAuto extends OpMode {
                 pathState = 9;
                 break;
             case 9:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.servoIntake.setPosition(0.45);
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
                     follower.followPath(buildExitPath());
                     pathState = 10;
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.servoIntake.setPosition(0.45);
+                robot.intakeFront.setPower(0);
+                robot.intakeBack.setPower(0);
                 follower.followPath(outtaking3);
                 pathState = 10;
                 break;
             case 10:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
                 if (follower.isBusy()) break;
                 shootingSequence();
-                if (pathSubState <= 2) break;
-                robot.intakeFront.setPower(0);
-                robot.intakeBack.setPower(0);
-                pathSubState = 0;
-                follower.followPath(leave);
-                pathState = 11;
+                if (pathSubState == 3) {
+                    pathSubState = 0;
+                    follower.followPath(leave);
+                    pathState = 11;
+                }
                 break;
             case 11:
                 if (follower.isBusy()) break;
                 reachedEnd = true;
-                pathState = 12;
                 break;
         }
     }
@@ -277,11 +264,8 @@ public class upperRedAuto extends OpMode {
         buildPaths();
         robot.initializeHardwareAuto(hardwareMap);
         robot.initializeAuto();
-        robot.servoBarrier.setPosition(0.425);
+        robot.servoBarrier.setPosition(0.35);
     }
-
-    @Override
-    public void init_loop() {}
 
     @Override
     public void start() {
@@ -297,16 +281,12 @@ public class upperRedAuto extends OpMode {
         follower.update();
         autonomousPathUpdate();
         robot.flywheel.loopAuto(1700);
-        robot.servoY.setPosition(0.5);
-        robot.turret.loopAuto(-2);
-        robot.x = follower.getPose().getX();
-        robot.y = follower.getPose().getY();
-        robot.heading = follower.getPose().getHeading();
+        robot.servoY.setPosition(0.7);
+        // Changed isRedAlliance to true
+        robot.turret.loopAuto(true, follower.getPose(), 144, 144);
+
         telemetry.addData("Path State", pathState);
         telemetry.addData("Sub State", pathSubState);
         telemetry.update();
     }
-
-    @Override
-    public void stop() {}
 }

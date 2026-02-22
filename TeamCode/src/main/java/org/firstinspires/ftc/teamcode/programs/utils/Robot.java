@@ -116,8 +116,8 @@ public class Robot {
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
         Robot.hardwareMap = hardwareMap;
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.start();
+      //  limelight = hardwareMap.get(Limelight3A.class, "limelight");
+      //  limelight.start();
 
         intakeFront = hardwareMap.get(DcMotorEx.class, "intakeFront");
         intakeBack = hardwareMap.get(DcMotorEx.class, "intakeBack");
@@ -130,20 +130,22 @@ public class Robot {
 
         servoY = hardwareMap.get(Servo.class, "servoY");
         servoX = hardwareMap.get(CRServo.class, "servoX");
-        axon = new RTPAxon(servoX, intakeFront);
+
+        servoX.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        axon = new RTPAxon(servoX, intakeBack);
 
         turret = new TurretCR();
         flywheel = new Flywheel();
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
-
-        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
     }
 
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
+        if(axon != null) axon.initialize(0);
     }
 
     public void update() {
@@ -173,5 +175,8 @@ public class Robot {
         configurePinpoint();
     }
 
+    public static void clearInstance() {
+        instance = null;
+    }
 
 }
