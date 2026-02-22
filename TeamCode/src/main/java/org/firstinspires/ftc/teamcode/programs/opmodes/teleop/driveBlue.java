@@ -161,6 +161,7 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData("X (Forward)", "%.1f in", robotX);
             telemetry.addData("Y (Strafe)", "%.1f in", robotY);
             telemetry.addData("Target Angle", robot.turret.getTargetAngle());
+            telemetry.addData("Ran Blue Auto", TurretCR.ranAutoBlue);
             telemetry.addData("Distance", distance);
         }
 

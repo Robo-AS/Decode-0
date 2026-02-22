@@ -26,7 +26,7 @@ public class bottomRedAuto extends OpMode {
 
     // Mirrored Poses (144 - BlueX)
     private final Pose startPose = new Pose(88, 8, Math.toRadians(0));
-    private final Pose outtake = new Pose(88.000, 18.000, Math.toRadians(0));
+    private final Pose outtake = new Pose(88.000, 13.000, Math.toRadians(0));
     private final Pose intake1 = new Pose(140, -3, Math.toRadians(0));
     private final Pose intake2 = new Pose(104.000, 32.5, Math.toRadians(0));
     private final Pose intake3 = new Pose(140, 5, Math.toRadians(0));

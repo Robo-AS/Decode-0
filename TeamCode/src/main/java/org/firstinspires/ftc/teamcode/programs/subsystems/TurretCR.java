@@ -23,7 +23,13 @@ public class TurretCR extends SubsystemBase {
 
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
-    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20;
+
+    public static double staticLastAutoX = 0.0;
+    public static double staticLastAutoY = 0.0;
+    public static double staticLastAutoHeading = 0.0;
+    public static double staticLastAutoTurretAngle = 0.0;
+    public static boolean ranAutoRed = false;
+    public static boolean ranAutoBlue = false;
 
     double angleToGoalField;
     private final TreeMap<Double, Double> yInterpolationTable = new TreeMap<>();
@@ -46,40 +52,56 @@ public class TurretCR extends SubsystemBase {
     }
 
     private void updateGoalLock(boolean isRedAlliance, double robotX, double robotY) {
-        double robotHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS);
+        double worldX = staticLastAutoX + robotX;
+        double worldY = staticLastAutoY + robotY;
+        double worldHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS) + staticLastAutoHeading;
+
         double goalY = isRedAlliance ? 150 : -8;
         double goalX = 136.0;
 
-        if ((goalX - robotX) != 0)
-            angleToGoalField = Math.atan((goalY - robotY) / (goalX - robotX));
-        else
-            angleToGoalField = 0;
+        double dX = goalX - worldX;
+        double dY = goalY - worldY;
 
-        double diff = angleToGoalField + robotHeading;
+        if (dX != 0) angleToGoalField = Math.atan(dY / dX);
+        else angleToGoalField = 0;
+
+        double diff = angleToGoalField + worldHeading;
+
+        if (ranAutoRed) diff -= Math.toRadians(90);
+        else if (ranAutoBlue) diff += Math.toRadians(90);
+
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
 
-        targetAngle = Math.toDegrees(diff);
+        targetAngle = Math.toDegrees(diff) - staticLastAutoTurretAngle;
     }
 
     public void loopAuto(boolean isRedAlliance, Pose pedro, double gX, double gY) {
-        double robotHeading = pedro.getHeading() - Math.toRadians(90);
-        double robotX = pedro.getX();
-        double robotY = pedro.getY();
+        double currentPY = pedro.getY(); // X for calculation
+        double currentPX = pedro.getX(); // Y for calculation
+        double currentPH = pedro.getHeading() - Math.toRadians(90);
 
-        double goalX = gX;
-        double goalY = gY;
+        if (isRedAlliance) { ranAutoRed = true; ranAutoBlue = false; }
+        else { ranAutoBlue = true; ranAutoRed = false; }
 
-        if ((goalY - robotY) != 0)
-            angleToGoalField = Math.atan((goalX - robotX) / (goalY - robotY));
-        else
-            angleToGoalField = 0;
+        double dX = gX - currentPX;
+        double dY = gY - currentPY;
 
-        double diff = angleToGoalField + robotHeading;
+        if (dY != 0) angleToGoalField = Math.atan(dX / dY);
+        else angleToGoalField = 0;
+
+        double diff = angleToGoalField + currentPH;
+
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
 
         targetAngle = Math.toDegrees(diff);
+
+        // Store for Teleop handoff
+        staticLastAutoX = currentPY;
+        staticLastAutoY = currentPX;
+        staticLastAutoHeading = currentPH;
+        staticLastAutoTurretAngle = robot.axon.getCurrentAngle();
 
         applyToHardware();
     }
