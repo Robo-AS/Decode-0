@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
+import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.staticLastAutoX;
 import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.targetAngle;
 
 @TeleOp(name = "Drive BLUE", group = "OpModes")
@@ -104,6 +105,8 @@ public class driveBlue extends CommandOpMode {
                 ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
     }
 
     @Override
@@ -128,10 +131,8 @@ public class driveBlue extends CommandOpMode {
         robotX = pose.getX(DistanceUnit.INCH);
         robotY = -pose.getY(DistanceUnit.INCH);
 
-        double goalY = -8.75;
-        double goalX = 136.0;
-
-        distance = Math.hypot(goalX - robotX,  goalY - robotY);
+        double goalY = 0;
+        double goalX = 144.0;
 
         boolean useLimelight = robot.limelightOnlyAim;
         robot.turret.loop(
@@ -139,8 +140,12 @@ public class driveBlue extends CommandOpMode {
                 20,
                 false,
                 robotX,
-                robotY
+                robotY,
+                Robot.getInstance().driverOffset
         );
+
+        distance = robot.turret.getDistance();
+        if(Robot.getInstance().wasUpperBlueAutoRan) distance -= 70.0;
 
         robot.servoY.setPosition(getServoYPositionFromDistance(distance));
 
@@ -158,11 +163,10 @@ public class driveBlue extends CommandOpMode {
 
     private void updateDriveTelemetry() {
         if (robot.pinpoint != null) {
-            telemetry.addData("X (Forward)", "%.1f in", robotX);
-            telemetry.addData("Y (Strafe)", "%.1f in", robotY);
-            telemetry.addData("Target Angle", robot.turret.getTargetAngle());
-            telemetry.addData("Ran Blue Auto", TurretCR.ranAutoBlue);
+            telemetry.addData("ROBOT X", robotX);
+            telemetry.addData("ROBOT Y", robotY);
             telemetry.addData("Distance", distance);
+            telemetry.addData("Driver Offset", Robot.getInstance().driverOffset);
         }
 
         double loopTimeMs = loopTimer.milliseconds();

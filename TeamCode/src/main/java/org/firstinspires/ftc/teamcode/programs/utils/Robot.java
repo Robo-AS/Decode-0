@@ -36,8 +36,8 @@ public class Robot {
     public static MultipleTelemetry telemetry;
     public GoBildaPinpointDriver pinpoint;
 
-    public double x = 0, y = 0, heading = 0, lastTurretAngle = 0;
-    public boolean shootFar = false, limelightOnlyAim = false;
+    public double x = 0, y = 0, heading = 0, lastTurretAngle = 0, driverOffset = 0;
+    public boolean shootFar = false, limelightOnlyAim = false, wasUpperBlueAutoRan = false;
 
     public static Robot getInstance() {
         if (instance == null) {

@@ -9,6 +9,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @Autonomous(name = "AUTO MEET JOS ALBASTRU")
@@ -31,7 +32,7 @@ public class bottomBlueAuto extends OpMode {
     private final Pose intake3 = new Pose(4, 5, Math.toRadians(180));
     private final Pose intake4 = new Pose(4, 30, Math.toRadians(180));
     private final Pose loaded2 = new Pose(7.5, 32.5, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(30, 18, Math.toRadians(180));
+    private final Pose leavePoint = new Pose(30, 18, Math.toRadians(90));
 
     private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
 
@@ -224,7 +225,12 @@ public class bottomBlueAuto extends OpMode {
                 break;
             case 6:
                 if (follower.isBusy()) break;
+
                 reachedEnd = true;
+
+                TurretCR.staticLastAutoX = follower.getPose().getX();
+                TurretCR.staticLastAutoY = follower.getPose().getY();
+
                 break;
         }
     }
@@ -258,7 +264,7 @@ public class bottomBlueAuto extends OpMode {
         }
         robot.flywheel.loopAuto(2300);
         robot.servoY.setPosition(1);
-        robot.turret.loopAuto(false, follower.getPose(), -1.15, 144);
+        robot.turret.loopAuto(false, follower.getPose(), -0, 144);
 
         telemetry.addData("Path State", pathState);
         telemetry.update();

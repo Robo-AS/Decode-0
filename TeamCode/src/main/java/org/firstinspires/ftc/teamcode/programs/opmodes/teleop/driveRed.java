@@ -137,7 +137,8 @@ public class driveRed extends CommandOpMode {
                 24,
                 true,
                 robotX,
-                robotY
+                robotY,
+                0
         );
 
         robot.servoY.setPosition(getServoYPositionFromDistance(distance));

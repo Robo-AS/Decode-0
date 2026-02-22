@@ -69,6 +69,7 @@ public class Flywheel extends SubsystemBase {
     public void initializeVelInterpLUT() {
         vel = new InterpLUT();
 
+        vel.add(-300.0000, 1600);
         vel.add(0.0000, 1600);
         vel.add(55.8133, 1600);
         vel.add(69.4260, 1675);
@@ -79,7 +80,7 @@ public class Flywheel extends SubsystemBase {
         vel.add(128.0427, 1950);
         vel.add(133.0427, 1950);
         vel.add(141.8654, 2300);
-        vel.add(300, 2300);
+        vel.add(1000, 2300);
 
         vel.createLUT();
     }

@@ -23,13 +23,9 @@ public class TurretCR extends SubsystemBase {
 
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
+    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20, distance = 0.0;
 
-    public static double staticLastAutoX = 0.0;
-    public static double staticLastAutoY = 0.0;
-    public static double staticLastAutoHeading = 0.0;
-    public static double staticLastAutoTurretAngle = 0.0;
-    public static boolean ranAutoRed = false;
-    public static boolean ranAutoBlue = false;
+    public static double staticLastAutoX = 0.0, staticLastAutoY = 0.0;
 
     double angleToGoalField;
     private final TreeMap<Double, Double> yInterpolationTable = new TreeMap<>();
@@ -51,57 +47,49 @@ public class TurretCR extends SubsystemBase {
         applyToHardware();
     }
 
-    private void updateGoalLock(boolean isRedAlliance, double robotX, double robotY) {
-        double worldX = staticLastAutoX + robotX;
-        double worldY = staticLastAutoY + robotY;
-        double worldHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS) + staticLastAutoHeading;
+    private void updateGoalLock(boolean isRedAlliance, double robotX, double robotY, double driverOffset) {
+        double robotHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS);
+        double goalY = isRedAlliance ? 152 : -8;
+        double goalX = 140.0; //152
 
-        double goalY = isRedAlliance ? 150 : -8;
-        double goalX = 136.0;
+        double calcX = goalX - staticLastAutoX;
+        double calcY = goalY - staticLastAutoY;
 
-        double dX = goalX - worldX;
-        double dY = goalY - worldY;
+        goalX -= staticLastAutoX;
+        goalY -= staticLastAutoY;
 
-        if (dX != 0) angleToGoalField = Math.atan(dY / dX);
-        else angleToGoalField = 0;
+        if ((goalX - robotX) != 0)
+            angleToGoalField = Math.atan((goalY - robotY) / (goalX - robotX));
+        else
+            angleToGoalField = 0;
 
-        double diff = angleToGoalField + worldHeading;
-
-        if (ranAutoRed) diff -= Math.toRadians(90);
-        else if (ranAutoBlue) diff += Math.toRadians(90);
-
+        double diff = angleToGoalField + robotHeading;
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
 
-        targetAngle = Math.toDegrees(diff) - staticLastAutoTurretAngle;
+        targetAngle = Math.toDegrees(diff) + driverOffset;
+
+        distance = Math.hypot(calcX - robotX, calcY - robotY);
     }
 
     public void loopAuto(boolean isRedAlliance, Pose pedro, double gX, double gY) {
-        double currentPY = pedro.getY(); // X for calculation
-        double currentPX = pedro.getX(); // Y for calculation
-        double currentPH = pedro.getHeading() - Math.toRadians(90);
+        double robotHeading = pedro.getHeading() - Math.toRadians(90);
+        double robotX = pedro.getX();
+        double robotY = pedro.getY();
 
-        if (isRedAlliance) { ranAutoRed = true; ranAutoBlue = false; }
-        else { ranAutoBlue = true; ranAutoRed = false; }
+        double goalX = gX;
+        double goalY = gY;
 
-        double dX = gX - currentPX;
-        double dY = gY - currentPY;
+        if ((goalY - robotY) != 0)
+            angleToGoalField = Math.atan((goalX - robotX) / (goalY - robotY));
+        else
+            angleToGoalField = 0;
 
-        if (dY != 0) angleToGoalField = Math.atan(dX / dY);
-        else angleToGoalField = 0;
-
-        double diff = angleToGoalField + currentPH;
-
+        double diff = angleToGoalField + robotHeading;
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
 
         targetAngle = Math.toDegrees(diff);
-
-        // Store for Teleop handoff
-        staticLastAutoX = currentPY;
-        staticLastAutoY = currentPX;
-        staticLastAutoHeading = currentPH;
-        staticLastAutoTurretAngle = robot.axon.getCurrentAngle();
 
         applyToHardware();
     }
@@ -121,9 +109,9 @@ public class TurretCR extends SubsystemBase {
         }
     }
 
-    public void loop(TurretState mode, int targetID, boolean isRed, double robotX, double robotY) {
+    public void loop(TurretState mode, int targetID, boolean isRed, double robotX, double robotY, double driverOffset) {
         this.currentState = mode;
-        if (currentState == TurretState.GOAL_LOCK) updateGoalLock(isRed, robotX, robotY);
+        if (currentState == TurretState.GOAL_LOCK) updateGoalLock(isRed, robotX, robotY, driverOffset);
         else if (currentState == TurretState.LIMELIGHT_LOCK) updateLimelight(targetID);
     }
 
@@ -151,4 +139,6 @@ public class TurretCR extends SubsystemBase {
 
     public double getAngleToGoalField() { return angleToGoalField; }
     public double getTargetAngle() { return targetAngle; }
+
+    public double getDistance(){ return distance; }
 }

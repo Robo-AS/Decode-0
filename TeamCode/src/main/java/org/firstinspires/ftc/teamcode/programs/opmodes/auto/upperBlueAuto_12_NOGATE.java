@@ -10,6 +10,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @Autonomous(name = "AUTO TRIUNGHI MARE 12 no gate BLUE")
@@ -32,8 +33,8 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
     private final Pose alignToBalls2 = new Pose(45.09, 60, Math.toRadians(180));
     private final Pose intake2 = new Pose(10, 60, Math.toRadians(180));
     private final Pose alignToBalls3 = new Pose(52, 37, Math.toRadians(180));
-    private final Pose intake3 = new Pose(18, 37, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(180));
+    private final Pose intake3 = new Pose(10, 37, Math.toRadians(180));
+    private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(90));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, align3, intaking3, outtaking3, leave;
 
@@ -225,6 +226,10 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
                     break;
                 }
                 if (follower.isBusy()) break;
+
+                robot.intakeBack.setPower(0);
+                robot.intakeFront.setPower(0);
+
                 follower.followPath(outtaking3);
                 pathState = 10;
                 waitTimer.resetTimer();
@@ -243,6 +248,10 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
             case 11: // Finish
                 if (follower.isBusy()) break;
                 reachedEnd = true;
+
+                TurretCR.staticLastAutoX = follower.getPose().getX();
+                TurretCR.staticLastAutoY = follower.getPose().getY();
+
                 break;
         }
     }
@@ -266,16 +275,19 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
 
     @Override
     public void loop() {
-        if (reachedEnd) return;
-        follower.update();
-        autonomousPathUpdate();
+
+        if (!reachedEnd) {
+            follower.update();
+            autonomousPathUpdate();
+        }
+
+        Robot.getInstance().wasUpperBlueAutoRan = true;
 
         robot.flywheel.loopAuto(1700);
         robot.servoY.setPosition(0.7);
         robot.turret.loopAuto(false, follower.getPose(), -2, 144);
 
         telemetry.addData("Path State", pathState);
-        telemetry.addData("Sub State", pathSubState);
         telemetry.update();
     }
 }
