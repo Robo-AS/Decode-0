@@ -8,8 +8,8 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @Autonomous(name = "AUTO TRIUNGHI MARE 12 gate BLUE")
@@ -21,7 +21,6 @@ public class upperBlueAuto_12_GATE extends OpMode {
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
     private final long PATH_TIMEOUT_MS = 4000;
-
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
@@ -34,8 +33,8 @@ public class upperBlueAuto_12_GATE extends OpMode {
     private final Pose intake2 = new Pose(10, 60, Math.toRadians(180));
     private final Pose alignToBalls3 = new Pose(52, 32, Math.toRadians(180));
     private final Pose intake3 = new Pose(10, 32, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(31.430604982206404, 83.5729537366548, Math.toRadians(180));
-    private final Pose openGate = new Pose(19, 64, Math.toRadians(180));
+    private final Pose leavePoint = new Pose(31.430604982206404, 83.5729537366548, Math.toRadians(90));
+    private final Pose openGate = new Pose(17, 64, Math.toRadians(180));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
 
@@ -49,12 +48,10 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
                 .build();
-
         intaking1 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls1, intake1))
                 .setConstantHeadingInterpolation(intake1.getHeading())
                 .build();
-
         outtaking1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
@@ -64,7 +61,6 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 .addPath(new BezierLine(outtake, alignToBalls2))
                 .setConstantHeadingInterpolation(alignToBalls2.getHeading())
                 .build();
-
         intaking2 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls2, intake2))
                 .setConstantHeadingInterpolation(intake2.getHeading())
@@ -74,12 +70,10 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
                 .build();
-
         intaking3 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls3, intake3))
                 .setConstantHeadingInterpolation(intake3.getHeading())
                 .build();
-
         outtaking3 = follower.pathBuilder()
                 .addPath(new BezierLine(intake3, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
@@ -150,7 +144,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 break;
             case 2:
                 if (follower.isBusy()) break;
-                robot.intakeFront.setPower(1); // Start intake only when moving to ball
+                robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking2, true);
                 pathTimeoutTimer.resetTimer();
@@ -159,20 +153,20 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 break;
             case 3:
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
-                    robot.intakeFront.setPower(0); // Failsafe stop
+                    robot.intakeFront.setPower(0);
                     robot.intakeBack.setPower(0);
                     follower.followPath(buildExitPath());
                     pathState = 4;
                     break;
                 }
                 if (follower.isBusy() || waitTimer.getElapsedTime() < 2000) break;
-                robot.intakeFront.setPower(0); // Stop after intaking
+                robot.intakeFront.setPower(0);
                 robot.intakeBack.setPower(0);
                 follower.followPath(openDaGate, true);
                 pathState = -1;
                 break;
             case -1:
-                if(follower.isBusy()) break;
+                if (follower.isBusy()) break;
                 follower.followPath(outtaking2);
                 pathState = 4;
                 break;
@@ -187,7 +181,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 break;
             case 5:
                 if (follower.isBusy()) break;
-                robot.intakeFront.setPower(1); // Start intake for ball 1
+                robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking1);
                 pathTimeoutTimer.resetTimer();
@@ -202,7 +196,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.intakeFront.setPower(0); // Stop after intaking
+                robot.intakeFront.setPower(0);
                 robot.intakeBack.setPower(0);
                 follower.followPath(outtaking1);
                 pathState = 7;
@@ -218,7 +212,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
                 break;
             case 8:
                 if (follower.isBusy()) break;
-                robot.intakeFront.setPower(1); // Start intake for ball 3
+                robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(1);
                 follower.followPath(intaking3, true);
                 pathTimeoutTimer.resetTimer();
@@ -233,7 +227,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
                     break;
                 }
                 if (follower.isBusy()) break;
-                robot.intakeFront.setPower(0); // Stop after intaking
+                robot.intakeFront.setPower(0);
                 robot.intakeBack.setPower(0);
                 follower.followPath(outtaking3);
                 pathState = 10;
@@ -250,6 +244,8 @@ public class upperBlueAuto_12_GATE extends OpMode {
             case 11:
                 if (follower.isBusy()) break;
                 reachedEnd = true;
+                TurretCR.staticLastAutoX = follower.getPose().getY();
+                TurretCR.staticLastAutoY = follower.getPose().getX();
                 break;
         }
     }
@@ -274,13 +270,13 @@ public class upperBlueAuto_12_GATE extends OpMode {
 
     @Override
     public void loop() {
-        if (reachedEnd) return;
-        follower.update();
-        autonomousPathUpdate();
+        if (!reachedEnd) {
+            follower.update();
+            autonomousPathUpdate();
+        }
         robot.flywheel.loopAuto(1700);
         robot.servoY.setPosition(0.7);
         robot.turret.loopAuto(false, follower.getPose(), -3, 144);
-
         telemetry.addData("Path State", pathState);
         telemetry.addData("Sub State", pathSubState);
         telemetry.update();

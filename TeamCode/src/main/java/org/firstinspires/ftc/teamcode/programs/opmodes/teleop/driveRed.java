@@ -12,7 +12,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.*;
@@ -21,6 +21,9 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPo
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
+import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.staticLastAutoX;
+import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.staticLastAutoY;
+import static org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR.targetAngle;
 
 @TeleOp(name = "Drive RED", group = "OpModes")
 public class driveRed extends CommandOpMode {
@@ -49,7 +52,7 @@ public class driveRed extends CommandOpMode {
         robot.initialize();
 
         robot.limelight.start();
-        robot.limelight.pipelineSwitch(0);
+        robot.limelight.pipelineSwitch(0);  // assuming pipeline 0 works for red too — change if needed
 
         setupControllerBindings();
     }
@@ -74,13 +77,11 @@ public class driveRed extends CommandOpMode {
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(new ParallelCommandGroup(
-                        new changeAimState(true),
                         new freeServoBarrier(),
                         new startIntakeBack(1),
                         new startIntakeFront(1)
                 ))
                 .whenReleased(new ParallelCommandGroup(
-                        new changeAimState(false),
                         new blockServoBarrier(),
                         new stopIntakeBack(),
                         new stopIntakeFront()
@@ -90,7 +91,7 @@ public class driveRed extends CommandOpMode {
                 .whenActive(new SequentialCommandGroup(
                         new changeLauncherVelocityState(true),
                         new setServoYPosition(1),
-                        new WaitCommand(1200),
+                        new WaitCommand(300),
                         new freeServoBarrier(),
                         new ParallelCommandGroup(new startIntakeBack(1), new startIntakeFront(1))
                 ))
@@ -101,7 +102,9 @@ public class driveRed extends CommandOpMode {
                         new stopIntakeFront()
                 ));
 
-        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new setServoYPosition(1));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
     }
 
     @Override
@@ -122,28 +125,27 @@ public class driveRed extends CommandOpMode {
         robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
 
         Pose2D pose = robot.pinpoint.getPosition();
-
         robotX = pose.getX(DistanceUnit.INCH);
-        robotY = -pose.getY(DistanceUnit.INCH);
+        robotY = -pose.getY(DistanceUnit.INCH);  // Keep this — makes strafe-right positive
 
-        double goalY = 152.0;
-        double goalX = 136.0;
-
-        distance = Math.hypot(goalX - robotX,  goalY - robotY);
-
+        // Use turret's goal-lock logic (with auto offset if came from auto)
         boolean useLimelight = robot.limelightOnlyAim;
+
         robot.turret.loop(
                 useLimelight ? TurretCR.TurretState.LIMELIGHT_LOCK : TurretCR.TurretState.GOAL_LOCK,
-                24,
-                true,
+                24,           // targetID — adjust if red uses different AprilTag ID
+                true,         // isRedAlliance = true
                 robotX,
                 robotY,
-                0
+                Robot.getInstance().driverOffset  // 0 by default, or use your offset system
         );
+
+        distance = robot.turret.getDistance();  // Now correct thanks to turret logic + auto offset
 
         robot.servoY.setPosition(getServoYPositionFromDistance(distance));
 
         handleFlywheel();
+
         updateDriveTelemetry();
     }
 
@@ -172,16 +174,14 @@ public class driveRed extends CommandOpMode {
             telemetry.addData("Y (Strafe)", "%.1f in", robotY);
             telemetry.addData("Distance to Goal", "%.1f in", distance);
             telemetry.addData("Target Angle", "%.1f deg", TurretCR.targetAngle);
+            telemetry.addData("staticLastAutoX", "%.1f", staticLastAutoX);
+            telemetry.addData("staticLastAutoY", "%.1f", staticLastAutoY);
+            telemetry.addData("Driver Offset", "%.1f", Robot.getInstance().driverOffset);
         }
 
         telemetry.addData("Loop Speed", "%.0f Hz", avgHz);
         telemetry.addData("Loop Time", "%.1f ms", currentLoopTime);
         telemetry.update();
-    }
-
-    private boolean isLimelightOffline() {
-        LLResult res = robot.limelight.getLatestResult();
-        return res == null || !res.isValid();
     }
 
     public double getServoYPositionFromDistance(double distance) {

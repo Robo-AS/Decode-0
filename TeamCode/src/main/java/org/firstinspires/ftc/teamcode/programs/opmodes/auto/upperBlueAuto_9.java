@@ -8,8 +8,8 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @Autonomous(name = "AUTO TRIUNGHI MARE 9 BLUE")
@@ -19,7 +19,6 @@ public class upperBlueAuto_9 extends OpMode {
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
     private final long PATH_TIMEOUT_MS = 3000;
-
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
@@ -31,7 +30,7 @@ public class upperBlueAuto_9 extends OpMode {
     private final Pose intake1 = new Pose(18, 82.21, Math.toRadians(180));
     private final Pose alignToBalls2 = new Pose(45.09, 60, Math.toRadians(180));
     private final Pose intake2 = new Pose(10, 60, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(180));
+    private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(90));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave;
 
@@ -41,33 +40,27 @@ public class upperBlueAuto_9 extends OpMode {
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
 
-        // Sequence for Ball 2
         align2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls2))
                 .setConstantHeadingInterpolation(alignToBalls2.getHeading())
                 .build();
-
         intaking2 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls2, intake2))
                 .setConstantHeadingInterpolation(intake2.getHeading())
                 .build();
-
         outtaking2 = follower.pathBuilder()
                 .addPath(new BezierCurve(intake2, new Pose(60.75, 68.09), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
-        // Sequence for Ball 1
         align1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
                 .build();
-
         intaking1 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls1, intake1))
                 .setConstantHeadingInterpolation(intake1.getHeading())
                 .build();
-
         outtaking1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
@@ -117,7 +110,6 @@ public class upperBlueAuto_9 extends OpMode {
                 robot.servoIntake.setPosition(0.45);
                 pathState = 1;
                 break;
-
             case 1: // Shoot preload
                 if (follower.isBusy()) break;
                 shootingSequence();
@@ -127,7 +119,6 @@ public class upperBlueAuto_9 extends OpMode {
                     pathState = 2;
                 }
                 break;
-
             case 2: // Align to Ball 2
                 if (follower.isBusy()) break;
                 robot.intakeFront.setPower(1);
@@ -136,7 +127,6 @@ public class upperBlueAuto_9 extends OpMode {
                 pathTimeoutTimer.resetTimer();
                 pathState = 3;
                 break;
-
             case 3: // Intake Ball 2 + Failsafe
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
                     follower.followPath(buildExitPath());
@@ -147,7 +137,6 @@ public class upperBlueAuto_9 extends OpMode {
                 follower.followPath(outtaking2);
                 pathState = 4;
                 break;
-
             case 4: // Shoot Ball 2
                 if (follower.isBusy()) break;
                 shootingSequence();
@@ -157,7 +146,6 @@ public class upperBlueAuto_9 extends OpMode {
                     pathState = 5;
                 }
                 break;
-
             case 5: // Align to Ball 1
                 if (follower.isBusy()) break;
                 robot.intakeFront.setPower(1);
@@ -166,7 +154,6 @@ public class upperBlueAuto_9 extends OpMode {
                 pathTimeoutTimer.resetTimer();
                 pathState = 6;
                 break;
-
             case 6: // Intake Ball 1 + Failsafe
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
                     follower.followPath(buildExitPath());
@@ -177,7 +164,6 @@ public class upperBlueAuto_9 extends OpMode {
                 follower.followPath(outtaking1);
                 pathState = 7;
                 break;
-
             case 7: // Shoot Ball 1
                 if (follower.isBusy()) break;
                 shootingSequence();
@@ -187,10 +173,11 @@ public class upperBlueAuto_9 extends OpMode {
                     pathState = 8;
                 }
                 break;
-
             case 8: // Finish
                 if (follower.isBusy()) break;
                 reachedEnd = true;
+                TurretCR.staticLastAutoX = follower.getPose().getY();
+                TurretCR.staticLastAutoY = follower.getPose().getX();
                 break;
         }
     }
@@ -213,14 +200,13 @@ public class upperBlueAuto_9 extends OpMode {
 
     @Override
     public void loop() {
-        if (reachedEnd) return;
-        follower.update();
-        autonomousPathUpdate();
-
+        if (!reachedEnd) {
+            follower.update();
+            autonomousPathUpdate();
+        }
         robot.flywheel.loopAuto(1700);
         robot.servoY.setPosition(0.85);
         robot.turret.loopAuto(false, follower.getPose(), -2.25, 144);
-
         telemetry.addData("Path State", pathState);
         telemetry.addData("Sub State", pathSubState);
         telemetry.update();

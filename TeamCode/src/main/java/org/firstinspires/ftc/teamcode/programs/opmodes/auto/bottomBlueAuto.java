@@ -1,5 +1,4 @@
 package org.firstinspires.ftc.teamcode.programs.opmodes.auto;
-
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -11,7 +10,6 @@ import com.pedropathing.paths.PathChain;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
-
 @Autonomous(name = "AUTO MEET JOS ALBASTRU")
 public class bottomBlueAuto extends OpMode {
     private Robot robot;
@@ -24,7 +22,6 @@ public class bottomBlueAuto extends OpMode {
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
     private final long PATH_TIMEOUT_MS = 4000;
-
     private final Pose startPose = new Pose(56, 8, Math.toRadians(180));
     private final Pose outtake = new Pose(56.000, 12.000, Math.toRadians(180));
     private final Pose intake1 = new Pose(4, -3, Math.toRadians(180));
@@ -33,9 +30,7 @@ public class bottomBlueAuto extends OpMode {
     private final Pose intake4 = new Pose(4, 30, Math.toRadians(180));
     private final Pose loaded2 = new Pose(7.5, 32.5, Math.toRadians(180));
     private final Pose leavePoint = new Pose(30, 18, Math.toRadians(90));
-
     private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
-
     public void buildPaths() {
         launchPreload = follower.pathBuilder().addPath(new BezierLine(startPose, outtake)).setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading()).build();
         get2 = follower.pathBuilder().addPath(new BezierLine(outtake, intake2)).setConstantHeadingInterpolation(intake2.getHeading()).build();
@@ -49,14 +44,12 @@ public class bottomBlueAuto extends OpMode {
         backFromIntake4 = follower.pathBuilder().addPath(new BezierLine(intake4, outtake)).setConstantHeadingInterpolation(outtake.getHeading()).build();
         leave = follower.pathBuilder().addPath(new BezierLine(outtake, leavePoint)).setConstantHeadingInterpolation(leavePoint.getHeading()).build();
     }
-
     private PathChain buildExitPath() {
         return follower.pathBuilder()
                 .addPath(new BezierLine(follower.getPose(), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
     }
-
     private void shootingSequence() {
         switch (pathSubState) {
             case 0:
@@ -80,7 +73,6 @@ public class bottomBlueAuto extends OpMode {
                 break;
         }
     }
-
     private void autonomousPathUpdate() {
         switch (pathState) {
             case -1:
@@ -225,16 +217,12 @@ public class bottomBlueAuto extends OpMode {
                 break;
             case 6:
                 if (follower.isBusy()) break;
-
                 reachedEnd = true;
-
-                TurretCR.staticLastAutoX = follower.getPose().getX();
-                TurretCR.staticLastAutoY = follower.getPose().getY();
-
+                TurretCR.staticLastAutoX = follower.getPose().getY();
+                TurretCR.staticLastAutoY = follower.getPose().getX();
                 break;
         }
     }
-
     @Override
     public void init() {
         Robot.clearInstance();
@@ -248,13 +236,11 @@ public class bottomBlueAuto extends OpMode {
         robot.initializeAuto();
         robot.servoBarrier.setPosition(0.35);
     }
-
     @Override
     public void start() {
         pathState = -1;
         pathTimeoutTimer.resetTimer();
     }
-
     @Override
     public void loop() {
         scheduler.run();
@@ -265,7 +251,6 @@ public class bottomBlueAuto extends OpMode {
         robot.flywheel.loopAuto(2300);
         robot.servoY.setPosition(1);
         robot.turret.loopAuto(false, follower.getPose(), -0, 144);
-
         telemetry.addData("Path State", pathState);
         telemetry.update();
     }

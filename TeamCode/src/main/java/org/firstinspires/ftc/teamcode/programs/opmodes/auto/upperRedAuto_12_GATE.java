@@ -8,8 +8,8 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @Autonomous(name = "AUTO TRIUNGHI MARE 12 gate RED")
@@ -21,12 +21,10 @@ public class upperRedAuto_12_GATE extends OpMode {
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
     private final long PATH_TIMEOUT_MS = 4000;
-
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
 
-    // Mirrored Poses: X = 144 - X_blue, Y = Y_blue, Heading = 180 - Heading_blue
     private final Pose startPose = new Pose(122.989, 124.014, Math.toRadians(36));
     private final Pose outtake = new Pose(93.438, 92.754, Math.toRadians(0));
     private final Pose alignToBalls1 = new Pose(99.907, 82.214, Math.toRadians(0));
@@ -35,7 +33,7 @@ public class upperRedAuto_12_GATE extends OpMode {
     private final Pose intake2 = new Pose(134, 60, Math.toRadians(0));
     private final Pose alignToBalls3 = new Pose(92, 32, Math.toRadians(0));
     private final Pose intake3 = new Pose(134, 32, Math.toRadians(0));
-    private final Pose leavePoint = new Pose(112.569, 83.573, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(112.569, 83.573, Math.toRadians(90));
     private final Pose openGate = new Pose(125, 64, Math.toRadians(0));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
@@ -50,12 +48,10 @@ public class upperRedAuto_12_GATE extends OpMode {
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
                 .build();
-
         intaking1 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls1, intake1))
                 .setConstantHeadingInterpolation(intake1.getHeading())
                 .build();
-
         outtaking1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
@@ -65,7 +61,6 @@ public class upperRedAuto_12_GATE extends OpMode {
                 .addPath(new BezierLine(outtake, alignToBalls2))
                 .setConstantHeadingInterpolation(alignToBalls2.getHeading())
                 .build();
-
         intaking2 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls2, intake2))
                 .setConstantHeadingInterpolation(intake2.getHeading())
@@ -75,19 +70,16 @@ public class upperRedAuto_12_GATE extends OpMode {
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
                 .build();
-
         intaking3 = follower.pathBuilder()
                 .addPath(new BezierLine(alignToBalls3, intake3))
                 .setConstantHeadingInterpolation(intake3.getHeading())
                 .build();
-
         outtaking3 = follower.pathBuilder()
                 .addPath(new BezierLine(intake3, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
         outtaking2 = follower.pathBuilder()
-                // Mirrored control point: 144 - 60.758 = 83.242
                 .addPath(new BezierCurve(openGate, new Pose(83.242, 68.094), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
@@ -98,7 +90,6 @@ public class upperRedAuto_12_GATE extends OpMode {
                 .build();
 
         openDaGate = follower.pathBuilder()
-                // Mirrored control point: 144 - 24.128 = 119.872
                 .addPath(new BezierCurve(intake2, new Pose(119.872, 59.171), openGate))
                 .setConstantHeadingInterpolation(openGate.getHeading())
                 .build();
@@ -175,7 +166,7 @@ public class upperRedAuto_12_GATE extends OpMode {
                 pathState = -1;
                 break;
             case -1:
-                if(follower.isBusy()) break;
+                if (follower.isBusy()) break;
                 follower.followPath(outtaking2);
                 pathState = 4;
                 break;
@@ -253,6 +244,8 @@ public class upperRedAuto_12_GATE extends OpMode {
             case 11:
                 if (follower.isBusy()) break;
                 reachedEnd = true;
+                TurretCR.staticLastAutoX = follower.getPose().getY();
+                TurretCR.staticLastAutoY = follower.getPose().getX();
                 break;
         }
     }
@@ -277,14 +270,13 @@ public class upperRedAuto_12_GATE extends OpMode {
 
     @Override
     public void loop() {
-        if (reachedEnd) return;
-        follower.update();
-        autonomousPathUpdate();
+        if (!reachedEnd) {
+            follower.update();
+            autonomousPathUpdate();
+        }
         robot.flywheel.loopAuto(1700);
         robot.servoY.setPosition(0.7);
-        // Changed isRedAlliance to true
-        robot.turret.loopAuto(true, follower.getPose(), 144, 144);
-
+        robot.turret.loopAuto(false, follower.getPose(), 144, 144);
         telemetry.addData("Path State", pathState);
         telemetry.addData("Sub State", pathSubState);
         telemetry.update();

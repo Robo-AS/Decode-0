@@ -26,8 +26,8 @@ public class bottomRedAuto extends OpMode {
     private final long PATH_TIMEOUT_MS = 4000;
 
     // Mirrored Poses (144 - BlueX)
-    private final Pose startPose = new Pose(88, 8, Math.toRadians(0));
-    private final Pose outtake = new Pose(88.000, 13.000, Math.toRadians(0));
+    private final Pose startPose = new Pose(88, 8, Math.toRadians(90));
+    private final Pose outtake = new Pose(88.000, 13.000, Math.toRadians(90));
     private final Pose intake1 = new Pose(140, -3, Math.toRadians(0));
     private final Pose intake2 = new Pose(104.000, 32.5, Math.toRadians(0));
     private final Pose intake3 = new Pose(140, 5, Math.toRadians(0));
@@ -247,8 +247,8 @@ public class bottomRedAuto extends OpMode {
 
                 reachedEnd = true;
 
-                TurretCR.staticLastAutoX = follower.getPose().getX();
-                TurretCR.staticLastAutoY = follower.getPose().getY();
+                TurretCR.staticLastAutoX = follower.getPose().getY();
+                TurretCR.staticLastAutoY = follower.getPose().getX();
 
                 break;
         }
@@ -283,7 +283,7 @@ public class bottomRedAuto extends OpMode {
         }
         robot.flywheel.loopAuto(2300);
         robot.servoY.setPosition(1);
-        robot.turret.loopAuto(true, follower.getPose(), 143, 144);
+        robot.turret.loopAuto(true, follower.getPose(), 144, 147);
 
         telemetry.addData("Path State", pathState);
         telemetry.addData("Target Angle", robot.turret.getTargetAngle());
