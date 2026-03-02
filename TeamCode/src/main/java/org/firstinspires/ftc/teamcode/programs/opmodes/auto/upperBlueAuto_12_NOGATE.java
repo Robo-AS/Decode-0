@@ -16,17 +16,17 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
     private Follower follower;
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
-    private final long PATH_TIMEOUT_MS = 3000;
+    private final long PATH_TIMEOUT_MS = 2500;
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
     // Poses
     private final Pose startPose = new Pose(21.01, 124.01, Math.toRadians(144));
     private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(180));
-    private final Pose alignToBalls1 = new Pose(44.09, 87.21, Math.toRadians(180));
-    private final Pose intake1 = new Pose(18, 87.21, Math.toRadians(180));
-    private final Pose alignToBalls2 = new Pose(45.09, 60, Math.toRadians(180));
-    private final Pose intake2 = new Pose(10, 60, Math.toRadians(180));
+    private final Pose alignToBalls1 = new Pose(44.09, 84.21, Math.toRadians(180));
+    private final Pose intake1 = new Pose(18, 84.21, Math.toRadians(180));
+    private final Pose alignToBalls2 = new Pose(45.09, 57, Math.toRadians(180));
+    private final Pose intake2 = new Pose(10, 57, Math.toRadians(180));
     private final Pose alignToBalls3 = new Pose(52, 37, Math.toRadians(180));
     private final Pose intake3 = new Pose(10, 37, Math.toRadians(180));
     private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(90));
@@ -243,7 +243,7 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
         Robot.getInstance().wasUpperBlueAutoRan = true;
         robot.flywheel.loopAuto(1700);
         robot.servoY.setPosition(0.7);
-        robot.turret.loopAuto(false, follower.getPose(), -2, 144);
+        robot.turret.loopAuto(false, follower.getPose(), -3, 142);
         telemetry.addData("Path State", pathState);
         telemetry.update();
     }

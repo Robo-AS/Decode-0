@@ -18,7 +18,7 @@ public class upperRedAuto_9 extends OpMode {
     private Follower follower;
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
-    private final long PATH_TIMEOUT_MS = 3000;
+    private final long PATH_TIMEOUT_MS = 2500;
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;

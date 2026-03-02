@@ -30,7 +30,7 @@ public class driveBlue extends CommandOpMode {
     private static final double STICK_EXPONENT = 3.0;
     private static final double CONSTANT_TERM = 0.6;
     private static final double LINEAR_COEF = 0.7;
-    public double downY = 0, upY = 1, maxDistance = 140, minDistance = 20, robotX, robotY, distance;
+    public double downY = 0, upY = 0.85, maxDistance = 140, minDistance = 20, robotX, robotY, distance;
     private ElapsedTime loopTimer = new ElapsedTime();
     @Override
     public void initialize() {
@@ -83,7 +83,7 @@ public class driveBlue extends CommandOpMode {
                         new stopIntakeBack(),
                         new stopIntakeFront()
                 ));
-        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
     }

@@ -20,7 +20,7 @@ public class upperRedAuto_12_GATE extends OpMode {
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
-    private final long PATH_TIMEOUT_MS = 4000;
+    private final long PATH_TIMEOUT_MS = 2500;
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
@@ -34,7 +34,7 @@ public class upperRedAuto_12_GATE extends OpMode {
     private final Pose alignToBalls3 = new Pose(92, 32, Math.toRadians(0));
     private final Pose intake3 = new Pose(134, 32, Math.toRadians(0));
     private final Pose leavePoint = new Pose(112.569, 83.573, Math.toRadians(90));
-    private final Pose openGate = new Pose(125, 64, Math.toRadians(0));
+    private final Pose openGate = new Pose(127.5, 64, Math.toRadians(0));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
 

@@ -110,7 +110,7 @@ public class Robot {
         if (flywheel != null) flywheel.initialize();
         if (axon != null) axon.initialize(lastTurretAngle);
         if (turret != null) turret.initialize();
-        if (servoY != null) servoY.setPosition(1);
+        if (servoY != null) servoY.setPosition(0.85);
         if (servoBarrier != null) servoBarrier.setPosition(0.35);
     }
 

@@ -20,7 +20,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
     private Timer opmodeTimer = new Timer();
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
-    private final long PATH_TIMEOUT_MS = 4000;
+    private final long PATH_TIMEOUT_MS = 2500;
     private boolean reachedEnd = false;
     private int pathState = 0;
     private int pathSubState = 0;
@@ -29,8 +29,8 @@ public class upperBlueAuto_12_GATE extends OpMode {
     private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(180));
     private final Pose alignToBalls1 = new Pose(44.09252669039146, 82.2135231316726, Math.toRadians(180));
     private final Pose intake1 = new Pose(18, 82.2135231316726, Math.toRadians(180));
-    private final Pose alignToBalls2 = new Pose(45.09252669039146, 60, Math.toRadians(180));
-    private final Pose intake2 = new Pose(10, 60, Math.toRadians(180));
+    private final Pose alignToBalls2 = new Pose(45.09252669039146, 57, Math.toRadians(180));
+    private final Pose intake2 = new Pose(10, 57, Math.toRadians(180));
     private final Pose alignToBalls3 = new Pose(52, 32, Math.toRadians(180));
     private final Pose intake3 = new Pose(10, 32, Math.toRadians(180));
     private final Pose leavePoint = new Pose(31.430604982206404, 83.5729537366548, Math.toRadians(90));
