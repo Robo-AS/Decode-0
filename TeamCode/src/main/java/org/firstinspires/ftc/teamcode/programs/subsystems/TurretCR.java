@@ -20,9 +20,8 @@ public class TurretCR extends SubsystemBase {
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
     public double distance = 0.0;
-    public static double staticLastAutoX = 0.0, staticLastAutoY = 0.0;
+    public static double staticLastAutoX = 0.0, staticLastAutoY = 0.0; // pozitia la care termina autonomi => translatare in origine
     double angleToGoalField;
-    private final TreeMap<Double, Double> yInterpolationTable = new TreeMap<>();
     private static boolean isInitialized = false;
     public TurretCR() {
         this.limelight = robot.limelight;
@@ -30,16 +29,7 @@ public class TurretCR extends SubsystemBase {
         CommandScheduler.getInstance().registerSubsystem(this);
     }
     public void initialize() {
-        if (isInitialized) {
-            yInterpolationTable.clear();
-            yInterpolationTable.put(0.0, 1.0);
-            yInterpolationTable.put(136.0, 50.0);
-            return;
-        }
         axon.initialize(0);
-        yInterpolationTable.put(0.0, 1.0);
-        yInterpolationTable.put(136.0, 50.0);
-        isInitialized = true;
     }
     @Override
     public void periodic() {
@@ -49,20 +39,24 @@ public class TurretCR extends SubsystemBase {
         double robotHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS);
         double goalY = isRedAlliance ? 144.0 : 0.0; //152 -8 MERGE PE ALBASTRU CU 0 144
         double goalX = 144.0;
-        double calcX = goalX - staticLastAutoX;
-        double calcY = goalY - staticLastAutoY;
+
         goalX -= staticLastAutoX;
-        goalY -= staticLastAutoY;
-        if ((goalX - robotX) != 0)
+        goalY -= staticLastAutoY; // translatare robot la origine
+
+        if ((goalX - robotX) != 0) //in case the robot is scored targeting still works
             angleToGoalField = Math.atan((goalY - robotY) / (goalX - robotX));
         else
             angleToGoalField = 0;
+
         double diff = angleToGoalField + robotHeading;
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
+
         targetAngle = Math.toDegrees(diff) + driverOffset;
-        distance = Math.hypot(calcX - robotX, calcY - robotY);
+        distance = Math.hypot(goalX - robotX, goalY - robotY);
     }
+
+
     public void loopAuto(boolean isBottomRed, Pose pedro, double gX, double gY) {
         double robotHeading = pedro.getHeading() - Math.toRadians(90);
         double robotX = pedro.getX();

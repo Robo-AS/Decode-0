@@ -12,11 +12,9 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.SetIntakeState;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 @TeleOp(name = "Pinpoint and Limelight Turret Test", group = "OpModes")
@@ -47,15 +45,15 @@ public class PinpointAndLimelightTest extends CommandOpMode {
         robot.limelight.pipelineSwitch(0);
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new startIntakeFront(1),
+                new SetIntakeState(Intake.IntakeState.ON),
                 new WaitCommand(1500),
-                new stopIntakeFront()
+                new SetIntakeState(Intake.IntakeState.OFF)
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(new SequentialCommandGroup(
-                new startIntakeFront(-1),
+                new SetIntakeState(Intake.IntakeState.REVERSED_ON),
                 new WaitCommand(300),
-                new stopIntakeFront()
+                new SetIntakeState(Intake.IntakeState.OFF)
         ));
 
     }

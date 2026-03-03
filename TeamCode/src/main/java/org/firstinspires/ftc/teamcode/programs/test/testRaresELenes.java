@@ -1,21 +1,16 @@
 package org.firstinspires.ftc.teamcode.programs.test;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.RunCommand;
-import com.arcrobotics.ftclib.command.SequentialCommandGroup;
-import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.SetIntakeState;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @TeleOp(name = "Se invarta tot si sa ma suga Rares", group = "OpModes")
@@ -35,8 +30,7 @@ public class testRaresELenes extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(
                         new ParallelCommandGroup(
-                                new startIntakeFront(1),
-                                new startIntakeBack(1),
+                                new SetIntakeState(Intake.IntakeState.ON),
                                 new RunCommand(
                                         () -> Robot.getInstance().launcher1.setPower(1)
                                 ),
@@ -53,8 +47,7 @@ public class testRaresELenes extends CommandOpMode {
                 )
                 .whenReleased(
                         new ParallelCommandGroup(
-                                new startIntakeFront(0),
-                                new startIntakeBack(0),
+                                new SetIntakeState(Intake.IntakeState.OFF),
                                 new RunCommand(
                                         () -> Robot.getInstance().launcher1.setPower(0)
                                 ),

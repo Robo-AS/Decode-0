@@ -21,6 +21,30 @@ public class Flywheel extends SubsystemBase {
     private SimpleMotorFeedforward feedforward;
 
     public static double targetVelocity = 0, currentVelocity = 0;
+    public double previousBarrier = 0.0, previousLauncher = 0.0, targetBarrier = 0.35;
+
+    public enum BarrierState{
+        FREE,
+        BLOCK
+    }
+
+    public static double FREE = 0.5;
+    public static double BLOCK = 0.35;
+
+    BarrierState barrierState;
+
+    public void updateBarrierState(BarrierState state){
+        barrierState = state;
+
+        switch (barrierState){
+            case FREE:
+                targetBarrier = FREE;
+                break;
+            case BLOCK:
+                targetBarrier = BLOCK;
+                break;
+        }
+    }
 
     public void initialize() {
         flyWheel1 = robot.launcher1;
@@ -43,6 +67,13 @@ public class Flywheel extends SubsystemBase {
 
         flyWheel1.setPower(power);
         flyWheel2.setPower(power);
+
+
+
+        if(targetBarrier != previousBarrier)
+            robot.servoBarrier.setPosition(targetBarrier);
+
+        previousBarrier = targetBarrier;
     }
 
     public void loopAuto(double velocity){
@@ -88,6 +119,8 @@ public class Flywheel extends SubsystemBase {
 }
 
 /*
+-300.0000 1600
+0.0000 1600
 55.8133 1600
 69.4260 1800
 76.2866 1800

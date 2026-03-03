@@ -20,8 +20,8 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPo
 @TeleOp(name = "Servo Position Setter", group = "OpModes")
 public class ServoPositionSetter extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
-    public static double servoBarrierPos = 0.5, servoYPos = 0.5, servoIntakePos = 0.5;
-
+    public static double servoBarrierPos = 0.5, servoYPos = 0.5, servoIntakePos = 0.5, servoSorterPos = 0.5;
+    //0.5 0.875 0.105
     FtcDashboard dashboard;
 
     @Override
@@ -43,9 +43,12 @@ public class ServoPositionSetter extends CommandOpMode {
         robot.servoY.setPosition(servoYPos);
         robot.servoBarrier.setPosition(servoBarrierPos);
         robot.servoIntake.setPosition(servoIntakePos);
+        robot.servoSorter.setPosition(servoSorterPos);
 
         telemetry.addData("Servo Y", servoYPos);
-        telemetry.addData("Servo Launcher", servoBarrierPos);
+        telemetry.addData("Servo Barrier", servoBarrierPos);
+        telemetry.addData("Servo Intake", servoIntakePos);
+        telemetry.addData("Servo Sorter", servoSorterPos);
         telemetry.update();
     }
 }

@@ -113,7 +113,7 @@ public class bottomBlueAuto extends OpMode {
                 }
                 if (follower.isBusy()) break;
 
-                // Start return path, but keep intake on for 1 second
+                // Start return path
                 follower.followPath(throw2, true);
                 waitTimer.resetTimer();
                 pathState = 3;
@@ -185,7 +185,7 @@ public class bottomBlueAuto extends OpMode {
             case 6: // End of Auto
                 if (follower.isBusy()) break;
                 reachedEnd = true;
-                TurretCR.staticLastAutoX = follower.getPose().getY();
+                TurretCR.staticLastAutoX = follower.getPose().getY(); //axis swap for teleop targeting
                 TurretCR.staticLastAutoY = follower.getPose().getX();
                 break;
         }

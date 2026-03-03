@@ -4,17 +4,14 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
-import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.SetIntakeState;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @TeleOp(name = "Intake Test", group = "OpModes")
@@ -37,15 +34,13 @@ public class IntakeTest extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(
                         new SequentialCommandGroup(
-                                new startIntakeFront(1),
-                                new startIntakeBack(1),
+                                new SetIntakeState(Intake.IntakeState.ON),
                                 new WaitCommand(1500),
-                                new stopIntakeFront(),
-                                new stopIntakeBack()
+                                new SetIntakeState(Intake.IntakeState.OFF)
                         )
                 )
                 .whenReleased(
-                        new stopIntakeFront()
+                        new SetIntakeState(Intake.IntakeState.OFF)
                 );
     }
 

@@ -9,7 +9,6 @@ import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
-import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
@@ -18,15 +17,11 @@ import com.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.startIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeBack;
-import org.firstinspires.ftc.teamcode.programs.commandbase.intake.stopIntakeFront;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.blockServoBarrier;
-import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.freeServoBarrier;
+import org.firstinspires.ftc.teamcode.programs.commandbase.intake.SetIntakeState;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.SetBarrierState;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
 @Config
@@ -75,22 +70,24 @@ public class SettingVelocityTest extends CommandOpMode {
         flyWheel2 = Robot.getInstance().launcher2;
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new startIntakeFront(1),
-                new startIntakeBack(1),
+                new SetIntakeState(Intake.IntakeState.ON),
                 new WaitCommand(1500),
-                new stopIntakeFront(),
-                new stopIntakeBack()
+                new SetIntakeState(Intake.IntakeState.OFF)
+        ));
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.Y).whenPressed(new SequentialCommandGroup(
+                new SetIntakeState(Intake.IntakeState.REVERSED_ON),
+                new WaitCommand(300),
+                new SetIntakeState(Intake.IntakeState.OFF)
         ));
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(new SequentialCommandGroup(
-                new freeServoBarrier(),
+                new SetBarrierState(Flywheel.BarrierState.FREE),
                 new WaitCommand(100),
-                new startIntakeFront(1),
-                new startIntakeBack(1),
+                new SetIntakeState(Intake.IntakeState.ON),
                 new WaitCommand(1500),
-                new stopIntakeFront(),
-                new stopIntakeBack(),
-                new blockServoBarrier()
+                new SetIntakeState(Intake.IntakeState.OFF),
+                new SetBarrierState(Flywheel.BarrierState.BLOCK)
         ));
     }
 
