@@ -81,7 +81,7 @@ public class Intake extends SubsystemBase {
 
         if(targetPower != previousPower) {
             front.setPower(targetPower);
-            back.setPower(targetPower);
+            back.setPower(-targetPower);
         }
 
         previousPosition = targetPosition;
