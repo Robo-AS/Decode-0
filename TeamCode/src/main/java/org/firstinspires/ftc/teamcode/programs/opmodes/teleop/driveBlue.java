@@ -56,7 +56,6 @@ public class driveBlue extends CommandOpMode {
         robot.initialize();
         robot.limelight.start();
         robot.limelight.pipelineSwitch(0);
-        setupControllerBindings();
 
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
@@ -142,41 +141,49 @@ public class driveBlue extends CommandOpMode {
                 );
 
 
-//        Trigger farZoneShootingTrigger = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.8)
-//                .whenActive(
-//
-//                )
+        Trigger farZoneShootingTrigger = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.8);
 
-
-
-
-
-
-    }
-
-    private void setupControllerBindings() {
-
-
-        new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
+        farZoneShootingTrigger
                 .whenActive(
-                        new SequentialCommandGroup(
-                            new changeLauncherVelocityState(true),
-                            new SetHoodServoState(Hood.HoodServoState.FAR_ZONE),
-                            new WaitCommand(300),
-                            new SetBarrierState(Flywheel.BarrierState.FREE),
-                            new SetIntakeState(Intake.IntakeState.ON)
-                ))
-                .whenInactive(new ParallelCommandGroup(
-                        new SetHoodServoState(Hood.HoodServoState.AUTOMATED),
-                        new changeLauncherVelocityState(false),
-                        new SetBarrierState(Flywheel.BarrierState.BLOCK),
-                        new SetIntakeState(Intake.IntakeState.OFF)
-                ));
+                        () -> CommandScheduler.getInstance().schedule(
+                                new ConditionalCommand(
+                                        new DoesNothingCommand(),
+                                        new SequentialCommandGroup(
+                                                new changeLauncherVelocityState(true),
+                                                new SetHoodServoState(Hood.HoodServoState.FAR_ZONE),
+                                                new WaitCommand(300),
+                                                new SetBarrierState(Flywheel.BarrierState.FREE),
+                                                new SetIntakeState(Intake.IntakeState.ON)
+                                        ),
+                                        () -> robot.hood.hoodServoState == Hood.HoodServoState.FAR_ZONE
+                                )
+                        )
+                );
+
+        farZoneShootingTrigger
+                .whenInactive(
+                        () -> CommandScheduler.getInstance().schedule(
+                                new ConditionalCommand(
+                                        new DoesNothingCommand(),
+                                        new ParallelCommandGroup(
+                                                new SetHoodServoState(Hood.HoodServoState.AUTOMATED),
+                                                new changeLauncherVelocityState(false),
+                                                new SetBarrierState(Flywheel.BarrierState.BLOCK),
+                                                new SetIntakeState(Intake.IntakeState.OFF)
+                                        ),
+                                        () -> robot.hood.hoodServoState == Hood.HoodServoState.AUTOMATED
+                                )
+                        )
+                );
+
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
+
+
     }
+
 
     private void triggerReverseSequence() {
         schedule(new SequentialCommandGroup(
@@ -252,9 +259,8 @@ public class driveBlue extends CommandOpMode {
 
         if (gamepad1.left_bumper) {
             handleIntakeLogic();
+            updateLEDStatus();
         }
-
-        updateLEDStatus();
 
         Pose2D pose = robot.pinpoint.getPosition();
         robotX = pose.getX(DistanceUnit.INCH);
@@ -281,7 +287,7 @@ public class driveBlue extends CommandOpMode {
 
     private void handleFlywheel() {
         if (robot.shootFar) {
-            robot.flywheel.loopAuto(2300);
+            robot.flywheel.loopAuto(2250);
         } else {
             robot.flywheel.loop(distance);
         }

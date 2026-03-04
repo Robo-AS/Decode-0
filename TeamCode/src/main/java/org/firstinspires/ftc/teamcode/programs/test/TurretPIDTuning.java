@@ -27,7 +27,6 @@ public class TurretPIDTuning extends OpMode {
     @Override
     public void init() {
         robot.initializeHardware(hardwareMap);
-        turret = robot.axon;
         turret.initialize(0);
 
         CommandScheduler.getInstance().unregisterSubsystem(robot.turret);
