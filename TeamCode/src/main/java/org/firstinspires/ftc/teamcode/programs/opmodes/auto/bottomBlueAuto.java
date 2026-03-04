@@ -216,7 +216,7 @@ public class bottomBlueAuto extends OpMode {
             autonomousPathUpdate();
         }
         robot.flywheel.loopAuto(2300);
-        robot.servoY.setPosition(0.85);
+        robot.hoodServo.setPosition(0.85);
         robot.turret.loopAuto(false, follower.getPose(), -0.75, 144);
         telemetry.addData("Path State", pathState);
         telemetry.update();

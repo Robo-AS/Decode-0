@@ -41,7 +41,7 @@ public class testRaresELenes extends CommandOpMode {
                                         () -> Robot.getInstance().servoBarrier.setPosition(1)
                                 ),
                                 new RunCommand(
-                                        () -> Robot.getInstance().servoY.setPosition(1)
+                                        () -> Robot.getInstance().hoodServo.setPosition(1)
                                 )
                         )
                 )
@@ -58,7 +58,7 @@ public class testRaresELenes extends CommandOpMode {
                                         () -> Robot.getInstance().servoBarrier.setPosition(0.5)
                                 ),
                                 new RunCommand(
-                                        () -> Robot.getInstance().servoY.setPosition(0)
+                                        () -> Robot.getInstance().hoodServo.setPosition(0)
                                 )
                         )
                 );

@@ -126,7 +126,7 @@ public class SettingVelocityTest extends CommandOpMode {
 
         distance = Math.hypot(goalY - robotY, goalX - robotX);
 
-        robot.servoY.setPosition(getServoYPositionFromDistance(distance));
+        robot.hoodServo.setPosition(getServoYPositionFromDistance(distance));
 
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("Target Velocity", targetVelocity);

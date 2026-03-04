@@ -166,7 +166,7 @@ public class Pose2d {
      * section on nonlinear pose estimation for derivation.
      *
      * <p>The twist is a change in pose in the robot's coordinate frame since the
-     * previous pose update. When the user runs exp() on the previous known
+     * previous pose loop. When the user runs exp() on the previous known
      * field-relative pose with the argument being the twist, the user will
      * receive the new field-relative pose.
      *
@@ -174,8 +174,8 @@ public class Pose2d {
      * equation moving the pose forward in time.
      *
      * @param twist The change in pose in the robot's coordinate frame since the
-     *              previous pose update. For example, if a non-holonomic robot moves forward
-     *              0.01 meters and changes angle by 0.5 degrees since the previous pose update,
+     *              previous pose loop. For example, if a non-holonomic robot moves forward
+     *              0.01 meters and changes angle by 0.5 degrees since the previous pose loop,
      *              the twist would be Twist2d{0.01, 0.0, toRadians(0.5)}
      * @return The new pose of the robot.
      */

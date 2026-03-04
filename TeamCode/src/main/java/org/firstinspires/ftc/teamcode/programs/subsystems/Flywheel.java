@@ -31,7 +31,7 @@ public class Flywheel extends SubsystemBase {
     public static double FREE = 0.5;
     public static double BLOCK = 0.35;
 
-    BarrierState barrierState;
+    public BarrierState barrierState;
 
     public void updateBarrierState(BarrierState state){
         barrierState = state;

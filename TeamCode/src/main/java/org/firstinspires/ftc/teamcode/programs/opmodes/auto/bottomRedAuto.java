@@ -235,7 +235,7 @@ public class bottomRedAuto extends OpMode {
             autonomousPathUpdate();
         }
         robot.flywheel.loopAuto(2300);
-        robot.servoY.setPosition(0.85);
+        robot.hoodServo.setPosition(0.85);
         robot.turret.loopAuto(true, follower.getPose(), 144, 147);
 
         telemetry.addData("Path State", pathState);

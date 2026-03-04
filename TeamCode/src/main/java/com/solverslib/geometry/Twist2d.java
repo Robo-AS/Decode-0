@@ -1,7 +1,7 @@
 package com.solverslib.geometry;
 
 /**
- * A change in distance along arc since the last pose update. We can use ideas
+ * A change in distance along arc since the last pose loop. We can use ideas
  * from differential calculus to create new Pose2ds from a Twist2d and vise
  * versa.
  *

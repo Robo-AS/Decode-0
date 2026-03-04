@@ -242,7 +242,7 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
         }
         Robot.getInstance().wasUpperBlueAutoRan = true;
         robot.flywheel.loopAuto(1700);
-        robot.servoY.setPosition(0.7);
+        robot.hoodServo.setPosition(0.7);
         robot.turret.loopAuto(false, follower.getPose(), -3, 142);
         telemetry.addData("Path State", pathState);
         telemetry.update();

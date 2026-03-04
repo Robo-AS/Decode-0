@@ -99,7 +99,7 @@ public class PinpointAndLimelightTest extends CommandOpMode {
             if(seesTargetID){
                 robot.flywheel.loop(distance);
                 pos = getServoYPositionFromDistance(y_distance);
-                robot.servoY.setPosition(pos);
+                robot.hoodServo.setPosition(pos);
             }
             else{
                 robot.flywheel.loop(0.0627);

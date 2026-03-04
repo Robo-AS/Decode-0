@@ -275,7 +275,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
             autonomousPathUpdate();
         }
         robot.flywheel.loopAuto(1700);
-        robot.servoY.setPosition(0.7);
+        robot.hoodServo.setPosition(0.7);
         robot.turret.loopAuto(false, follower.getPose(), -3, 144);
         telemetry.addData("Path State", pathState);
         telemetry.addData("Sub State", pathSubState);

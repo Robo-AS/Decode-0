@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 public class SetIntakeState extends InstantCommand {
     public SetIntakeState(Intake.IntakeState intakeState){
         super(
-                () -> Robot.getInstance().intake.updateIntake(intakeState)
+                () -> Robot.getInstance().intake.updateIntakeMotor(intakeState)
         );
     }
 }

@@ -26,7 +26,7 @@ import java.util.Objects;
  *   new TrapezoidProfile.State(initialReference, 0.0);
  * </code></pre>
  *
- * <p>Run on update:
+ * <p>Run on loop:
  * <pre><code>
  * TrapezoidProfile profile =
  *   new TrapezoidProfile(constraints, unprofiledReference, previousProfiledReference);

@@ -7,18 +7,6 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class Intake extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
-    private final DcMotorEx front;
-    private final DcMotorEx back;
-    private final Servo intakeServo;
-    private boolean isFull = false;
-
-    private double targetPower = 0.0, targetPosition = 0.0, previousPower = 0.0, previousPosition = 0.0, previousBarrierPosition = 0.0;
-
-    public Intake() {
-        this.front = robot.intakeFront;
-        this.back = robot.intakeBack;
-        this.intakeServo = robot.servoIntake;
-    }
 
     public enum IntakeState{
         ON,
@@ -27,64 +15,59 @@ public class Intake extends SubsystemBase {
     }
 
     public enum ServoIntakeState{
-        LIFT,
-        LOWER
+        UP,
+        DOWN
     }
 
-    public enum BarrierState{
-        FREE,
-        BLOCk
-    }
 
     public IntakeState intakeState;
     public ServoIntakeState servoIntakeState;
-
-    public static int ON = 1;
-    public static int OFF = 0;
-    public static int REVERSED_ON = -1;
-    public static int LIFT = 0;
-    public static double LOWER = 0.3;
+    public static int UP = 0;
+    public static double DOWN = 0.3;
 
 
-    public void updateIntake(IntakeState state){
+    public void updateIntakeMotor(IntakeState state){
         intakeState = state;
 
         switch (intakeState){
             case ON:
-                targetPower = ON;
+                robot.intakeFront.setPower(1);
+                robot.intakeBack.setPower(-1);
                 break;
             case OFF:
-                targetPower = OFF;
+                robot.intakeFront.setPower(0);
+                robot.intakeBack.setPower(0);
                 break;
             case REVERSED_ON:
-                targetPower = REVERSED_ON;
+                robot.intakeFront.setPower(-1);
+                robot.intakeBack.setPower(1);
                 break;
         }
     }
 
-    public void updateServoIntake(ServoIntakeState state){
+    public void updateIntakeServo(ServoIntakeState state){
         servoIntakeState = state;
 
         switch (servoIntakeState){
-            case LIFT:
-                targetPosition = LIFT;
+            case UP:
+                robot.servoIntake.setPosition(UP);
                 break;
-            case LOWER:
-                targetPosition = LOWER;
+            case DOWN:
+                robot.servoIntake.setPosition(DOWN);
                 break;
         }
     }
 
-    public void loop(){
-        if(targetPosition != previousPosition)
-            intakeServo.setPosition(targetPosition);
-
-        if(targetPower != previousPower) {
-            front.setPower(targetPower);
-            back.setPower(-targetPower);
-        }
-
-        previousPosition = targetPosition;
-        previousPower = targetPower;
-    }
+//    public void loop(){
+//        if(targetPosition != previousPosition)
+//            intakeServo.setPosition(targetPosition);
+//
+//        if(targetPower != previousPower) {
+//            front.setPower(targetPower);
+//            back.setPower(-targetPower);
+//        }
+//
+//        previousPosition = targetPosition;
+//        previousPower = targetPower;
+//    }
 }

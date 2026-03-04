@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Hood;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
@@ -28,10 +29,11 @@ public class Robot {
     public TurretCR turret = null;
     public RTPAxon axon = null;
     public Flywheel flywheel = null;
+    public Hood hood;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intakeFront, intakeBack;
     public DcMotorEx launcher1, launcher2;
-    public Servo servoY, servoBarrier, servoIntake, servoSorter;
-    public CRServo servoX;
+    public Servo hoodServo, servoBarrier, servoIntake, servoSorter;
+    public CRServo turretServo;
     public List<DcMotorEx> motors;
     public GoBildaPinpointDriver pinpoint;
     public TouchSensor backArtefacts, frontArtefacts, are3Artefacts_1, are3Artefacts_2;
@@ -48,8 +50,8 @@ public class Robot {
 
     public void initializeHardware(final HardwareMap hardwareMap) {
         Robot.hardwareMap = hardwareMap;
-        allHubs = hardwareMap.getAll(LynxModule.class);
 
+        allHubs = hardwareMap.getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
@@ -70,7 +72,7 @@ public class Robot {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
-        mecanum = new Mecanum();
+
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
@@ -78,12 +80,11 @@ public class Robot {
         intakeBack = hardwareMap.get(DcMotorEx.class, "intakeBack");
         intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        servoX = hardwareMap.get(CRServo.class, "servoX");
-        servoY = hardwareMap.get(Servo.class, "servoY");
-        servoX.setDirection(DcMotorSimple.Direction.REVERSE);
+        turretServo = hardwareMap.get(CRServo.class, "servoX");
+        hoodServo = hardwareMap.get(Servo.class, "servoY");
+        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        axon = new RTPAxon(servoX, intakeBack);
-        turret = new TurretCR();
+
 
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
@@ -91,7 +92,7 @@ public class Robot {
         launcher1.setDirection(DcMotorSimple.Direction.FORWARD);
         launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        flywheel = new Flywheel();
+
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
@@ -110,16 +111,18 @@ public class Robot {
         pin0 = hardwareMap.digitalChannel.get("digital0");
         pin1 = hardwareMap.digitalChannel.get("digital1");
 
-        intake = new Intake();
-
         servoSorter = hardwareMap.get(Servo.class, "servoSorter");
+
+        intake = new Intake();
+        mecanum = new Mecanum();
+        axon = new RTPAxon(turretServo, intakeBack);
+        turret = new TurretCR();
+        flywheel = new Flywheel();
+        hood = new Hood();
+
+
     }
 
-    public void clearBulkCache() {
-        if (allHubs != null) {
-            for (LynxModule hub : allHubs) hub.clearBulkCache();
-        }
-    }
 
     public void initialize() {
         if (mecanum != null) mecanum.initialize();
@@ -127,10 +130,11 @@ public class Robot {
         if (flywheel != null) flywheel.initialize();
         if (axon != null) axon.initialize(lastTurretAngle);
         if (turret != null) turret.initialize();
-        if (servoY != null) servoY.setPosition(0.85);
+//        if (hoodServo != null) hoodServo.setPosition(0.85);
         if (servoBarrier != null) servoBarrier.setPosition(0.35);
         if (servoIntake != null) servoIntake.setPosition(0);
         if (led != null) led.setPosition(0.475);
+        hood.initialize();
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
@@ -142,10 +146,10 @@ public class Robot {
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
         launcher1.setDirection(DcMotorSimple.Direction.FORWARD);
         launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
-        servoY = hardwareMap.get(Servo.class, "servoY");
-        servoX = hardwareMap.get(CRServo.class, "servoX");
-        servoX.setDirection(DcMotorSimple.Direction.REVERSE);
-        axon = new RTPAxon(servoX, intakeBack);
+        hoodServo = hardwareMap.get(Servo.class, "servoY");
+        turretServo = hardwareMap.get(CRServo.class, "servoX");
+        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
+        axon = new RTPAxon(turretServo, intakeBack);
         turret = new TurretCR();
         flywheel = new Flywheel();
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
@@ -165,8 +169,12 @@ public class Robot {
         pinpoint.resetPosAndIMU();
     }
 
-    public void update() {
-        if (pinpoint != null) pinpoint.update();
+    public void loop() {
+         pinpoint.update();
+
+        for (LynxModule hub : allHubs) {
+            hub.clearBulkCache();
+        }
     }
 
     public static void clearInstance() {

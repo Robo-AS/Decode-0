@@ -65,7 +65,7 @@ public class FlywheelPIDTuning extends OpMode {
         if(result.isValid() && result != null) {
             ty = result.getTy();
             y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
-            Robot.getInstance().servoY.setPosition(getServoYPositionFromDistance(y_distance));
+            Robot.getInstance().hoodServo.setPosition(getServoYPositionFromDistance(y_distance));
         }
 
         double ff = feedforward.calculate(targetVelocity);

@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.programs.test;
 
-import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -14,10 +12,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
-import org.firstinspires.ftc.teamcode.programs.commandbase.limelight.setServoYPosition;
+import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.SetHoodServoState;
 
 @TeleOp(name = "Hood Test", group = "OpModes")
 public class HoodTest extends CommandOpMode {
@@ -45,7 +42,6 @@ public class HoodTest extends CommandOpMode {
         robot.limelight.start();
         robot.limelight.setPollRateHz(100);
         robot.limelight.pipelineSwitch(0);
-        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new setServoYPosition(0.5));
     }
 
     @Override
@@ -79,7 +75,7 @@ public class HoodTest extends CommandOpMode {
         double distance = Math.hypot(goalX - robotX, goalY - robotY);
 
         double pos = getServoYPositionFromDistance(distance);
-        robot.servoY.setPosition(pos);
+        robot.hoodServo.setPosition(pos);
 
         telemetry.addData("Distance", distance);
         telemetry.addData("Servo Position", pos);
