@@ -43,23 +43,23 @@ public class TurretPIDTuning extends OpMode {
         TurretCR.kI = kI;
         TurretCR.kD = kD;
         TurretCR.kS = kS;
-        TurretCR.targetAngle = targetAngle;
+        TurretCR.targetTurretPosition = targetAngle;
 
         CommandScheduler.getInstance().run();
 
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("currentAngle", turret.getCurrentAngle());
-        packet.put("targetAngle", TurretCR.targetAngle);
-        packet.put("error", TurretCR.targetAngle - turret.getCurrentAngle());
+        packet.put("targetAngle", TurretCR.targetTurretPosition);
+        packet.put("error", TurretCR.targetTurretPosition - turret.getCurrentAngle());
         dashboard.sendTelemetryPacket(packet);
 
         telemetry.addData("Current Angle", turret.getCurrentAngle());
-        telemetry.addData("Target Angle", TurretCR.targetAngle);
+        telemetry.addData("Target Angle", TurretCR.targetTurretPosition);
         telemetry.update();
     }
 
     @Override
     public void stop() {
-        TurretCR.targetAngle = turret.getCurrentAngle();
+        TurretCR.targetTurretPosition = turret.getCurrentAngle();
     }
 }

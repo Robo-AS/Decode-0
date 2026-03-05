@@ -114,7 +114,7 @@ public class Robot {
 
         intake = new Intake();
         mecanum = new Mecanum();
-        turret = new TurretCR(turretServo, intakeBack);
+        turret = new TurretCR();
         flywheel = new Flywheel();
         hood = new Hood();
 
@@ -146,7 +146,7 @@ public class Robot {
         hoodServo = hardwareMap.get(Servo.class, "servoY");
         turretServo = hardwareMap.get(CRServo.class, "servoX");
         turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
-        turret = new TurretCR(turretServo, intakeBack);
+        turret = new TurretCR();
         flywheel = new Flywheel();
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
