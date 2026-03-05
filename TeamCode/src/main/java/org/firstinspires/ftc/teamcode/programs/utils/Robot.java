@@ -27,7 +27,6 @@ public class Robot {
     public Mecanum mecanum = null;
     public Limelight3A limelight = null;
     public TurretCR turret = null;
-    public RTPAxon axon = null;
     public Flywheel flywheel = null;
     public Hood hood;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intakeFront, intakeBack;
@@ -115,8 +114,7 @@ public class Robot {
 
         intake = new Intake();
         mecanum = new Mecanum();
-        axon = new RTPAxon(turretServo, intakeBack);
-        turret = new TurretCR();
+        turret = new TurretCR(turretServo, intakeBack);
         flywheel = new Flywheel();
         hood = new Hood();
 
@@ -128,13 +126,12 @@ public class Robot {
         if (mecanum != null) mecanum.initialize();
         configurePinpoint();
         if (flywheel != null) flywheel.initialize();
-        if (axon != null) axon.initialize(lastTurretAngle);
         if (turret != null) turret.initialize();
-//        if (hoodServo != null) hoodServo.setPosition(0.85);
         if (servoBarrier != null) servoBarrier.setPosition(0.35);
         if (servoIntake != null) servoIntake.setPosition(0);
         if (led != null) led.setPosition(0.475);
         hood.initialize();
+        servoSorter.setPosition(0.5);
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
@@ -149,8 +146,7 @@ public class Robot {
         hoodServo = hardwareMap.get(Servo.class, "servoY");
         turretServo = hardwareMap.get(CRServo.class, "servoX");
         turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
-        axon = new RTPAxon(turretServo, intakeBack);
-        turret = new TurretCR();
+        turret = new TurretCR(turretServo, intakeBack);
         flywheel = new Flywheel();
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
@@ -159,7 +155,6 @@ public class Robot {
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
-        if (axon != null) axon.initialize(0);
     }
 
     public void configurePinpoint() {

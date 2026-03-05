@@ -6,18 +6,19 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import org.firstinspires.ftc.teamcode.programs.utils.RTPAxon;
-import org.firstinspires.ftc.teamcode.programs.utils.Robot;
+
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
+import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 @Config
 @TeleOp(name = "Turret PID Tuning", group = "Tuning")
 public class TurretPIDTuning extends OpMode {
 
-    Robot robot = Robot.getInstance();
-    RTPAxon turret;
-    FtcDashboard dashboard;
+    private Robot robot;
+    private TurretCR turret;
+    private FtcDashboard dashboard;
 
+    // Local dashboard controls
     public static double kP = 0.0125;
     public static double kI = 0.0;
     public static double kD = 0.0005;
@@ -26,35 +27,39 @@ public class TurretPIDTuning extends OpMode {
 
     @Override
     public void init() {
+        robot = Robot.getInstance();
         robot.initializeHardware(hardwareMap);
-        turret.initialize(0);
 
-        CommandScheduler.getInstance().unregisterSubsystem(robot.turret);
+        // Reference the subsystem already created in your Robot class
+        this.turret = robot.turret;
+        turret.initialize();
 
         dashboard = FtcDashboard.getInstance();
     }
 
     @Override
     public void loop() {
-        turret.updatePIDCoeffs(kP, kI, kD, kS);
+        TurretCR.kP = kP;
+        TurretCR.kI = kI;
+        TurretCR.kD = kD;
+        TurretCR.kS = kS;
+        TurretCR.targetAngle = targetAngle;
 
-        turret.setTargetRotation(targetAngle);
-        turret.update();
+        CommandScheduler.getInstance().run();
 
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("currentAngle", turret.getCurrentAngle());
-        packet.put("targetAngle", targetAngle);
-        packet.put("error", targetAngle - turret.getCurrentAngle());
+        packet.put("targetAngle", TurretCR.targetAngle);
+        packet.put("error", TurretCR.targetAngle - turret.getCurrentAngle());
         dashboard.sendTelemetryPacket(packet);
 
         telemetry.addData("Current Angle", turret.getCurrentAngle());
-        telemetry.addData("Target Angle", targetAngle);
+        telemetry.addData("Target Angle", TurretCR.targetAngle);
         telemetry.update();
     }
 
     @Override
     public void stop() {
-        turret.setTargetRotation(turret.getCurrentAngle());
-        turret.update();
+        TurretCR.targetAngle = turret.getCurrentAngle();
     }
 }

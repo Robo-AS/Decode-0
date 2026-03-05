@@ -71,7 +71,7 @@ public class PinpointTargetTest extends CommandOpMode {
         if (finalTurretAngle > 90) finalTurretAngle -= 360;
         finalTurretAngle = Math.max(-360, Math.min(finalTurretAngle, 90));
 
-        robot.turret.loopAuto(finalTurretAngle - dynamicOffset);
+      //  robot.turret.loopAuto(finalTurretAngle - dynamicOffset);
 
         if (gamepad1.options) robot.pinpoint.resetPosAndIMU();
 
