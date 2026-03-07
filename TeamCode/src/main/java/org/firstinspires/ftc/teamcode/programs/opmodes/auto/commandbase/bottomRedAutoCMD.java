@@ -26,58 +26,82 @@ import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "AUTO NEAR 9 BLUE FULL CMD🔵")
-public class upperBlueCMD_9 extends CommandOpMode {
+@Autonomous(name = "AUTO FAR RED FULL CMD❤️")
+public class bottomRedAutoCMD extends CommandOpMode {
 
     private final Robot robot = Robot.getInstance();
     private Follower follower;
 
     private double loopTime = 0;
-    private final Pose startPose = new Pose(21.01, 124.01, Math.toRadians(144));
-    private final Pose outtake = new Pose(60.562, 82.754, Math.toRadians(180));
-    private final Pose alignToBalls1 = new Pose(44.09, 82.21, Math.toRadians(180));
-    private final Pose intake1 = new Pose(20, 82.21, Math.toRadians(180));
-    private final Pose alignToBalls2 = new Pose(45.09, 57, Math.toRadians(180));
-    private final Pose intake2 = new Pose(13, 57, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(90));
+    private final Pose startPose = new Pose(88, 8, Math.toRadians(90));
+    private final Pose outtake = new Pose(88.000, 13.000, Math.toRadians(90));
+    private final Pose intake1 = new Pose(135, -3, Math.toRadians(0));
+    private final Pose intake2 = new Pose(104.000, 32.5, Math.toRadians(0));
+    private final Pose intake3 = new Pose(135, 5, Math.toRadians(0));
+    private final Pose intake4 = new Pose(135, 30, Math.toRadians(0));
+    private final Pose loaded2 = new Pose(136.5, 32.5, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(114, 18, Math.toRadians(90));
 
-    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave;
+    private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
 
-    private void buildPaths() {
+    public void buildPaths() {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
 
-        align2 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, alignToBalls2))
-                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
-                .build();
-        intaking2 = follower.pathBuilder()
-                .addPath(new BezierLine(alignToBalls2, intake2))
+        get2 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake2))
                 .setConstantHeadingInterpolation(intake2.getHeading())
                 .build();
-        outtaking2 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake2, new Pose(60.75, 68.09), outtake))
+
+        loading2 = follower.pathBuilder()
+                .addPath(new BezierLine(intake2, loaded2))
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .build();
+
+        throw2 = follower.pathBuilder()
+                .addPath(new BezierLine(loaded2, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
-        align1 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, alignToBalls1))
-                .setConstantHeadingInterpolation(alignToBalls1.getHeading())
-                .build();
-        intaking1 = follower.pathBuilder()
-                .addPath(new BezierLine(alignToBalls1, intake1))
+        get1 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake1))
                 .setConstantHeadingInterpolation(intake1.getHeading())
                 .build();
-        outtaking1 = follower.pathBuilder()
+
+        backFromIntake1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
-        leave = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, leavePoint))
-                .setConstantHeadingInterpolation(leavePoint.getHeading())
+        get3 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake3))
+                .setConstantHeadingInterpolation(intake3.getHeading())
+                .build();
+
+        backFromIntake3 = follower.pathBuilder()
+                .addPath(new BezierLine(intake3, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+
+        get4 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake4))
+                .setConstantHeadingInterpolation(intake4.getHeading())
+                .build();
+
+        backFromIntake4 = follower.pathBuilder()
+                .addPath(new BezierLine(intake4, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+
+        leave = follower.pathBuilder().addPath(new BezierLine(outtake, leavePoint)).setConstantHeadingInterpolation(leavePoint.getHeading()).build();
+    }
+
+    private PathChain buildExitPath() {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(follower.getPose(), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
     }
 
@@ -169,19 +193,27 @@ public class upperBlueCMD_9 extends CommandOpMode {
                 followPath(launchPreload, false),
                 shootingSequence(),
 
-                followPath(align2, false),
+                followPath(get2, false),
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
-                followPathWithAutomation(intaking2),
-                followPath(outtaking2, false),
+                followPathWithAutomation(loading2),
+                followPath(throw2, false),
                 shootingSequence(),
 
-                followPath(align1, false),
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
-                followPathWithAutomation(intaking1),
-                followPath(outtaking1, false),
-                shootingSequence(),
+                followPathWithAutomation(get1),
+                followPath(buildExitPath(), false),
+
+                new SetIntakeState(Intake.IntakeState.ON),
+                new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
+                followPathWithAutomation(get3),
+                followPath(buildExitPath(), false),
+
+                new SetIntakeState(Intake.IntakeState.ON),
+                new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
+                followPathWithAutomation(get4),
+                followPath(buildExitPath(), false),
 
                 followPath(leave, false),
                 new InstantCommand(() -> {
@@ -196,9 +228,9 @@ public class upperBlueCMD_9 extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.75);
-            robot.turret.loopAuto(false, follower.getPose(), -2.25, 144);
+            robot.flywheel.loopAuto(2250);
+            robot.hoodServo.setPosition(0.85);
+            robot.turret.loopAuto(false, follower.getPose(), 144, 147);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

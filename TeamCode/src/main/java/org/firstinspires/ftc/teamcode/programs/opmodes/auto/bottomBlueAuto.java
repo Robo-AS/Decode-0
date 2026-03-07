@@ -21,15 +21,15 @@ public class bottomBlueAuto extends OpMode {
     private int pathSubState = 0;
     private Timer waitTimer = new Timer();
     private Timer pathTimeoutTimer = new Timer();
-    private final long PATH_TIMEOUT_MS = 2500;
+    private final long PATH_TIMEOUT_MS = 4000;
     private final Pose startPose = new Pose(56, 8, Math.toRadians(180));
     private final Pose outtake = new Pose(56.000, 12.000, Math.toRadians(180));
-    private final Pose intake1 = new Pose(2.75, -3, Math.toRadians(180));
+    private final Pose intake1 = new Pose(4, -3, Math.toRadians(180));
     private final Pose intake2 = new Pose(40.000, 32.5, Math.toRadians(180));
     private final Pose intake3 = new Pose(4, 5, Math.toRadians(180));
     private final Pose intake4 = new Pose(4, 30, Math.toRadians(180));
     private final Pose loaded2 = new Pose(7.5, 32.5, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(30, 13, Math.toRadians(90));
+    private final Pose leavePoint = new Pose(30, 18, Math.toRadians(90));
     private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
     public void buildPaths() {
         launchPreload = follower.pathBuilder().addPath(new BezierLine(startPose, outtake)).setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading()).build();
@@ -82,19 +82,16 @@ public class bottomBlueAuto extends OpMode {
                 waitTimer.resetTimer();
                 pathTimeoutTimer.resetTimer();
                 break;
-
-            case 0: // Preload Outtake
+            case 0:
                 if (follower.isBusy() || waitTimer.getElapsedTime() < 1000) break;
                 shootingSequence();
                 if (pathSubState <= 2) break;
                 pathSubState = 0;
-                // Start moving to Intake 2
                 follower.followPath(get2, true);
                 pathTimeoutTimer.resetTimer();
                 pathState = 1;
                 break;
-
-            case 1: // Moving to Intake 2
+            case 1:
                 if (follower.isBusy()) break;
                 robot.intakeBack.setPower(1);
                 robot.intakeFront.setPower(1);
@@ -102,30 +99,23 @@ public class bottomBlueAuto extends OpMode {
                 pathTimeoutTimer.resetTimer();
                 pathState = 2;
                 break;
-
-            case 2: // Loading Intake 2
+            case 2:
                 if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
                     robot.intakeFront.setPower(0);
                     robot.intakeBack.setPower(0);
                     follower.followPath(buildExitPath());
+                    pathTimeoutTimer.resetTimer();
                     pathState = 3;
                     break;
                 }
                 if (follower.isBusy()) break;
-
-                // Start return path
+                robot.intakeFront.setPower(0);
+                robot.intakeBack.setPower(0);
                 follower.followPath(throw2, true);
-                waitTimer.resetTimer();
+                pathTimeoutTimer.resetTimer();
                 pathState = 3;
                 break;
-
-            case 3: // Outtaking Ball 2 + Overrun
-                // Non-blocking 1-second intake timer
-                if (waitTimer.getElapsedTime() >= 1000) {
-                    robot.intakeFront.setPower(0);
-                    robot.intakeBack.setPower(0);
-                }
-
+            case 3:
                 if (follower.isBusy()) break;
                 shootingSequence();
                 if (pathSubState <= 2) break;
@@ -134,8 +124,7 @@ public class bottomBlueAuto extends OpMode {
                 pathTimeoutTimer.resetTimer();
                 pathState = 4;
                 break;
-
-            case 4: // Intaking Ball 1
+            case 4:
                 if (follower.getCurrentTValue() > 0.5) {
                     robot.intakeBack.setPower(1);
                     robot.intakeFront.setPower(1);
@@ -144,48 +133,92 @@ public class bottomBlueAuto extends OpMode {
                     robot.intakeFront.setPower(0);
                     robot.intakeBack.setPower(0);
                     follower.followPath(buildExitPath());
+                    pathTimeoutTimer.resetTimer();
                     pathState = 5;
                     break;
                 }
                 if (!follower.isBusy()) {
-                    // Start return path, but keep intake on for 1 second
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
                     follower.followPath(backFromIntake1, true);
-                    waitTimer.resetTimer();
+                    pathTimeoutTimer.resetTimer();
                     pathState = 5;
                 }
                 break;
-
-            case 5: // Outtaking Ball 1 + Overrun
-                // Non-blocking 1-second intake timer
-                if (waitTimer.getElapsedTime() >= 1000) {
-                    robot.intakeFront.setPower(0);
-                    robot.intakeBack.setPower(0);
-                }
-
+            case 5:
                 if (follower.isBusy()) break;
                 shootingSequence();
                 if (pathSubState <= 2) break;
                 pathSubState = 0;
-
-                // SKIPPING INTAKE 3 AND 4 - Going straight to parking logic
-                pathState = 10;
+                follower.followPath(get3, true);
+                pathTimeoutTimer.resetTimer();
+                pathState = 7;
                 break;
-
-            case 10: // Parking Sequence
+            case 7:
+                if (follower.getCurrentTValue() > 0.5) {
+                    robot.intakeBack.setPower(1);
+                    robot.intakeFront.setPower(1);
+                }
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathTimeoutTimer.resetTimer();
+                    pathState = 8;
+                    break;
+                }
+                if (!follower.isBusy()) {
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
+                    follower.followPath(backFromIntake3, true);
+                    pathTimeoutTimer.resetTimer();
+                    pathState = 8;
+                }
+                break;
+            case 8:
                 if (follower.isBusy()) break;
-                // Final safety shutoff for intake
-                robot.intakeFront.setPower(0);
-                robot.intakeBack.setPower(0);
-
+                shootingSequence();
+                if (pathSubState <= 2) break;
+                pathSubState = 0;
+                follower.followPath(get4, true);
+                pathTimeoutTimer.resetTimer();
+                pathState = 9;
+                break;
+            case 9:
+                if (follower.getCurrentTValue() > 0.5) {
+                    robot.intakeBack.setPower(1);
+                    robot.intakeFront.setPower(1);
+                }
+                if (follower.isBusy() && pathTimeoutTimer.getElapsedTime() >= PATH_TIMEOUT_MS) {
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
+                    follower.followPath(buildExitPath());
+                    pathTimeoutTimer.resetTimer();
+                    pathState = 10;
+                    break;
+                }
+                if (!follower.isBusy()) {
+                    robot.intakeFront.setPower(0);
+                    robot.intakeBack.setPower(0);
+                    follower.followPath(backFromIntake4, true);
+                    pathTimeoutTimer.resetTimer();
+                    pathState = 10;
+                }
+                break;
+            case 10:
+                if (follower.isBusy()) break;
+                shootingSequence();
+                if (pathSubState <= 2) break;
+                pathSubState = 0;
                 TARGET_ANGLE = 0;
                 follower.followPath(leave);
+                pathTimeoutTimer.resetTimer();
                 pathState = 6;
                 break;
-
-            case 6: // End of Auto
+            case 6:
                 if (follower.isBusy()) break;
                 reachedEnd = true;
-                TurretCR.staticLastAutoX = follower.getPose().getY(); //axis swap for teleop targeting
+                TurretCR.staticLastAutoX = follower.getPose().getY();
                 TurretCR.staticLastAutoY = follower.getPose().getX();
                 break;
         }
@@ -217,7 +250,7 @@ public class bottomBlueAuto extends OpMode {
         }
         robot.flywheel.loopAuto(2300);
         robot.hoodServo.setPosition(0.85);
-        robot.turret.loopAuto(false, follower.getPose(), -0.75, 144);
+        robot.turret.loopAuto(false, follower.getPose(), -0, 144);
         telemetry.addData("Path State", pathState);
         telemetry.update();
     }
