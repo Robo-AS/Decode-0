@@ -40,7 +40,7 @@ public class Intake extends SubsystemBase {
                 break;
             case REVERSED_ON:
                 robot.intakeFront.setPower(-1);
-                robot.intakeBack.setPower(1);
+                robot.intakeBack.setPower(0);
                 break;
         }
     }

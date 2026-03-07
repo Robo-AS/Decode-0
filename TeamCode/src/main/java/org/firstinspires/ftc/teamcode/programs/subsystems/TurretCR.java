@@ -48,11 +48,11 @@ public class TurretCR extends SubsystemBase {
     }
 
 
-//    @Override
-//    public void periodic() {
-//        currentTurretPosition = (robot.intakeBack.getCurrentPosition() / TICKS_PER_REV) * 360.0;
-//        applyToHardware();
-//    }
+    @Override
+    public void periodic() {
+        currentTurretPosition = (robot.intakeBack.getCurrentPosition() / TICKS_PER_REV) * 360.0;
+        applyToHardware();
+    }
 
     private void updateGoalLock(double goalX, double goalY, double robotX, double robotY, double driverOffset) {
         double robotHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS);

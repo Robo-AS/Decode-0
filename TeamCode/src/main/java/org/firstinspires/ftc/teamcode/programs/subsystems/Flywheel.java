@@ -91,6 +91,11 @@ public class Flywheel extends SubsystemBase {
 
         flyWheel1.setPower(power);
         flyWheel2.setPower(power);
+
+        if(targetBarrier != previousBarrier) {
+            robot.servoBarrier.setPosition(targetBarrier);
+        }
+        previousBarrier = targetBarrier;
     }
 
     public double getCurrentVelocity(){

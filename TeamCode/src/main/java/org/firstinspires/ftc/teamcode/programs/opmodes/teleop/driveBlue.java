@@ -18,6 +18,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.commandbase.DoesNothingCommand;
+import org.firstinspires.ftc.teamcode.programs.commandbase.SetSorterPosition;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.*;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.*;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.SetHoodServoState;
@@ -27,6 +28,10 @@ import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
+
+import com.pedropathing.util.Timer;
+
+import kotlin.time.Instant;
 
 @TeleOp(name = "Drive BLUE 🔵", group = "OpModes")
 public class driveBlue extends CommandOpMode {
@@ -41,10 +46,14 @@ public class driveBlue extends CommandOpMode {
     private ElapsedTime sensorTimer = new ElapsedTime();
     private boolean sensorsWereActive = false;
     private boolean isReversing = false;
+    private boolean sorterMoved = false;
     public boolean isFull = false;
 
     public double goalX = 144, goalY = 0;
     private double loopTime = 0;
+    private int sorterCount = -1;
+
+    public Timer backSensorTimer = new Timer();
 
     @Override
     public void initialize() {
@@ -56,6 +65,7 @@ public class driveBlue extends CommandOpMode {
         robot.initialize();
         robot.limelight.start();
         robot.limelight.pipelineSwitch(0);
+        backSensorTimer.resetTimer();
 
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
@@ -80,32 +90,32 @@ public class driveBlue extends CommandOpMode {
 
 
 
-    gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-            .whenReleased(
-                    () -> CommandScheduler.getInstance().schedule(
-                            new ParallelCommandGroup(
-                                    new SetServoIntakeState(Intake.ServoIntakeState.UP),
-                                    new SetIntakeState(Intake.IntakeState.OFF),
-                                    new InstantCommand(() -> {
-                                                isFull = false;
-                                                isReversing = false;
-                                                sensorsWereActive = false;
-                                            }
-                                    )
+        gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .whenReleased(
+                        () -> CommandScheduler.getInstance().schedule(
+                                new ParallelCommandGroup(
+                                        new SetServoIntakeState(Intake.ServoIntakeState.UP),
+                                        new SetIntakeState(Intake.IntakeState.OFF),
+                                        new InstantCommand(() -> {
+                                            isFull = false;
+                                            isReversing = false;
+                                            sensorsWereActive = false;
+                                        }
+                                        )
 
-                            )
-                    )
-            );
+                                )
+                        )
+                );
 
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.Y)
                 .whenPressed(
                         () -> CommandScheduler.getInstance().schedule(
-                            new SequentialCommandGroup(
-                                    new SetIntakeState(Intake.IntakeState.REVERSED_ON),
-                                    new WaitCommand(300),
-                                    new SetIntakeState(Intake.IntakeState.OFF)
-                            )
+                                new SequentialCommandGroup(
+                                        new SetIntakeState(Intake.IntakeState.REVERSED_ON),
+                                        new WaitCommand(300),
+                                        new SetIntakeState(Intake.IntakeState.OFF)
+                                )
                         )
                 );
 
@@ -114,12 +124,39 @@ public class driveBlue extends CommandOpMode {
                 .whileHeld(
                         () -> CommandScheduler.getInstance().schedule(
                                 new ConditionalCommand(
-                                        new DoesNothingCommand(),
-                                        new ParallelCommandGroup(
-                                                new SetBarrierState(Flywheel.BarrierState.FREE),
-                                                new SetIntakeState(Intake.IntakeState.ON)
+                                        new ConditionalCommand(
+                                                new DoesNothingCommand(),
+                                                new ParallelCommandGroup(
+                                                        new SetBarrierState(Flywheel.BarrierState.FREE),
+                                                        new SetIntakeState(Intake.IntakeState.ON)
+                                                ),
+                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.ON
                                         ),
-                                        () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.ON
+                                        new ParallelCommandGroup(
+                                                new ConditionalCommand(
+                                                        new InstantCommand(() -> backSensorTimer.resetTimer()),
+                                                        new DoesNothingCommand(),
+                                                        () -> (!hue_green && !hue_purple && robot.proximitySensor.getState() && robot.backArtefacts.isPressed())
+                                                ),
+                                                new ConditionalCommand(
+                                                        new DoesNothingCommand(),
+                                                        new ParallelCommandGroup(
+                                                                new SetBarrierState(Flywheel.BarrierState.FREE),
+                                                                new SetIntakeState(Intake.IntakeState.ON)
+                                                        ),
+                                                        () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.ON
+                                                ),
+                                                new ConditionalCommand(
+                                                        new SequentialCommandGroup(
+                                                                new WaitCommand(250),
+                                                                new InstantCommand(() -> robot.servoSorter.setPosition(0.5)),
+                                                                new WaitCommand(150),
+                                                                new InstantCommand(() -> sorterMoved = false)
+                                                        ),
+                                                        new DoesNothingCommand(),
+                                                        () -> (!hue_green && !hue_purple && robot.proximitySensor.getState() && robot.backArtefacts.isPressed()) && backSensorTimer.getElapsedTime() >= 10
+                                                )),
+                                        () -> !sorterMoved
                                 )
                         )
                 );
@@ -141,7 +178,7 @@ public class driveBlue extends CommandOpMode {
                 );
 
 
-        Trigger farZoneShootingTrigger = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.8);
+        Trigger farZoneShootingTrigger = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.8);
 
         farZoneShootingTrigger
                 .whenActive(
@@ -176,13 +213,42 @@ public class driveBlue extends CommandOpMode {
                         )
                 );
 
+        Trigger intakeBack = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.8);
+
+        intakeBack
+                .whenActive(
+                        new ParallelCommandGroup(
+                                new ConditionalCommand(
+                                        new DoesNothingCommand(),
+                                        new ParallelCommandGroup(
+                                                new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
+                                                new SetIntakeState(Intake.IntakeState.ON)
+                                        ),
+                                        () -> robot.intake.servoIntakeState == Intake.ServoIntakeState.DOWN && robot.intake.intakeState == Intake.IntakeState.ON
+                                ),
+                                new ConditionalCommand(
+                                    new SequentialCommandGroup(
+                                            new InstantCommand(() -> robot.servoSorter.setPosition(0.88)),
+                                            new InstantCommand(() -> sorterMoved = true)
+                                    ),
+                                    new DoesNothingCommand(),
+                                    () ->  (hue_green || hue_purple || !robot.proximitySensor.getState()) && !robot.backArtefacts.isPressed()
+                                )
+                        ));
+
+        intakeBack
+                .whenInactive(
+                        () -> CommandScheduler.getInstance().schedule(
+                                new SetIntakeState(Intake.IntakeState.OFF)
+                        )
+                );
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
-
-
+        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new SetSorterPosition(getSorterPosition(sorterCount += 1)));
     }
+
 
 
     private void triggerReverseSequence() {
@@ -195,7 +261,7 @@ public class driveBlue extends CommandOpMode {
                             robot.intake.updateIntakeMotor(Intake.IntakeState.REVERSED_ON);
                         })
                 ),
-                new WaitCommand(50),
+                new WaitCommand(10),
                 new InstantCommand(() -> {
                     isReversing = false;
                     robot.intake.updateIntakeMotor(Intake.IntakeState.OFF);
@@ -203,7 +269,7 @@ public class driveBlue extends CommandOpMode {
         ));
     }
 
-    private void handleIntakeLogic() {
+    private void handleFrontIntakeLogic() {
         boolean zone3 = !robot.proximitySensor.getState() || hue_green || hue_purple;
         boolean currentlyActive = (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()) &&
                 !robot.frontArtefacts.isPressed() && zone3;
@@ -236,6 +302,9 @@ public class driveBlue extends CommandOpMode {
         } else {
             robot.led.setPosition(0.277);
         }
+
+        if(!robot.backArtefacts.isPressed() && (hue_purple || hue_green || !robot.proximitySensor.getState()) && sorterMoved)
+            robot.led.setPosition(0.611);
     }
 
     @Override
@@ -258,7 +327,7 @@ public class driveBlue extends CommandOpMode {
 
 
         if (gamepad1.left_bumper) {
-            handleIntakeLogic();
+            handleFrontIntakeLogic();
             updateLEDStatus();
         }
 
@@ -298,12 +367,15 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData("ROBOT X", robotX);
             telemetry.addData("ROBOT Y", robotY);
             telemetry.addData("Distance", distance);
-            telemetry.addData("Lidar State", robot.proximitySensor.getState());
-            telemetry.addData("Hue Green", hue_green);
-            telemetry.addData("Hue Purple", hue_purple);
+            telemetry.addData("Green", hue_green);
+            telemetry.addData("Purple", hue_purple);
+            telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
+            telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
             telemetry.addData("TargetAngle", robot.turret.getTargetAngle());
-            telemetry.addData("HoodServoState", robot.hood.hoodServoState);
-
+//            telemetry.addData("AUTO X", TurretCR.staticLastAutoX);
+//            telemetry.addData("AUTO Y", TurretCR.staticLastAutoY);
+//            telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
+            telemetry.addData("Sorter Moved",sorterMoved);
         }
 
 
@@ -313,9 +385,11 @@ public class driveBlue extends CommandOpMode {
         telemetry.update();
     }
 
-//    public double getServoYPositionFromDistance(double distance) {
-//        double clippedDistance = Range.clip(distance, minDistance, maxDistance);
-//        double ratio = (clippedDistance - minDistance) / (maxDistance - minDistance);
-//        return downY + ratio * (upY - downY);
-//    }
+    private double getSorterPosition(int count){
+        if(count % 3 == 0) return 0.5;
+        if(count % 3 == 1) return 0.88;
+        if(count % 3 == 2) return 0.115;
+
+        return 0.5;
+    }
 }

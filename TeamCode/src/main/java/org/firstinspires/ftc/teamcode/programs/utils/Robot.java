@@ -136,20 +136,44 @@ public class Robot {
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
         Robot.hardwareMap = hardwareMap;
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
         intakeFront = hardwareMap.get(DcMotorEx.class, "intakeFront");
         intakeBack = hardwareMap.get(DcMotorEx.class, "intakeBack");
         intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        turretServo = hardwareMap.get(CRServo.class, "servoX");
+        hoodServo = hardwareMap.get(Servo.class, "servoY");
+        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
+
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
+
         launcher1.setDirection(DcMotorSimple.Direction.FORWARD);
         launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
-        hoodServo = hardwareMap.get(Servo.class, "servoY");
-        turretServo = hardwareMap.get(CRServo.class, "servoX");
-        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
-        turret = new TurretCR();
-        flywheel = new Flywheel();
+
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
+
+        led = hardwareMap.get(Servo.class, "led");
+
+        are3Artefacts_1 = hardwareMap.get(TouchSensor.class, "artefact1");
+        are3Artefacts_2 = hardwareMap.get(TouchSensor.class, "artefact2");
+        backArtefacts = hardwareMap.get(TouchSensor.class, "backArtefacts");
+        frontArtefacts = hardwareMap.get(TouchSensor.class, "frontArtefacts");
+
+        proximitySensor = hardwareMap.get(DigitalChannel.class, "proximitySensor");
+        proximitySensor.setMode(DigitalChannel.Mode.INPUT);
+        pin0 = hardwareMap.digitalChannel.get("digital0");
+        pin1 = hardwareMap.digitalChannel.get("digital1");
+
+        servoSorter = hardwareMap.get(Servo.class, "servoSorter");
+
+        intake = new Intake();
+        mecanum = new Mecanum();
+        turret = new TurretCR();
+        flywheel = new Flywheel();
+        hood = new Hood();
     }
 
     public void initializeAuto() {
