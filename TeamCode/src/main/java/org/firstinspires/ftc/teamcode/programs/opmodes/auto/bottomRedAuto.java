@@ -38,20 +38,55 @@ public class bottomRedAuto extends OpMode {
     private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
 
     public void buildPaths() {
-        launchPreload = follower.pathBuilder().addPath(new BezierLine(startPose, outtake)).setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading()).build();
+        launchPreload = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, outtake))
+                .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
+                .build();
 
-        get2 = follower.pathBuilder().addPath(new BezierLine(outtake, intake2)).setConstantHeadingInterpolation(intake2.getHeading()).build();
-        loading2 = follower.pathBuilder().addPath(new BezierLine(intake2, loaded2)).setConstantHeadingInterpolation(intake2.getHeading()).build();
-        throw2 = follower.pathBuilder().addPath(new BezierLine(loaded2, outtake)).setConstantHeadingInterpolation(outtake.getHeading()).build();
+        get2 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake2))
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .build();
 
-        get1 = follower.pathBuilder().addPath(new BezierLine(outtake, intake1)).setConstantHeadingInterpolation(intake1.getHeading()).build();
-        backFromIntake1 = follower.pathBuilder().addPath(new BezierLine(intake1, outtake)).setConstantHeadingInterpolation(outtake.getHeading()).build();
+        loading2 = follower.pathBuilder()
+                .addPath(new BezierLine(intake2, loaded2))
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .build();
 
-        get3 = follower.pathBuilder().addPath(new BezierLine(outtake, intake3)).setConstantHeadingInterpolation(intake3.getHeading()).build();
-        backFromIntake3 = follower.pathBuilder().addPath(new BezierLine(intake3, outtake)).setConstantHeadingInterpolation(outtake.getHeading()).build();
+        throw2 = follower.pathBuilder()
+                .addPath(new BezierLine(loaded2, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
 
-        get4 = follower.pathBuilder().addPath(new BezierLine(outtake, intake4)).setConstantHeadingInterpolation(intake4.getHeading()).build();
-        backFromIntake4 = follower.pathBuilder().addPath(new BezierLine(intake4, outtake)).setConstantHeadingInterpolation(outtake.getHeading()).build();
+        get1 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake1))
+                .setConstantHeadingInterpolation(intake1.getHeading())
+                .build();
+
+        backFromIntake1 = follower.pathBuilder()
+                .addPath(new BezierLine(intake1, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+
+        get3 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake3))
+                .setConstantHeadingInterpolation(intake3.getHeading())
+                .build();
+
+        backFromIntake3 = follower.pathBuilder()
+                .addPath(new BezierLine(intake3, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+
+        get4 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, intake4))
+                .setConstantHeadingInterpolation(intake4.getHeading())
+                .build();
+
+        backFromIntake4 = follower.pathBuilder()
+                .addPath(new BezierLine(intake4, outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
 
         leave = follower.pathBuilder().addPath(new BezierLine(outtake, leavePoint)).setConstantHeadingInterpolation(leavePoint.getHeading()).build();
     }

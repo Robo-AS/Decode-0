@@ -31,8 +31,6 @@ import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 
 import com.pedropathing.util.Timer;
 
-import kotlin.time.Instant;
-
 @TeleOp(name = "Drive BLUE 🔵", group = "OpModes")
 public class driveBlue extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
@@ -347,7 +345,7 @@ public class driveBlue extends CommandOpMode {
                 Robot.getInstance().driverOffset
         );
 
-        distance = Math.hypot(goalX - robotX, goalY - robotY);
+        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
         robot.hood.loop(distance);
 
         handleFlywheel();

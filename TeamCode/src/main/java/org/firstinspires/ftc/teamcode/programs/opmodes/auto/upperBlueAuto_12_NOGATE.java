@@ -36,7 +36,6 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
-        // Sequence for Ball 2
         align2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls2))
                 .setConstantHeadingInterpolation(alignToBalls2.getHeading())
@@ -49,7 +48,6 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
                 .addPath(new BezierCurve(intake2, new Pose(60.75, 68.09), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-        // Sequence for Ball 1
         align1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
@@ -62,7 +60,6 @@ public class upperBlueAuto_12_NOGATE extends OpMode {
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-        // Sequence for Ball 3
         align3 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
