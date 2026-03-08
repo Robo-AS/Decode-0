@@ -53,8 +53,12 @@ public class driveBlue extends CommandOpMode {
 
     public Timer backSensorTimer = new Timer();
 
+    private final FtcDashboard dashboard = FtcDashboard.getInstance();
+
     @Override
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+
         goalX = 144;
         goalY = 0;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -64,7 +68,6 @@ public class driveBlue extends CommandOpMode {
         robot.limelight.start();
         robot.limelight.pipelineSwitch(0);
         backSensorTimer.resetTimer();
-
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(
