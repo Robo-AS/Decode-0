@@ -29,7 +29,7 @@ public class TurretCR extends SubsystemBase {
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
 
     private final double TICKS_PER_REV = 8192.0;
-    private final double POSITION_TOLERANCE = 0.5;
+    private final double POSITION_TOLERANCE = 0;
 
     private double lastPower = 0;
 
@@ -103,8 +103,23 @@ public class TurretCR extends SubsystemBase {
     }
 
     private void applyToHardware() {
-        while (targetTurretPosition - currentTurretPosition > 180) targetTurretPosition -= 360;
-        while (targetTurretPosition - currentTurretPosition < -180) targetTurretPosition += 360;
+        while (targetTurretPosition - currentTurretPosition > 180) {
+            isNormalized = true;
+            kP = 0.125;
+            kI = 0;
+            kD = 0.0005;
+            kS = 0.075;
+            targetTurretPosition -= 360;
+        }
+
+        while (targetTurretPosition - currentTurretPosition < -180) {
+            isNormalized = true;
+            kP = 0.125;
+            kI = 0;
+            kD = 0.0005;
+            kS = 0.075;
+            targetTurretPosition += 360;
+        }
 
         if (targetTurretPosition < MIN_ANGLE) {
             isNormalized = true;
@@ -135,16 +150,18 @@ public class TurretCR extends SubsystemBase {
         turretPID.setPID(kP, kI, kD);
 
         double error = targetTurretPosition - currentTurretPosition;
-        double newPower = 0;
+        double newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
 
-        if (Math.abs(error) > POSITION_TOLERANCE) {
-            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
-        }
+//        if (Math.abs(error) > POSITION_TOLERANCE) {
+//            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
+//        }
+//
+//        if (Math.abs(newPower - lastPower) > 0.005) {
+//            robot.turretServo.setPower(newPower);
+//            lastPower = newPower;
+//        }
 
-        if (Math.abs(newPower - lastPower) > 0.005) {
-            robot.turretServo.setPower(newPower);
-            lastPower = newPower;
-        }
+        robot.turretServo.setPower(newPower);
     }
 
     public void loop(double goalX, double goalY, TurretState state, int targetID, boolean isRed, double robotX, double robotY, double driverOffset) {
@@ -183,7 +200,7 @@ public class TurretCR extends SubsystemBase {
 
     public void updatePIDCoefficients()
     {
-        if(currentTurretPosition < targetTurretPosition) //clockwise
+        if(currentTurretPosition <= targetTurretPosition) //clockwise
         {
             if(targetTurretPosition >= -90 && targetTurretPosition <= 80) {
                 kP = 0.018;
