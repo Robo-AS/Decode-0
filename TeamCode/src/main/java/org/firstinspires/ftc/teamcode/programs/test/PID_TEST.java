@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.Range;
 
 
 @Config
@@ -53,6 +54,8 @@ public class PID_TEST extends CommandOpMode {
     @Override
     public void run(){
         CommandScheduler.getInstance().run();
+
+        targetTurretPosition = Range.clip(targetTurretPosition, -90, 360);
 
         currentTurretPosition = (intakeBack.getCurrentPosition() / TICKS_PER_REV) * 360.0;
         turretPID_RIGHT.setPID(kP_RIGHT, kI_RIGHT, kD_RIGHT);
