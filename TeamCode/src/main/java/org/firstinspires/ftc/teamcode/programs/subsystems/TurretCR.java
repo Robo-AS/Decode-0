@@ -150,16 +150,16 @@ public class TurretCR extends SubsystemBase {
         turretPID.setPID(kP, kI, kD);
 
         double error = targetTurretPosition - currentTurretPosition;
-        double newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
+        double newPower = 0;
 
-//        if (Math.abs(error) > POSITION_TOLERANCE) {
-//            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
-//        }
-//
-//        if (Math.abs(newPower - lastPower) > 0.005) {
-//            robot.turretServo.setPower(newPower);
-//            lastPower = newPower;
-//        }
+        if (Math.abs(error) > POSITION_TOLERANCE) {
+            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
+        }
+
+        if (Math.abs(newPower - lastPower) > 0.005) {
+            robot.turretServo.setPower(newPower);
+            lastPower = newPower;
+        }
 
         robot.turretServo.setPower(newPower);
     }

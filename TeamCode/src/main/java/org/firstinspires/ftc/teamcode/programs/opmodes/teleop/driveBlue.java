@@ -351,7 +351,7 @@ public class driveBlue extends CommandOpMode {
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
         robot.hood.loop(distance);
 
-        handleFlywheel();
+       // handleFlywheel();
         updateDriveTelemetry();
     }
 
@@ -373,9 +373,11 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
             telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
             telemetry.addData("TargetAngle", robot.turret.getTargetAngle());
-//            telemetry.addData("AUTO X", TurretCR.staticLastAutoX);
-//            telemetry.addData("AUTO Y", TurretCR.staticLastAutoY);
-//            telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
+            telemetry.addData("kP", TurretCR.kP);
+            telemetry.addData("kI", TurretCR.kI);
+            telemetry.addData("kD", TurretCR.kD);
+            telemetry.addData("kS", TurretCR.kS);
+            telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
             telemetry.addData("Sorter Moved",sorterMoved);
         }
 
