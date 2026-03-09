@@ -373,6 +373,7 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
             telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
             telemetry.addData("TargetAngle", robot.turret.getTargetAngle());
+            telemetry.addData("Current Angle", robot.turret.getCurrentAngle());
             telemetry.addData("kP", TurretCR.kP);
             telemetry.addData("kI", TurretCR.kI);
             telemetry.addData("kD", TurretCR.kD);

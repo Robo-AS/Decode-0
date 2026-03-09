@@ -29,7 +29,7 @@ public class TurretCR extends SubsystemBase {
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
 
     private final double TICKS_PER_REV = 8192.0;
-    private final double POSITION_TOLERANCE = 0;
+    private final double POSITION_TOLERANCE = 0.5;
 
     private double lastPower = 0;
 
@@ -228,7 +228,7 @@ public class TurretCR extends SubsystemBase {
             }
         }
         else{
-            kP = 0.125;
+            kP = 0.0125;
             kI = 0;
             kD = 0.0005;
             kS = 0.075;
