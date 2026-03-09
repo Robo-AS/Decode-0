@@ -248,6 +248,8 @@ public class driveBlue extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new SetSorterPosition(getSorterPosition(sorterCount += 1)));
+
+   //     Trigger touchpadHeld = new Trigger(() -> gamepad1.touchpad); => LOCK MECANUM SOON
     }
 
 
@@ -295,7 +297,7 @@ public class driveBlue extends CommandOpMode {
         if (!robot.proximitySensor.getState() || hue_green || hue_purple) count++;
 
         if (count >= 3) {
-            robot.led.setPosition(0.475);
+            robot.led.setPosition(0.611);
         } else if (count == 2) {
             robot.led.setPosition(0.388);
         } else if (count == 1) {
@@ -351,7 +353,7 @@ public class driveBlue extends CommandOpMode {
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
         robot.hood.loop(distance);
 
-       // handleFlywheel();
+        handleFlywheel();
         updateDriveTelemetry();
     }
 
@@ -372,7 +374,8 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData("Purple", hue_purple);
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
             telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
-            telemetry.addData("TargetAngle", robot.turret.getTargetAngle());
+            telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
+            telemetry.addData("Target Angle", robot.turret.getTargetAngle());
             telemetry.addData("Current Angle", robot.turret.getCurrentAngle());
             telemetry.addData("kP", TurretCR.kP);
             telemetry.addData("kI", TurretCR.kI);

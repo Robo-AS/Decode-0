@@ -113,7 +113,7 @@ public class Flywheel extends SubsystemBase {
         vel.add(90.9241, 1800); //1750
         vel.add(102.6444, 1850);
         vel.add(118.0427, 1950);
-        vel.add(128.0427, 2000);
+        vel.add(128.0427, 2250);
         vel.add(133.0427, 2250);
         vel.add(138.0427, 2250);
         vel.add(141.8654, 2250);

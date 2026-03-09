@@ -292,7 +292,7 @@ public class driveRed extends CommandOpMode {
         if (!robot.proximitySensor.getState() || hue_green || hue_purple) count++;
 
         if (count >= 3) {
-            robot.led.setPosition(0.475);
+            robot.led.setPosition(0.611);
         } else if (count == 2) {
             robot.led.setPosition(0.388);
         } else if (count == 1) {
