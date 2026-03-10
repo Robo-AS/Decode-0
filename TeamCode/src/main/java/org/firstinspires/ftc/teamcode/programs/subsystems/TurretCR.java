@@ -273,28 +273,10 @@ public class TurretCR extends SubsystemBase {
         //counterclockwise
         else{
             if(Math.abs(currentTurretPosition - targetTurretPosition) <= ANGLE_DIFFERENCE) {
-                if(targetTurretPosition >= -90 && targetTurretPosition < -70) {
+                if(targetTurretPosition >= -90 && targetTurretPosition < -50) {
                     kP = 0.0125;
                     kI = 0;
                     kD = 0.0005;
-                    kS = 0.075;
-                }
-                else if(targetTurretPosition >= -70 && targetTurretPosition < -65) {
-                    kP = 0.08;
-                    kI = 0.01;
-                    kD = 0.0006;
-                    kS = 0.075;
-                }
-                else if(targetTurretPosition >= -65 && targetTurretPosition < -60) {
-                    kP = 0.071;
-                    kI = 0.01;
-                    kD = 0.0006;
-                    kS = 0.075;
-                }
-                else if(targetTurretPosition >= -60 && targetTurretPosition < -50) {
-                    kP = 0.055;
-                    kI = 0.01;
-                    kD = 0.0006;
                     kS = 0.075;
                 }
 
