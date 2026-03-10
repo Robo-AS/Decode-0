@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class Hood extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
-    public double downY = 0, upY = 0.85, maxDistance = 140, minDistance = 20, distance;
+    public double downY = 0, upY = 0.85, maxDistance = 120, minDistance = 20, distance;
     public HoodServoState hoodServoState = HoodServoState.AUTOMATED;
 
 
