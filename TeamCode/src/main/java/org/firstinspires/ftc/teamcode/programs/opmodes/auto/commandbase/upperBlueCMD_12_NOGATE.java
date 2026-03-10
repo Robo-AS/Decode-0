@@ -34,13 +34,13 @@ public class upperBlueCMD_12_NOGATE extends CommandOpMode {
 
     private double loopTime = 0;
     private final Pose startPose = new Pose(21.01, 124.01, Math.toRadians(144));
-    private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(180));
+    private final Pose outtake = new Pose(60.562, 84.21, Math.toRadians(180));
     private final Pose alignToBalls1 = new Pose(44.09, 84.21, Math.toRadians(180));
-    private final Pose intake1 = new Pose(18, 84.21, Math.toRadians(180));
+    private final Pose intake1 = new Pose(23, 84.21, Math.toRadians(180));
     private final Pose alignToBalls2 = new Pose(45.09, 57, Math.toRadians(180));
-    private final Pose intake2 = new Pose(10, 57, Math.toRadians(180));
+    private final Pose intake2 = new Pose(17.5, 57, Math.toRadians(180));
     private final Pose alignToBalls3 = new Pose(52, 37, Math.toRadians(180));
-    private final Pose intake3 = new Pose(10, 37, Math.toRadians(180));
+    private final Pose intake3 = new Pose(17, 37, Math.toRadians(180));
     private final Pose leavePoint = new Pose(31.43, 83.57, Math.toRadians(90));
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, align3, intaking3, outtaking3, leave;
     private void buildPaths() {
@@ -144,6 +144,7 @@ public class upperBlueCMD_12_NOGATE extends CommandOpMode {
 
     private Command shootingSequence() {
         return new SequentialCommandGroup(
+                new WaitCommand(750),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetIntakeState(Intake.IntakeState.ON),
@@ -185,6 +186,7 @@ public class upperBlueCMD_12_NOGATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking2),
+                new WaitCommand(500),
                 followPath(outtaking2, false),
                 shootingSequence(),
 
@@ -192,6 +194,7 @@ public class upperBlueCMD_12_NOGATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking1),
+                new WaitCommand(500),
                 followPath(outtaking1, false),
                 shootingSequence(),
 
@@ -199,6 +202,7 @@ public class upperBlueCMD_12_NOGATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking3),
+                new WaitCommand(500),
                 followPath(outtaking3, false),
                 shootingSequence(),
 
@@ -215,8 +219,8 @@ public class upperBlueCMD_12_NOGATE extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.75);
+            robot.flywheel.loopAuto(1850);
+            robot.hoodServo.setPosition(0.7);
             robot.turret.loopAuto(false, follower.getPose(), -3, 144);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));

@@ -34,7 +34,7 @@ public class upperBlueAuto_12_GATE extends OpMode {
     private final Pose alignToBalls3 = new Pose(52, 32, Math.toRadians(180));
     private final Pose intake3 = new Pose(10, 32, Math.toRadians(180));
     private final Pose leavePoint = new Pose(31.430604982206404, 83.5729537366548, Math.toRadians(90));
-    private final Pose openGate = new Pose(17, 64, Math.toRadians(180));
+    private final Pose openGate = new Pose(17, 62, Math.toRadians(180));
 
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
 

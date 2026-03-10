@@ -34,24 +34,35 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
 
     private double loopTime = 0;
     private final Pose startPose = new Pose(122.989, 124.014, Math.toRadians(36));
-    private final Pose outtake = new Pose(93.438, 92.754, Math.toRadians(0));
-    private final Pose alignToBalls1 = new Pose(99.907, 82.214, Math.toRadians(0));
-    private final Pose intake1 = new Pose(126, 82.214, Math.toRadians(0));
-    private final Pose alignToBalls2 = new Pose(98.907, 60, Math.toRadians(0));
-    private final Pose intake2 = new Pose(134, 60, Math.toRadians(0));
+    private final Pose outtake = new Pose(83.438, 82.214, Math.toRadians(0));
+    private final Pose alignToBalls1 = new Pose(99.91, 82.214, Math.toRadians(0));
+    private final Pose intake1 = new Pose(121, 82.214, Math.toRadians(0));
+    private final Pose alignToBalls2 = new Pose(98.91, 56, Math.toRadians(0));
+    private final Pose intake2 = new Pose(127, 56, Math.toRadians(0));
     private final Pose alignToBalls3 = new Pose(92, 32, Math.toRadians(0));
-    private final Pose intake3 = new Pose(134, 32, Math.toRadians(0));
-    private final Pose leavePoint = new Pose(112.569, 83.573, Math.toRadians(90));
-    private final Pose openGate = new Pose(127.5, 64, Math.toRadians(0));
-
-    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
-
+    private final Pose intake3 = new Pose(127, 32, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(92, 82.214, Math.toRadians(90));
+    private final Pose openGate = new Pose(128, 62, Math.toRadians(0));
+    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, align3, intaking3, outtaking3, leave, openDaGate;
     private void buildPaths() {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
-
+        // Sequence for Ball 2
+        align2 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, alignToBalls2))
+                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
+                .build();
+        intaking2 = follower.pathBuilder()
+                .addPath(new BezierLine(alignToBalls2, intake2))
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .build();
+        outtaking2 = follower.pathBuilder()
+                .addPath(new BezierCurve(intake2, new Pose(83.25, 68.09), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+        // Sequence for Ball 1
         align1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
@@ -64,16 +75,7 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
-        align2 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, alignToBalls2))
-                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
-                .build();
-        intaking2 = follower.pathBuilder()
-                .addPath(new BezierLine(alignToBalls2, intake2))
-                .setConstantHeadingInterpolation(intake2.getHeading())
-                .build();
-
+        // Sequence for Ball 3
         align3 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
@@ -86,19 +88,12 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
                 .addPath(new BezierLine(intake3, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
-        outtaking2 = follower.pathBuilder()
-                .addPath(new BezierCurve(openGate, new Pose(83.242, 68.094), outtake))
-                .setConstantHeadingInterpolation(outtake.getHeading())
-                .build();
-
         leave = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, leavePoint))
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
                 .build();
-
         openDaGate = follower.pathBuilder()
-                .addPath(new BezierCurve(intake2, new Pose(119.872, 59.171), openGate))
+                .addPath(new BezierCurve(intake2, new Pose(115, 59.170818505338076), openGate))
                 .setConstantHeadingInterpolation(openGate.getHeading())
                 .build();
     }
@@ -143,7 +138,7 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
                                 new WaitCommand(150),
                                 new SetServoIntakeState(Intake.ServoIntakeState.UP),
                                 new SetIntakeState(Intake.IntakeState.REVERSED_ON),
-                                new WaitCommand(10),
+                                new WaitCommand(25),
                                 new SetIntakeState(Intake.IntakeState.OFF)
                         ),
                         new SetIntakeState(Intake.IntakeState.OFF),
@@ -154,6 +149,7 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
 
     private Command shootingSequence() {
         return new SequentialCommandGroup(
+                new WaitCommand(450),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetIntakeState(Intake.IntakeState.ON),
@@ -195,9 +191,11 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking2),
-
-                followPath(openDaGate, true),
-                new WaitCommand(2000),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(100),
+                new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(openDaGate, false),
+                new WaitCommand(600),
                 followPath(outtaking2, false),
                 shootingSequence(),
 
@@ -205,6 +203,9 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking1),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(100),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking1, false),
                 shootingSequence(),
 
@@ -212,6 +213,9 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking3),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(100),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking3, false),
                 shootingSequence(),
 
@@ -228,9 +232,9 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.7);
-            robot.turret.loopAuto(false, follower.getPose(), 144, 144);
+            robot.flywheel.loopAuto(1850);
+            robot.hoodServo.setPosition(0.72);
+            robot.turret.loopAuto(false, follower.getPose(), 144, 140);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

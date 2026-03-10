@@ -179,6 +179,7 @@ public class Robot {
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
+        servoSorter.setPosition(0.5);
     }
 
     public void configurePinpoint() {

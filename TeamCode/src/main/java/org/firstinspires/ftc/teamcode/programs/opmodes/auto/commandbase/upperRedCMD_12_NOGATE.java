@@ -34,23 +34,21 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
 
     private double loopTime = 0;
     private final Pose startPose = new Pose(122.99, 124.01, Math.toRadians(36));
-    private final Pose outtake = new Pose(93.438, 92.754, Math.toRadians(0));
-    private final Pose alignToBalls1 = new Pose(99.91, 87.21, Math.toRadians(0));
-    private final Pose intake1 = new Pose(126, 87.21, Math.toRadians(0));
+    private final Pose outtake = new Pose(85.438, 87.21, Math.toRadians(0));
+    private final Pose alignToBalls1 = new Pose(93.91, 87.21, Math.toRadians(0));
+    private final Pose intake1 = new Pose(122, 87.21, Math.toRadians(0));
     private final Pose alignToBalls2 = new Pose(98.91, 60, Math.toRadians(0));
-    private final Pose intake2 = new Pose(134, 60, Math.toRadians(0));
+    private final Pose intake2 = new Pose(122, 60, Math.toRadians(0));
     private final Pose alignToBalls3 = new Pose(92, 37, Math.toRadians(0));
-    private final Pose intake3 = new Pose(126, 37, Math.toRadians(0));
-    private final Pose leavePoint = new Pose(112.57, 83.57, Math.toRadians(90));
-
+    private final Pose intake3 = new Pose(122, 37, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(100.57, 83.57, Math.toRadians(90));
     private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, align3, intaking3, outtaking3, leave;
-
     private void buildPaths() {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
-
+        // Sequence for Ball 2
         align2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls2))
                 .setConstantHeadingInterpolation(alignToBalls2.getHeading())
@@ -60,10 +58,10 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 .setConstantHeadingInterpolation(intake2.getHeading())
                 .build();
         outtaking2 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake2, new Pose(83.25, 68.09), outtake))
+                .addPath(new BezierCurve(intake2, new Pose(60.75, 68.09), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
+        // Sequence for Ball 1
         align1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
@@ -76,7 +74,7 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
+        // Sequence for Ball 3
         align3 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
@@ -86,10 +84,9 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 .setConstantHeadingInterpolation(intake3.getHeading())
                 .build();
         outtaking3 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake3, new Pose(79, 50), outtake))
+                .addPath(new BezierCurve(intake3, new Pose(65, 50), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
         leave = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, leavePoint))
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
@@ -127,7 +124,7 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
     private Command followPathWithAutomation(PathChain path) {
         return new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
-                        new WaitUntilCommand(this::isRobotFull).withTimeout(2500),
+                        new WaitUntilCommand(this::isRobotFull).withTimeout(2000),
                         new InstantCommand(() -> follower.followPath(path, true))
                 ),
                 new WaitCommand(150),
@@ -136,7 +133,7 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                                 new WaitCommand(150),
                                 new SetServoIntakeState(Intake.ServoIntakeState.UP),
                                 new SetIntakeState(Intake.IntakeState.REVERSED_ON),
-                                new WaitCommand(10),
+                                new WaitCommand(25),
                                 new SetIntakeState(Intake.IntakeState.OFF)
                         ),
                         new SetIntakeState(Intake.IntakeState.OFF),
@@ -147,6 +144,7 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
 
     private Command shootingSequence() {
         return new SequentialCommandGroup(
+                new WaitCommand(500),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetIntakeState(Intake.IntakeState.ON),
@@ -188,6 +186,10 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking2),
+                new SetServoIntakeState(Intake.ServoIntakeState.UP),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(200),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking2, false),
                 shootingSequence(),
 
@@ -195,6 +197,10 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking1),
+                new SetServoIntakeState(Intake.ServoIntakeState.UP),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(200),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking1, false),
                 shootingSequence(),
 
@@ -202,6 +208,10 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking3),
+                new SetServoIntakeState(Intake.ServoIntakeState.UP),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(200),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking3, false),
                 shootingSequence(),
 
@@ -218,9 +228,9 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.75);
-            robot.turret.loopAuto(false, follower.getPose(), 144, 144);
+            robot.flywheel.loopAuto(1800);
+            robot.hoodServo.setPosition(0.82);
+            robot.turret.loopAuto(false, follower.getPose(), 148, 144);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

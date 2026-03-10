@@ -336,7 +336,8 @@ public class SettingVelocityTest extends CommandOpMode {
             telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
             telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
             telemetry.addData("Target Angle", robot.turret.getTargetAngle());
-            telemetry.addData("Current Angle", robot.turret.getCurrentAngle());
+            telemetry.addData("Current Velocity", robot.flywheel.getCurrentVelocity());
+            telemetry.addData("Target Velocity", targetVelocity);
             telemetry.addData("kP", TurretCR.kP);
             telemetry.addData("kI", TurretCR.kI);
             telemetry.addData("kD", TurretCR.kD);

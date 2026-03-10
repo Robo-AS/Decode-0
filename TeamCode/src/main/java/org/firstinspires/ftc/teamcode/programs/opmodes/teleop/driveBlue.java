@@ -69,6 +69,7 @@ public class driveBlue extends CommandOpMode {
         robot.limelight.pipelineSwitch(0);
         backSensorTimer.resetTimer();
 
+
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(
                         () -> CommandScheduler.getInstance().schedule(
@@ -264,7 +265,7 @@ public class driveBlue extends CommandOpMode {
                             robot.intake.updateIntakeMotor(Intake.IntakeState.REVERSED_ON);
                         })
                 ),
-                new WaitCommand(10),
+                new WaitCommand(25),
                 new InstantCommand(() -> {
                     isReversing = false;
                     robot.intake.updateIntakeMotor(Intake.IntakeState.OFF);

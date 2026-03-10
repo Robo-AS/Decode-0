@@ -34,17 +34,16 @@ public class bottomRedAutoCMD extends CommandOpMode {
 
     private double loopTime = 0;
     private final Pose startPose = new Pose(88, 8, Math.toRadians(90));
-    private final Pose outtake = new Pose(88.000, 13.000, Math.toRadians(90));
-    private final Pose intake1 = new Pose(135, -3, Math.toRadians(0));
+    private final Pose outtake = new Pose(88, 12.000, Math.toRadians(90));
+    private final Pose intake1 = new Pose(135, 5, Math.toRadians(0));
     private final Pose intake2 = new Pose(104.000, 32.5, Math.toRadians(0));
     private final Pose intake3 = new Pose(135, 5, Math.toRadians(0));
     private final Pose intake4 = new Pose(135, 30, Math.toRadians(0));
-    private final Pose loaded2 = new Pose(136.5, 32.5, Math.toRadians(0));
-    private final Pose leavePoint = new Pose(114, 18, Math.toRadians(90));
-
+    private final Pose loaded2 = new Pose(134, 32.5, Math.toRadians(0));
+    private final Pose leavePoint = new Pose(100, 18, Math.toRadians(90));
     private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
-
-    public void buildPaths() {
+    public void buildPaths()
+    {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
@@ -57,8 +56,8 @@ public class bottomRedAutoCMD extends CommandOpMode {
 
         loading2 = follower.pathBuilder()
                 .addPath(new BezierLine(intake2, loaded2))
-                .setConstantHeadingInterpolation(intake2.getHeading())
-                .build();
+                .setConstantHeadingInterpolation(intake2.getHeading()).
+                build();
 
         throw2 = follower.pathBuilder()
                 .addPath(new BezierLine(loaded2, outtake))
@@ -95,7 +94,10 @@ public class bottomRedAutoCMD extends CommandOpMode {
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
 
-        leave = follower.pathBuilder().addPath(new BezierLine(outtake, leavePoint)).setConstantHeadingInterpolation(leavePoint.getHeading()).build();
+        leave = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, leavePoint))
+                .setConstantHeadingInterpolation(leavePoint.getHeading())
+                .build();
     }
 
     private PathChain buildExitPath() {
@@ -136,7 +138,7 @@ public class bottomRedAutoCMD extends CommandOpMode {
     private Command followPathWithAutomation(PathChain path) {
         return new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
-                        new WaitUntilCommand(this::isRobotFull).withTimeout(2500),
+                        new WaitUntilCommand(this::isRobotFull).withTimeout(2000),
                         new InstantCommand(() -> follower.followPath(path, true))
                 ),
                 new WaitCommand(150),
@@ -156,6 +158,7 @@ public class bottomRedAutoCMD extends CommandOpMode {
 
     private Command shootingSequence() {
         return new SequentialCommandGroup(
+                new WaitCommand(400),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetIntakeState(Intake.IntakeState.ON),
@@ -190,6 +193,7 @@ public class bottomRedAutoCMD extends CommandOpMode {
 
         Command auto = new SequentialCommandGroup(
                 new SetServoIntakeState(Intake.ServoIntakeState.UP),
+                new WaitCommand(150),
                 followPath(launchPreload, false),
                 shootingSequence(),
 
@@ -203,17 +207,26 @@ public class bottomRedAutoCMD extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get1),
-                followPath(buildExitPath(), false),
+                new SetIntakeState(Intake.IntakeState.ON),
+                followPath(backFromIntake1, false),
+                new SetIntakeState(Intake.IntakeState.OFF),
+                shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get3),
-                followPath(buildExitPath(), false),
+                new SetIntakeState(Intake.IntakeState.ON),
+                followPath(backFromIntake3, false),
+                new SetIntakeState(Intake.IntakeState.OFF),
+                shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get4),
-                followPath(buildExitPath(), false),
+                new SetIntakeState(Intake.IntakeState.ON),
+                followPath(backFromIntake4, false),
+                new SetIntakeState(Intake.IntakeState.OFF),
+                shootingSequence(),
 
                 followPath(leave, false),
                 new InstantCommand(() -> {
@@ -228,9 +241,9 @@ public class bottomRedAutoCMD extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(2250);
+            robot.flywheel.loopAuto(2235);
             robot.hoodServo.setPosition(0.85);
-            robot.turret.loopAuto(false, follower.getPose(), 144, 147);
+            robot.turret.loopAuto(false, follower.getPose(), 144, 140);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

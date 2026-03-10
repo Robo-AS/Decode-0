@@ -33,25 +33,36 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
     private Follower follower;
 
     private double loopTime = 0;
-    private final Pose startPose = new Pose(21.01067615658363, 124.01423487544484, Math.toRadians(144));
-    private final Pose outtake = new Pose(50.562, 92.754, Math.toRadians(180));
-    private final Pose alignToBalls1 = new Pose(44.09252669039146, 82.2135231316726, Math.toRadians(180));
-    private final Pose intake1 = new Pose(18, 82.2135231316726, Math.toRadians(180));
-    private final Pose alignToBalls2 = new Pose(45.09252669039146, 57, Math.toRadians(180));
-    private final Pose intake2 = new Pose(10, 57, Math.toRadians(180));
-    private final Pose alignToBalls3 = new Pose(52, 32, Math.toRadians(180));
-    private final Pose intake3 = new Pose(10, 32, Math.toRadians(180));
-    private final Pose leavePoint = new Pose(31.430604982206404, 83.5729537366548, Math.toRadians(90));
-    private final Pose openGate = new Pose(17, 64, Math.toRadians(180));
-
-    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, leave, openDaGate, align3, intaking3, outtaking3;
-
+    private final Pose startPose = new Pose(21.01, 124.01, Math.toRadians(144));
+    private final Pose outtake = new Pose(60.562, 84.21, Math.toRadians(180));
+    private final Pose alignToBalls1 = new Pose(44.09, 84.21, Math.toRadians(180));
+    private final Pose intake1 = new Pose(23, 84.21, Math.toRadians(180));
+    private final Pose alignToBalls2 = new Pose(45.09, 57, Math.toRadians(180));
+    private final Pose intake2 = new Pose(17.5, 57, Math.toRadians(180));
+    private final Pose alignToBalls3 = new Pose(52, 37, Math.toRadians(180));
+    private final Pose intake3 = new Pose(17, 37, Math.toRadians(180));
+    private final Pose leavePoint = new Pose(45, 80, Math.toRadians(90));
+    private final Pose openGate = new Pose(14.5, 62, Math.toRadians(180));
+    private PathChain launchPreload, align1, intaking1, outtaking1, align2, intaking2, outtaking2, align3, intaking3, outtaking3, leave, openDaGate;
     private void buildPaths() {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
                 .build();
-
+        // Sequence for Ball 2
+        align2 = follower.pathBuilder()
+                .addPath(new BezierLine(outtake, alignToBalls2))
+                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
+                .build();
+        intaking2 = follower.pathBuilder()
+                .addPath(new BezierLine(alignToBalls2, intake2))
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .build();
+        outtaking2 = follower.pathBuilder()
+                .addPath(new BezierCurve(intake2, new Pose(60.75, 68.09), outtake))
+                .setConstantHeadingInterpolation(outtake.getHeading())
+                .build();
+        // Sequence for Ball 1
         align1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls1))
                 .setConstantHeadingInterpolation(alignToBalls1.getHeading())
@@ -64,16 +75,7 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
-        align2 = follower.pathBuilder()
-                .addPath(new BezierLine(outtake, alignToBalls2))
-                .setConstantHeadingInterpolation(alignToBalls2.getHeading())
-                .build();
-        intaking2 = follower.pathBuilder()
-                .addPath(new BezierLine(alignToBalls2, intake2))
-                .setConstantHeadingInterpolation(intake2.getHeading())
-                .build();
-
+        // Sequence for Ball 3
         align3 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, alignToBalls3))
                 .setConstantHeadingInterpolation(alignToBalls3.getHeading())
@@ -83,20 +85,13 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
                 .setConstantHeadingInterpolation(intake3.getHeading())
                 .build();
         outtaking3 = follower.pathBuilder()
-                .addPath(new BezierLine(intake3, outtake))
+                .addPath(new BezierCurve(intake3, new Pose(65, 50), outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
-
-        outtaking2 = follower.pathBuilder()
-                .addPath(new BezierCurve(openGate, new Pose(60.75786832740214, 68.09408185053384), outtake))
-                .setConstantHeadingInterpolation(outtake.getHeading())
-                .build();
-
         leave = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, leavePoint))
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
                 .build();
-
         openDaGate = follower.pathBuilder()
                 .addPath(new BezierCurve(intake2, new Pose(24.12811387900356, 59.170818505338076), openGate))
                 .setConstantHeadingInterpolation(openGate.getHeading())
@@ -143,7 +138,7 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
                                 new WaitCommand(150),
                                 new SetServoIntakeState(Intake.ServoIntakeState.UP),
                                 new SetIntakeState(Intake.IntakeState.REVERSED_ON),
-                                new WaitCommand(10),
+                                new WaitCommand(25),
                                 new SetIntakeState(Intake.IntakeState.OFF)
                         ),
                         new SetIntakeState(Intake.IntakeState.OFF),
@@ -154,6 +149,7 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
 
     private Command shootingSequence() {
         return new SequentialCommandGroup(
+                new WaitCommand(450),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetIntakeState(Intake.IntakeState.ON),
@@ -195,8 +191,11 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking2),
-                followPath(openDaGate, true),
-                new WaitCommand(2000),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(100),
+                new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(openDaGate, false),
+                new WaitCommand(600),
                 followPath(outtaking2, false),
                 shootingSequence(),
 
@@ -204,6 +203,9 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking1),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(100),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking1, false),
                 shootingSequence(),
 
@@ -211,6 +213,9 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(intaking3),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitCommand(100),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 followPath(outtaking3, false),
                 shootingSequence(),
 
@@ -227,9 +232,9 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.7);
-            robot.turret.loopAuto(false, follower.getPose(), -3, 144);
+            robot.flywheel.loopAuto(1850);
+            robot.hoodServo.setPosition(0.72);
+            robot.turret.loopAuto(false, follower.getPose(), -5, 144);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

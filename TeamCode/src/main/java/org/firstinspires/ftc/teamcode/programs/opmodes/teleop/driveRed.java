@@ -245,6 +245,8 @@ public class driveRed extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new SetSorterPosition(getSorterPosition(sorterCount += 1)));
+
+   //     Trigger touchpadHeld = new Trigger(() -> gamepad1.touchpad); => LOCK MECANUM SOON
     }
 
 
@@ -259,7 +261,7 @@ public class driveRed extends CommandOpMode {
                             robot.intake.updateIntakeMotor(Intake.IntakeState.REVERSED_ON);
                         })
                 ),
-                new WaitCommand(10),
+                new WaitCommand(25),
                 new InstantCommand(() -> {
                     isReversing = false;
                     robot.intake.updateIntakeMotor(Intake.IntakeState.OFF);
@@ -369,10 +371,14 @@ public class driveRed extends CommandOpMode {
             telemetry.addData("Purple", hue_purple);
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
             telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
-            telemetry.addData("TargetAngle", robot.turret.getTargetAngle());
-//            telemetry.addData("AUTO X", TurretCR.staticLastAutoX);
-//            telemetry.addData("AUTO Y", TurretCR.staticLastAutoY);
-//            telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
+            telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
+            telemetry.addData("Target Angle", robot.turret.getTargetAngle());
+            telemetry.addData("Current Angle", robot.turret.getCurrentAngle());
+            telemetry.addData("kP", TurretCR.kP);
+            telemetry.addData("kI", TurretCR.kI);
+            telemetry.addData("kD", TurretCR.kD);
+            telemetry.addData("kS", TurretCR.kS);
+            telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
             telemetry.addData("Sorter Moved",sorterMoved);
         }
 
