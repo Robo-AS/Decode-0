@@ -29,7 +29,7 @@ public class TurretCR extends SubsystemBase {
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
 
     private final double TICKS_PER_REV = 8192.0;
-    private final double POSITION_TOLERANCE = 0.5;
+    public static double POSITION_TOLERANCE = 0.5;
 
     private double lastPower = 0;
 
@@ -38,7 +38,7 @@ public class TurretCR extends SubsystemBase {
 
     private boolean isNormalized = false;
 
-    public static double ANGLE_DIFFERENCE = 10;
+    public static double ANGLE_DIFFERENCE = 5;
 
     public TurretCR() {
         turretPID = new PIDController(kP, kI, kD);
@@ -161,9 +161,9 @@ public class TurretCR extends SubsystemBase {
         double error = targetTurretPosition - currentTurretPosition;
         double newPower = 0;
 
-        if (Math.abs(error) > POSITION_TOLERANCE) {
-            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
-        }
+//        if (Math.abs(error) >= POSITION_TOLERANCE) {
+//            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
+//        }
 
         if (Math.abs(newPower - lastPower) > 0.005) {
             robot.turretServo.setPower(newPower);
@@ -201,19 +201,27 @@ public class TurretCR extends SubsystemBase {
     public void updatePIDCoefficients() {
         if(currentTurretPosition <= targetTurretPosition){//clockwise
             if(Math.abs(currentTurretPosition - targetTurretPosition) <= ANGLE_DIFFERENCE){ //small difference
-                if(targetTurretPosition >= -90 && targetTurretPosition <= -25) {
+                if(targetTurretPosition >= -90 && targetTurretPosition <= -50) {
+                    kP = 0.009;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.069;
+                }
+
+                else if(targetTurretPosition > -50 && targetTurretPosition <= -25) {
+                    kP = 0.009;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.069;
+                }
+
+                else if(targetTurretPosition > -25 && targetTurretPosition <= 80) {
                     kP = 0.018;
                     kI = 0.01;
                     kD = 0;
                     kS = 0.069;
                 }
 
-                if(targetTurretPosition > -25 && targetTurretPosition <= 80) {
-                    kP = 0.018;
-                    kI = 0.01;
-                    kD = 0;
-                    kS = 0.069;
-                }
                 else if(targetTurretPosition > 80 && targetTurretPosition <= 280){
                     kP = 0.022;
                     kI = 0.011;
@@ -269,13 +277,50 @@ public class TurretCR extends SubsystemBase {
         //counterclockwise
         else{
             if(Math.abs(currentTurretPosition - targetTurretPosition) <= ANGLE_DIFFERENCE) {
-                if(targetTurretPosition >= -90 && targetTurretPosition <= 80) {
-                    kP = 0.022;
-                    kI = 0.011;
+                if(targetTurretPosition >= -90 && targetTurretPosition < -50) {
+                    kP = 0.05;
+                    kI = 0.01;
                     kD = 0;
-                    kS = 0.053;
+                    kS = 0.075;
                 }
 
+
+                else if(targetTurretPosition >= -50 && targetTurretPosition < -45) {
+                    kP = 0.05;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.075;
+                }
+
+                else if(targetTurretPosition >= -45 && targetTurretPosition < -40) {
+                    kP = 0.04;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.08;
+                }
+
+                else if(targetTurretPosition >= -40 && targetTurretPosition < -25) {
+                    kP = 0.038;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.075;
+                }
+
+                else if(targetTurretPosition >= -25 && targetTurretPosition < -20) {
+                    kP = 0.03;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.07;
+                }
+
+                else if(targetTurretPosition >= -20 && targetTurretPosition <= 80) {
+                    kP = 0.018;
+                    kI = 0.01;
+                    kD = 0;
+                    kS = 0.069;
+
+
+                }
                 else if (targetTurretPosition > 80 && targetTurretPosition <= 280){
                     kP = 0.022;
                     kI = 0.011;
@@ -322,6 +367,11 @@ public class TurretCR extends SubsystemBase {
                 kD = 0.0005;
                 kS = 0.075;
             }
+
+
+
+
         }
+
     }
 }

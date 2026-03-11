@@ -55,8 +55,8 @@ public class driveRed extends CommandOpMode {
 
     @Override
     public void initialize() {
-        goalX = 144;
-        goalY = 144;
+        goalX = 140; //144
+        goalY = 140; //144
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
