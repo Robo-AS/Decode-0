@@ -29,7 +29,7 @@ public class TurretCR extends SubsystemBase {
     public static double MAX_ANGLE = 360.0, MIN_ANGLE = -90.0;
 
     private final double TICKS_PER_REV = 8192.0;
-    public static double POSITION_TOLERANCE = 0.0;
+    public static double POSITION_TOLERANCE = 0.5;
 
     private double lastPower = 0;
 
@@ -161,9 +161,9 @@ public class TurretCR extends SubsystemBase {
         double error = targetTurretPosition - currentTurretPosition;
         double newPower = 0;
 
-        if (Math.abs(error) >= POSITION_TOLERANCE) {
-            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
-        }
+//        if (Math.abs(error) >= POSITION_TOLERANCE) {
+//            newPower = turretPID.calculate(currentTurretPosition, targetTurretPosition) + (Math.signum(error) * kS);
+//        }
 
         if (Math.abs(newPower - lastPower) > 0.005) {
             robot.turretServo.setPower(newPower);
