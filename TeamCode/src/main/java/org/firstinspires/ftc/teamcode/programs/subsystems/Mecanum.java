@@ -7,11 +7,20 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.Vector2D;
 
+import java.util.concurrent.locks.Lock;
+
 public class Mecanum  {
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
 
     double[] ws = new double[4];
     private final int frontLeft = 3, frontRight = 1, backLeft = 2, backRight = 0, ks = 0;
+
+    public LockMecanumState lockMecanumState;
+
+    public enum LockMecanumState{
+        ENGAGED,
+        DISENGAGED
+    }
 
     public void initialize() {
         Robot robot = Robot.getInstance();
@@ -29,7 +38,7 @@ public class Mecanum  {
     public void set(double strafeSpeed, double forwardSpeed, double turnSpeed, double gyroAngle) {
 
         Vector2D input = new Vector2D(strafeSpeed, forwardSpeed).rotate(-gyroAngle);
-        double actualks = ks; // *12/getVoltage();
+        double actualks = ks;
 
 
         strafeSpeed = Range.clip(input.x, -1, 1);
@@ -63,5 +72,20 @@ public class Mecanum  {
         rightFront.setPower(ws[frontRight]);
         leftRear.setPower(ws[backLeft]);
         rightRear.setPower(ws[backRight]);
+    }
+
+    public void updateLockMecanumState(LockMecanumState state){
+        lockMecanumState = state;
+
+        switch(lockMecanumState) {
+            case ENGAGED:
+                Robot.getInstance().lockMecanum_1.setPosition(0.6);
+                Robot.getInstance().lockMecanum_2.setPosition(0.8);
+                break;
+            case DISENGAGED:
+                Robot.getInstance().lockMecanum_1.setPosition(0.2);
+                Robot.getInstance().lockMecanum_2.setPosition(0.3);
+                break;
+        }
     }
 }

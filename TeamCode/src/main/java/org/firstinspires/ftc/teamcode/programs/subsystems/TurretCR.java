@@ -360,16 +360,12 @@ public class TurretCR extends SubsystemBase {
                 }
             }
 
-
             else{
                 kP = 0.0125;
                 kI = 0;
                 kD = 0.0005;
                 kS = 0.075;
             }
-
-
-
 
         }
 

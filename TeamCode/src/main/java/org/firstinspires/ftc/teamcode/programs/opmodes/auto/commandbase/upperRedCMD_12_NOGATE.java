@@ -84,7 +84,7 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
                 .setConstantHeadingInterpolation(intake3.getHeading())
                 .build();
         outtaking3 = follower.pathBuilder()
-                .addPath(new BezierCurve(intake3, new Pose(65, 50), outtake))
+                .addPath(new BezierLine(intake3, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
                 .build();
         leave = follower.pathBuilder()
@@ -235,6 +235,8 @@ public class upperRedCMD_12_NOGATE extends CommandOpMode {
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;
             telemetry.update();
+            TurretCR.staticLastAutoX = follower.getPose().getY();
+            TurretCR.staticLastAutoY = follower.getPose().getX();
         }
     }
 }

@@ -22,9 +22,11 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.SetSorterPosition;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.*;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.*;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.SetHoodServoState;
+import org.firstinspires.ftc.teamcode.programs.commandbase.mecanum.SetLockMecanumServoState;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Hood;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
@@ -51,7 +53,9 @@ public class driveRed extends CommandOpMode {
     private double loopTime = 0;
     private int sorterCount = -1;
 
-    public Timer backSensorTimer = new Timer();
+    public Timer backSensorTimer = new Timer(), lightUpLEDBlue = new Timer();
+
+    private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
     @Override
     public void initialize() {
@@ -147,7 +151,7 @@ public class driveRed extends CommandOpMode {
                                                 new ConditionalCommand(
                                                         new SequentialCommandGroup(
                                                                 new WaitCommand(250),
-                                                                new InstantCommand(() -> robot.servoSorter.setPosition(0.5)),
+                                                                new InstantCommand(() -> robot.servoSorter.setPosition(0.61)),
                                                                 new WaitCommand(150),
                                                                 new InstantCommand(() -> sorterMoved = false)
                                                         ),
@@ -226,7 +230,7 @@ public class driveRed extends CommandOpMode {
                                 ),
                                 new ConditionalCommand(
                                     new SequentialCommandGroup(
-                                            new InstantCommand(() -> robot.servoSorter.setPosition(0.88)),
+                                            new InstantCommand(() -> robot.servoSorter.setPosition(0.24)),
                                             new InstantCommand(() -> sorterMoved = true)
                                     ),
                                     new DoesNothingCommand(),
@@ -244,10 +248,23 @@ public class driveRed extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
-        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new SetSorterPosition(getSorterPosition(sorterCount += 1)));
-
-   //     Trigger touchpadHeld = new Trigger(() -> gamepad1.touchpad); => LOCK MECANUM SOON
+        gamepadEx.getGamepadButton(GamepadKeys.Button.X)
+                .whileHeld(
+                        new ConditionalCommand(
+                                new DoesNothingCommand(),
+                                new SetLockMecanumServoState(Mecanum.LockMecanumState.ENGAGED),
+                                () -> robot.mecanum.lockMecanumState == Mecanum.LockMecanumState.ENGAGED
+                        )
+                )
+                .whenReleased(
+                        new ConditionalCommand(
+                                new DoesNothingCommand(),
+                                new SetLockMecanumServoState(Mecanum.LockMecanumState.DISENGAGED),
+                                () -> robot.mecanum.lockMecanumState == Mecanum.LockMecanumState.DISENGAGED
+                        )
+                );
     }
+
 
 
 
@@ -274,7 +291,7 @@ public class driveRed extends CommandOpMode {
         boolean currentlyActive = (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()) &&
                 !robot.frontArtefacts.isPressed() && zone3;
 
-        if (currentlyActive) {
+        if (currentlyActive || ((!robot.are3Artefacts_2.isPressed() || !robot.are3Artefacts_1.isPressed()) && !robot.frontArtefacts.isPressed())) {
             if (!sensorsWereActive) {
                 sensorTimer.reset();
                 sensorsWereActive = true;
@@ -293,18 +310,23 @@ public class driveRed extends CommandOpMode {
         if (!robot.frontArtefacts.isPressed()) count++;
         if (!robot.proximitySensor.getState() || hue_green || hue_purple) count++;
 
+        boolean delayPassed = sensorTimer.milliseconds() > 500;
+
         if (count >= 3) {
-            robot.led.setPosition(0.611);
-        } else if (count == 2) {
+            if (delayPassed) robot.led.setPosition(0.611);
+        } else if (count == 2 && !robot.frontArtefacts.isPressed() && (!robot.proximitySensor.getState() || hue_green || hue_purple)) {
             robot.led.setPosition(0.388);
         } else if (count == 1) {
-            robot.led.setPosition(0.333);
-        } else {
-            robot.led.setPosition(0.277);
+            robot.led.setPosition(0.3);
         }
 
-        if(!robot.backArtefacts.isPressed() && (hue_purple || hue_green || !robot.proximitySensor.getState()) && sorterMoved)
+        if((!robot.are3Artefacts_2.isPressed() || !robot.are3Artefacts_1.isPressed()) && !robot.frontArtefacts.isPressed() && count != 3) {
+            if (delayPassed) robot.led.setPosition(0.475);
+        }
+
+        if(!robot.backArtefacts.isPressed() && (hue_purple || hue_green || !robot.proximitySensor.getState()) && sorterMoved) {
             robot.led.setPosition(0.611);
+        }
     }
 
     @Override
@@ -323,7 +345,10 @@ public class driveRed extends CommandOpMode {
         double y_input = (Math.pow(ly, STICK_EXPONENT) + LINEAR_COEF * ly) * CONSTANT_TERM;
         double rx_final = (Math.pow(rx, STICK_EXPONENT) + LINEAR_COEF * rx) * CONSTANT_TERM;
 
-        robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
+        if(gamepad1.x){
+            robot.mecanum.set(new PoseRR(0, y_input, 0), 0);
+        }
+        else robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
 
 
         if (gamepad1.left_bumper) {
@@ -364,20 +389,12 @@ public class driveRed extends CommandOpMode {
 
     private void updateDriveTelemetry() {
         if (robot.pinpoint != null) {
-            telemetry.addData("ROBOT X", robotX);
-            telemetry.addData("ROBOT Y", robotY);
             telemetry.addData("Distance", distance);
-            telemetry.addData("Green", hue_green);
-            telemetry.addData("Purple", hue_purple);
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
-            telemetry.addData("ZONE 2", !robot.backArtefacts.isPressed());
             telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
             telemetry.addData("Target Angle", robot.turret.getTargetAngle());
-            telemetry.addData("Current Angle", robot.turret.getCurrentAngle());
-            telemetry.addData("kP", TurretCR.kP);
-            telemetry.addData("kI", TurretCR.kI);
-            telemetry.addData("kD", TurretCR.kD);
-            telemetry.addData("kS", TurretCR.kS);
+            telemetry.addData("Current Velocity", robot.flywheel.getCurrentVelocity());
+            telemetry.addData("Target Velocity", robot.flywheel.getTargetVelocity());
             telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
             telemetry.addData("Sorter Moved",sorterMoved);
         }
@@ -390,10 +407,10 @@ public class driveRed extends CommandOpMode {
     }
 
     private double getSorterPosition(int count){
-        if(count % 3 == 0) return 0.5;
-        if(count % 3 == 1) return 0.88;
+        if(count % 3 == 0) return 0.475;
+        if(count % 3 == 1) return 0.1;
         if(count % 3 == 2) return 0.115;
 
-        return 0.5;
+        return 0.475;
     }
 }

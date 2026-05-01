@@ -203,6 +203,8 @@ public class upperBlueCMD_9 extends CommandOpMode {
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;
             telemetry.update();
+            TurretCR.staticLastAutoX = follower.getPose().getY();
+            TurretCR.staticLastAutoY = follower.getPose().getX();
         }
     }
 }

@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 @TeleOp(name = "Servo Position Setter", group = "OpModes")
 public class ServoPositionSetter extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
-    public static double servoBarrierPos = 0.5, servoYPos = 0.5, servoIntakePos = 0.5, servoSorterPos = 0.5;
+    public static double servoBarrierPos = 0.5, servoYPos = 0.5, servoIntakePos = 0.5, servoSorterPos = 0.5, servoLockMecanum_1 = 0, servoLockMecanum_2;
     //0.5 0.875 0.105
     FtcDashboard dashboard;
 
@@ -36,11 +36,15 @@ public class ServoPositionSetter extends CommandOpMode {
         robot.servoBarrier.setPosition(servoBarrierPos);
         robot.servoIntake.setPosition(servoIntakePos);
         robot.servoSorter.setPosition(servoSorterPos);
+        robot.lockMecanum_1.setPosition(servoLockMecanum_1);
+        robot.lockMecanum_2.setPosition(servoLockMecanum_2);
 
         telemetry.addData("Servo Y", servoYPos);
         telemetry.addData("Servo Barrier", servoBarrierPos);
         telemetry.addData("Servo Intake", servoIntakePos);
         telemetry.addData("Servo Sorter", servoSorterPos);
+        telemetry.addData("Servo LOCK MECANUM 1", servoLockMecanum_1);
+        telemetry.addData("Servo LOCK MECANUM 2", servoLockMecanum_2);
         telemetry.update();
     }
 }

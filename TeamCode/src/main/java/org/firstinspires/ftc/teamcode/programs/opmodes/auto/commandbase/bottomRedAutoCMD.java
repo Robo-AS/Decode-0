@@ -35,12 +35,12 @@ public class bottomRedAutoCMD extends CommandOpMode {
     private double loopTime = 0;
     private final Pose startPose = new Pose(88, 8, Math.toRadians(90));
     private final Pose outtake = new Pose(88, 12.000, Math.toRadians(90));
-    private final Pose intake1 = new Pose(135, 5, Math.toRadians(0));
-    private final Pose intake2 = new Pose(104.000, 32.5, Math.toRadians(0));
-    private final Pose intake3 = new Pose(135, 5, Math.toRadians(0));
-    private final Pose intake4 = new Pose(135, 30, Math.toRadians(0));
+    private final Pose intake1 = new Pose(131, 5, Math.toRadians(0));
+    private final Pose intake2 = new Pose(100.000, 32.5, Math.toRadians(0));
+    private final Pose intake3 = new Pose(131, 5, Math.toRadians(0));
+    private final Pose intake4 = new Pose(131, 30, Math.toRadians(0));
     private final Pose loaded2 = new Pose(134, 32.5, Math.toRadians(0));
-    private final Pose leavePoint = new Pose(100, 18, Math.toRadians(90));
+    private final Pose leavePoint = new Pose(95, 18, Math.toRadians(90));
     private PathChain launchPreload, get1, get2, get3, get4, throw2, loading2, leave, backFromIntake1, backFromIntake3, backFromIntake4;
     public void buildPaths()
     {
@@ -138,7 +138,7 @@ public class bottomRedAutoCMD extends CommandOpMode {
     private Command followPathWithAutomation(PathChain path) {
         return new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
-                        new WaitUntilCommand(this::isRobotFull).withTimeout(2000),
+                        new WaitUntilCommand(this::isRobotFull).withTimeout(2500),
                         new InstantCommand(() -> follower.followPath(path, true))
                 ),
                 new WaitCommand(150),
@@ -193,7 +193,6 @@ public class bottomRedAutoCMD extends CommandOpMode {
 
         Command auto = new SequentialCommandGroup(
                 new SetServoIntakeState(Intake.ServoIntakeState.UP),
-                new WaitCommand(150),
                 followPath(launchPreload, false),
                 shootingSequence(),
 
@@ -207,25 +206,28 @@ public class bottomRedAutoCMD extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get1),
-                new SetIntakeState(Intake.IntakeState.ON),
-                followPath(backFromIntake1, false),
+                new WaitCommand(50),
                 new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(backFromIntake1, false),
+             //   new SetIntakeState(Intake.IntakeState.OFF),
                 shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get3),
-                new SetIntakeState(Intake.IntakeState.ON),
-                followPath(backFromIntake3, false),
+                new WaitCommand(50),
                 new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(backFromIntake3, false),
+            //    new SetIntakeState(Intake.IntakeState.OFF),
                 shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get4),
-                new SetIntakeState(Intake.IntakeState.ON),
-                followPath(backFromIntake4, false),
+                new WaitCommand(50),
                 new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(backFromIntake4, false),
+            //    new SetIntakeState(Intake.IntakeState.OFF),
                 shootingSequence(),
 
                 followPath(leave, false),
@@ -248,6 +250,8 @@ public class bottomRedAutoCMD extends CommandOpMode {
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;
             telemetry.update();
+            TurretCR.staticLastAutoX = follower.getPose().getY();
+            TurretCR.staticLastAutoY = follower.getPose().getX();
         }
     }
 }

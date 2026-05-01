@@ -102,6 +102,8 @@ public class Flywheel extends SubsystemBase {
         return currentVelocity;
     }
 
+    public double getTargetVelocity() { return targetVelocity; }
+
     public void initializeVelInterpLUT() {
         vel = new InterpLUT();
 
@@ -116,9 +118,9 @@ public class Flywheel extends SubsystemBase {
         vel.add(128.0427, 2000);
 
         //vel.add(133.0427, 2250);
-        vel.add(138.0427, 2180);
-        vel.add(141.8654, 2165);
-        vel.add(145, 2170);
+        vel.add(138.0427, 2220);//2180
+//        vel.add(141.8654, 2165);
+//        vel.add(145, 2170);
         vel.add(156, 2255);
         vel.add(157, 2255);
         vel.add(162, 2380);

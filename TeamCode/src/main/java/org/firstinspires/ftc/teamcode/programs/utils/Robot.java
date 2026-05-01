@@ -31,7 +31,7 @@ public class Robot {
     public Hood hood;
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intakeFront, intakeBack;
     public DcMotorEx launcher1, launcher2;
-    public Servo hoodServo, servoBarrier, servoIntake, servoSorter;
+    public Servo hoodServo, servoBarrier, servoIntake, servoSorter, lockMecanum_1, lockMecanum_2;
     public CRServo turretServo;
     public List<DcMotorEx> motors;
     public GoBildaPinpointDriver pinpoint;
@@ -112,13 +112,14 @@ public class Robot {
 
         servoSorter = hardwareMap.get(Servo.class, "servoSorter");
 
+        lockMecanum_1 = hardwareMap.get(Servo.class, "lock1");
+        lockMecanum_2 = hardwareMap.get(Servo.class, "lock2");
+
         intake = new Intake();
         mecanum = new Mecanum();
         turret = new TurretCR();
         flywheel = new Flywheel();
         hood = new Hood();
-
-
     }
 
 
@@ -131,7 +132,7 @@ public class Robot {
         if (servoIntake != null) servoIntake.setPosition(0);
         if (led != null) led.setPosition(0.475);
         hood.initialize();
-        servoSorter.setPosition(0.5);
+        servoSorter.setPosition( 0.61 );
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
@@ -179,7 +180,7 @@ public class Robot {
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
-        servoSorter.setPosition(0.5);
+        servoSorter.setPosition( 0.61);
     }
 
     public void configurePinpoint() {

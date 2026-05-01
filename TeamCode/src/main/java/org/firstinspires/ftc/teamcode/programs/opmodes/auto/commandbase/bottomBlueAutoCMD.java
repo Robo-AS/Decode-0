@@ -34,7 +34,7 @@ public class bottomBlueAutoCMD extends CommandOpMode {
 
     private double loopTime = 0;
     private final Pose startPose = new Pose(56, 8, Math.toRadians(180));
-    private final Pose outtake = new Pose(56.000, 12.000, Math.toRadians(180));
+    private final Pose outtake = new Pose(53.000, 12.000, Math.toRadians(180));
     private final Pose intake1 = new Pose(2, -3, Math.toRadians(180));
     private final Pose intake2 = new Pose(40.000, 32.5, Math.toRadians(180));
     private final Pose intake3 = new Pose(2, 5, Math.toRadians(180));
@@ -206,25 +206,28 @@ public class bottomBlueAutoCMD extends CommandOpMode {
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get1),
-                new SetIntakeState(Intake.IntakeState.ON),
-                followPath(buildExitPath(), false),
+                new WaitCommand(100),
                 new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(buildExitPath(), false),
+             //   new SetIntakeState(Intake.IntakeState.OFF),
                 shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get3),
-                new SetIntakeState(Intake.IntakeState.ON),
-                followPath(buildExitPath(), false),
+                new WaitCommand(100),
                 new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(buildExitPath(), false),
+            //    new SetIntakeState(Intake.IntakeState.OFF),
                 shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
                 followPathWithAutomation(get4),
-                new SetIntakeState(Intake.IntakeState.ON),
-                followPath(buildExitPath(), false),
+                new WaitCommand(100),
                 new SetIntakeState(Intake.IntakeState.OFF),
+                followPath(buildExitPath(), false),
+            //    new SetIntakeState(Intake.IntakeState.OFF),
                 shootingSequence(),
 
                 followPath(leave, false),
@@ -247,6 +250,8 @@ public class bottomBlueAutoCMD extends CommandOpMode {
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;
             telemetry.update();
+            TurretCR.staticLastAutoX = follower.getPose().getY();
+            TurretCR.staticLastAutoY = follower.getPose().getX();
         }
     }
 }
