@@ -10,7 +10,6 @@ public class Hood extends SubsystemBase {
     public double downY = 0, upY = 0.85, maxDistance = 120, minDistance = 20, distance;
     public HoodServoState hoodServoState = HoodServoState.AUTOMATED;
 
-
     public enum HoodServoState{
         AUTOMATED,
         FAR_ZONE

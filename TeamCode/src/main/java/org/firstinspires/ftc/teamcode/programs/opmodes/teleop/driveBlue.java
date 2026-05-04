@@ -13,8 +13,10 @@ import com.arcrobotics.ftclib.command.button.Trigger;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.commandbase.DoesNothingCommand;
@@ -61,7 +63,7 @@ public class driveBlue extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        goalX = 140;//144
+        goalX = 144;//144
         goalY = 0;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
@@ -70,7 +72,6 @@ public class driveBlue extends CommandOpMode {
         robot.limelight.start();
         robot.limelight.pipelineSwitch(0);
         backSensorTimer.resetTimer();
-
 
         gamepadEx.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(
@@ -265,6 +266,19 @@ public class driveBlue extends CommandOpMode {
                                 () -> robot.mecanum.lockMecanumState == Mecanum.LockMecanumState.DISENGAGED
                         )
                 );
+
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(
+                new InstantCommand(
+                        () -> Robot.getInstance().turret.applyBlueResetClose_BLUE()
+                )
+        );
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_DOWN).whenPressed(
+                new InstantCommand(
+                        () -> Robot.getInstance().turret.applyBlueResetFar_BLUE()
+                )
+        );
     }
 
 
@@ -374,6 +388,7 @@ public class driveBlue extends CommandOpMode {
                 Robot.getInstance().driverOffset
         );
 
+
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
         robot.hood.loop(distance);
 
@@ -399,6 +414,13 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData("Target Velocity", robot.flywheel.getTargetVelocity());
             telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
             telemetry.addData("Sorter Moved",sorterMoved);
+            telemetry.addData("X1", robot.pinpoint.getPosX(DistanceUnit.INCH));
+            telemetry.addData("Y1", robot.pinpoint.getPosY(DistanceUnit.INCH));
+            telemetry.addData("Heading 1", robot.pinpoint.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("X1", robot.pinpoint.getPosition().getX(DistanceUnit.INCH));
+            telemetry.addData("Y1", robot.pinpoint.getPosition().getY(DistanceUnit.INCH));
+            telemetry.addData("Heading 1", robot.pinpoint.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Offset", robot.turret.resetOffset);
         }
 
 
