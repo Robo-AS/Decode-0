@@ -150,10 +150,9 @@ public class TurretCR extends SubsystemBase {
 
         if (Math.abs(newPower - lastPower) > 0.005) {
             robot.turretServo.setPower(newPower);
+            robot.sec_turretServo.setPower(newPower);
             lastPower = newPower;
         }
-
-        robot.turretServo.setPower(newPower);
     }
 
     public void loop(double goalX, double goalY, TurretState state, int targetID, boolean isRed, double robotX, double robotY, double driverOffset) {
@@ -204,13 +203,13 @@ public class TurretCR extends SubsystemBase {
         if(currentTurretPosition <= targetTurretPosition){//clockwise
             if(Math.abs(currentTurretPosition - targetTurretPosition) <= ANGLE_DIFFERENCE){ //small difference
                 if(targetTurretPosition >= -90 && targetTurretPosition <= -50) {
-                    kP = 0.009; kI = 0.01; kD = 0; kS = 0.069;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition > -50 && targetTurretPosition <= -25) {
-                    kP = 0.009; kI = 0.01; kD = 0; kS = 0.069;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition > -25 && targetTurretPosition <= 80) {
-                    kP = 0.018; kI = 0.01; kD = 0; kS = 0.069;
+                    kP = 0.0155; kI = 0.05; kD = 0.0006; kS = 0.06;
                 }
                 else if(targetTurretPosition > 80 && targetTurretPosition <= 280){
                     kP = 0.022; kI = 0.011; kD = 0; kS = 0.06;
@@ -235,28 +234,28 @@ public class TurretCR extends SubsystemBase {
                 }
             }
             else{
-                kP = 0.0125; kI = 0; kD = 0.0005; kS = 0.075;
+                kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
             }
         }
         else{
             if(Math.abs(currentTurretPosition - targetTurretPosition) <= ANGLE_DIFFERENCE) {
                 if(targetTurretPosition >= -90 && targetTurretPosition < -50) {
-                    kP = 0.05; kI = 0.01; kD = 0; kS = 0.075;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition >= -50 && targetTurretPosition < -45) {
-                    kP = 0.05; kI = 0.01; kD = 0; kS = 0.075;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition >= -45 && targetTurretPosition < -40) {
-                    kP = 0.04; kI = 0.01; kD = 0; kS = 0.08;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition >= -40 && targetTurretPosition < -25) {
-                    kP = 0.038; kI = 0.01; kD = 0; kS = 0.075;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition >= -25 && targetTurretPosition < -20) {
-                    kP = 0.03; kI = 0.01; kD = 0; kS = 0.07;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition >= -20 && targetTurretPosition <= 80) {
-                    kP = 0.018; kI = 0.01; kD = 0; kS = 0.069;
+                    kP = 0.0155; kI = 0.05; kD = 0.0006; kS = 0.06;
                 }
                 else if (targetTurretPosition > 80 && targetTurretPosition <= 280){
                     kP = 0.022; kI = 0.011; kD = 0; kS = 0.053;
@@ -265,21 +264,28 @@ public class TurretCR extends SubsystemBase {
                     kP = 0.02; kI = 0.015; kD = 0; kS = 0.065;
                 }
                 else if(targetTurretPosition > 300 && targetTurretPosition <= 320){
-                    kP = 0.03; kI = 0.02; kD = 0; kS = 0.06;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition > 320 && targetTurretPosition <= 325){
-                    kP = 0.03; kI = 0.033; kD = 0; kS = 0.05;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else if(targetTurretPosition > 325 && targetTurretPosition <= 330){
-                    kP = 0.008; kI = 0.029; kD = 0; kS = 0.06;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
                 else{
-                    kP = 0.0125; kI = 0; kD = 0.0005; kS = 0.075;
+                    kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
                 }
             }
             else{
-                kP = 0.0125; kI = 0; kD = 0.0005; kS = 0.075;
+                kP = 0.015; kI = 0.005; kD = 0.001; kS = 0.06;
             }
         }
     }
 }
+
+//    public void updatePIDCoefficients() {
+//        kP = 0.015;
+//        kI = 0.005;
+//        kD = 0.001;
+//        kS = 0.06;
+//    }

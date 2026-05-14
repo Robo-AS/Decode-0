@@ -51,7 +51,7 @@ public class driveBlue extends CommandOpMode {
     private boolean sorterMoved = false;
     public boolean isFull = false;
 
-    public double goalX = 144, goalY = 0;
+    public double goalX = 0, goalY = 0;
     private double loopTime = 0;
     private int sorterCount = -1;
 
@@ -63,8 +63,8 @@ public class driveBlue extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        goalX = 144;//144
-        goalY = 0;
+        goalX = 141;
+        goalY = 3;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
@@ -173,9 +173,14 @@ public class driveBlue extends CommandOpMode {
                         () -> CommandScheduler.getInstance().schedule(
                                 new ConditionalCommand(
                                         new DoesNothingCommand(),
-                                        new ParallelCommandGroup(
-                                                new SetBarrierState(Flywheel.BarrierState.BLOCK),
-                                                new SetIntakeState(Intake.IntakeState.OFF)
+//                                        new ParallelCommandGroup(
+//                                                new SetBarrierState(Flywheel.BarrierState.BLOCK),
+//                                                new SetIntakeState(Intake.IntakeState.OFF)
+//                                        ),
+                                        new SequentialCommandGroup(
+                                          new SetIntakeState(Intake.IntakeState.OFF),
+                                          new WaitCommand(250),
+                                          new SetBarrierState(Flywheel.BarrierState.BLOCK)
                                         ),
                                         () -> robot.flywheel.barrierState == Flywheel.BarrierState.BLOCK && robot.intake.intakeState == Intake.IntakeState.OFF
                                 )

@@ -22,8 +22,11 @@ import org.firstinspires.ftc.teamcode.programs.commandbase.DoesNothingCommand;
 import org.firstinspires.ftc.teamcode.programs.commandbase.SetSorterPosition;
 import org.firstinspires.ftc.teamcode.programs.commandbase.intake.*;
 import org.firstinspires.ftc.teamcode.programs.commandbase.launcher.*;
+import org.firstinspires.ftc.teamcode.programs.commandbase.mecanum.SetLockMecanumServoState;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Flywheel;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Hood;
 import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.programs.subsystems.Mecanum;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 import org.firstinspires.ftc.teamcode.programs.utils.geometry.PoseRR;
@@ -47,11 +50,11 @@ public class SettingVelocityTest extends CommandOpMode {
     private boolean sorterMoved = false;
     public boolean isFull = false;
 
-    public double goalX = 144, goalY = 0;
+    public double goalX = 0, goalY = 0;
     private double loopTime = 0;
     private int sorterCount = -1;
 
-    public Timer backSensorTimer = new Timer();
+    public Timer backSensorTimer = new Timer(), lightUpLEDBlue = new Timer();
 
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
@@ -61,8 +64,8 @@ public class SettingVelocityTest extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        goalX = 144;
-        goalY = 0;
+        goalX = 141;
+        goalY = 3;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
@@ -152,7 +155,7 @@ public class SettingVelocityTest extends CommandOpMode {
                                                 new ConditionalCommand(
                                                         new SequentialCommandGroup(
                                                                 new WaitCommand(250),
-                                                                new InstantCommand(() -> robot.servoSorter.setPosition(0.5)),
+                                                                new InstantCommand(() -> robot.servoSorter.setPosition(0.61)),
                                                                 new WaitCommand(150),
                                                                 new InstantCommand(() -> sorterMoved = false)
                                                         ),
@@ -171,11 +174,52 @@ public class SettingVelocityTest extends CommandOpMode {
                         () -> CommandScheduler.getInstance().schedule(
                                 new ConditionalCommand(
                                         new DoesNothingCommand(),
+//                                        new ParallelCommandGroup(
+//                                                new SetBarrierState(Flywheel.BarrierState.BLOCK),
+//                                                new SetIntakeState(Intake.IntakeState.OFF)
+//                                        ),
+                                        new SequentialCommandGroup(
+                                          new SetIntakeState(Intake.IntakeState.OFF),
+                                          new WaitCommand(250),
+                                          new SetBarrierState(Flywheel.BarrierState.BLOCK)
+                                        ),
+                                        () -> robot.flywheel.barrierState == Flywheel.BarrierState.BLOCK && robot.intake.intakeState == Intake.IntakeState.OFF
+                                )
+                        )
+                );
+
+
+        Trigger farZoneShootingTrigger = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.8);
+
+        farZoneShootingTrigger
+                .whenActive(
+                        () -> CommandScheduler.getInstance().schedule(
+                                new ConditionalCommand(
+                                        new DoesNothingCommand(),
+                                        new SequentialCommandGroup(
+                                                new changeLauncherVelocityState(true),
+                                                new SetHoodServoState(Hood.HoodServoState.FAR_ZONE),
+                                                new WaitCommand(300),
+                                                new SetBarrierState(Flywheel.BarrierState.FREE),
+                                                new SetIntakeState(Intake.IntakeState.ON)
+                                        ),
+                                        () -> robot.hood.hoodServoState == Hood.HoodServoState.FAR_ZONE
+                                )
+                        )
+                );
+
+        farZoneShootingTrigger
+                .whenInactive(
+                        () -> CommandScheduler.getInstance().schedule(
+                                new ConditionalCommand(
+                                        new DoesNothingCommand(),
                                         new ParallelCommandGroup(
+                                                new SetHoodServoState(Hood.HoodServoState.AUTOMATED),
+                                                new changeLauncherVelocityState(false),
                                                 new SetBarrierState(Flywheel.BarrierState.BLOCK),
                                                 new SetIntakeState(Intake.IntakeState.OFF)
                                         ),
-                                        () -> robot.flywheel.barrierState == Flywheel.BarrierState.BLOCK && robot.intake.intakeState == Intake.IntakeState.OFF
+                                        () -> robot.hood.hoodServoState == Hood.HoodServoState.AUTOMATED
                                 )
                         )
                 );
@@ -195,12 +239,12 @@ public class SettingVelocityTest extends CommandOpMode {
                                         () -> robot.intake.servoIntakeState == Intake.ServoIntakeState.DOWN && robot.intake.intakeState == Intake.IntakeState.ON
                                 ),
                                 new ConditionalCommand(
-                                        new SequentialCommandGroup(
-                                                new InstantCommand(() -> robot.servoSorter.setPosition(0.88)),
-                                                new InstantCommand(() -> sorterMoved = true)
-                                        ),
-                                        new DoesNothingCommand(),
-                                        () ->  (hue_green || hue_purple || !robot.proximitySensor.getState()) && !robot.backArtefacts.isPressed()
+                                    new SequentialCommandGroup(
+                                            new InstantCommand(() -> robot.servoSorter.setPosition(0.24)),
+                                            new InstantCommand(() -> sorterMoved = true)
+                                    ),
+                                    new DoesNothingCommand(),
+                                    () ->  (hue_green || hue_purple || !robot.proximitySensor.getState()) && !robot.backArtefacts.isPressed()
                                 )
                         ));
 
@@ -214,10 +258,36 @@ public class SettingVelocityTest extends CommandOpMode {
         gamepadEx.getGamepadButton(GamepadKeys.Button.A).whenPressed(new changeAimState(!Robot.getInstance().limelightOnlyAim));
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT).whenPressed(new increaseDriverOffset());
         gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_LEFT).whenPressed(new decreaseDriverOffset());
-        gamepadEx.getGamepadButton(GamepadKeys.Button.B).whenPressed(new SetSorterPosition(getSorterPosition(sorterCount += 1)));
+        gamepadEx.getGamepadButton(GamepadKeys.Button.X)
+                .whileHeld(
+                        new ConditionalCommand(
+                                new DoesNothingCommand(),
+                                new SetLockMecanumServoState(Mecanum.LockMecanumState.ENGAGED),
+                                () -> robot.mecanum.lockMecanumState == Mecanum.LockMecanumState.ENGAGED
+                        )
+                )
+                .whenReleased(
+                        new ConditionalCommand(
+                                new DoesNothingCommand(),
+                                new SetLockMecanumServoState(Mecanum.LockMecanumState.DISENGAGED),
+                                () -> robot.mecanum.lockMecanumState == Mecanum.LockMecanumState.DISENGAGED
+                        )
+                );
 
-        //     Trigger touchpadHeld = new Trigger(() -> gamepad1.touchpad); => LOCK MECANUM SOON
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(
+                new InstantCommand(
+                        () -> Robot.getInstance().turret.applyBlueResetClose_BLUE()
+                )
+        );
+
+        gamepadEx.getGamepadButton(GamepadKeys.Button.DPAD_DOWN).whenPressed(
+                new InstantCommand(
+                        () -> Robot.getInstance().turret.applyBlueResetFar_BLUE()
+                )
+        );
     }
+
 
 
 

@@ -13,6 +13,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.teamcode.programs.utils.Robot;
+
 
 @Config
 @TeleOp(name = "PID_TEST", group = "Tests")
@@ -22,7 +24,7 @@ public class PID_TEST extends CommandOpMode {
 
 
     public DcMotorEx intakeBack;
-    public CRServo turretServo;
+    public CRServo turretServo, turretServo2;
     private final PIDController turretPID_RIGHT = new PIDController(kP_RIGHT, kI_RIGHT, kD_RIGHT);
     public static double kP_RIGHT = 0.006, kI_RIGHT = 0, kD_RIGHT = 0.0006, ks_RIGHT = 0.075;
 
@@ -39,14 +41,15 @@ public class PID_TEST extends CommandOpMode {
 
         intakeBack = hardwareMap.get(DcMotorEx.class, "intakeBack");
         intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
-        intakeBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turretServo = hardwareMap.get(CRServo.class, "servoX");
-        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
+        turretServo2 = hardwareMap.get(CRServo.class, "servoTurret");
 
-
+        turretServo2.setDirection(DcMotorSimple.Direction.FORWARD);
+        turretServo.setDirection(DcMotorSimple.Direction.FORWARD);
 
 
         turretServo.setPower(0);
+        turretServo2.setPower(0);
         turretPID_RIGHT.reset();
         targetTurretPosition = 0;
     }
@@ -62,6 +65,7 @@ public class PID_TEST extends CommandOpMode {
         double error = targetTurretPosition - currentTurretPosition;
         double power = turretPID_RIGHT.calculate(currentTurretPosition, targetTurretPosition) + Math.signum(error) * ks_RIGHT;
         turretServo.setPower(power);
+        turretServo2.setPower(power);
 
 
         telemetry.addData("Current Angle", currentTurretPosition);

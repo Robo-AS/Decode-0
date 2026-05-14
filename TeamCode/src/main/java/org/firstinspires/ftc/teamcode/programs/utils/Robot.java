@@ -32,7 +32,7 @@ public class Robot {
     public DcMotorEx leftFront, leftRear, rightRear, rightFront, intakeFront, intakeBack;
     public DcMotorEx launcher1, launcher2;
     public Servo hoodServo, servoBarrier, servoIntake, servoSorter, lockMecanum_1, lockMecanum_2;
-    public CRServo turretServo;
+    public CRServo turretServo, sec_turretServo;
     public List<DcMotorEx> motors;
     public GoBildaPinpointDriver pinpoint;
     public TouchSensor backArtefacts, frontArtefacts, are3Artefacts_1, are3Artefacts_2;
@@ -80,9 +80,10 @@ public class Robot {
         intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         turretServo = hardwareMap.get(CRServo.class, "servoX");
+        sec_turretServo = hardwareMap.get(CRServo.class, "servoTurret");
         hoodServo = hardwareMap.get(Servo.class, "servoY");
-        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
-
+        turretServo.setDirection(DcMotorSimple.Direction.FORWARD);
+        sec_turretServo.setDirection(DcMotorSimple.Direction.FORWARD);
 
 
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
@@ -92,9 +93,10 @@ public class Robot {
         launcher2.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
-
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
+        servoIntake.setDirection(Servo.Direction.REVERSE
+        );
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
@@ -144,8 +146,10 @@ public class Robot {
         intakeBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         turretServo = hardwareMap.get(CRServo.class, "servoX");
+        sec_turretServo = hardwareMap.get(CRServo.class, "servoTurret");
         hoodServo = hardwareMap.get(Servo.class, "servoY");
         turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
+        sec_turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
 
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
