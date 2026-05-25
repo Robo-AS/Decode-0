@@ -13,7 +13,6 @@ import com.arcrobotics.ftclib.command.button.Trigger;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -63,8 +62,8 @@ public class driveBlue extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        goalX = 141;
-        goalY = 3;
+        goalX = 133.856315748;
+        goalY = 1.6317;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
@@ -380,6 +379,16 @@ public class driveBlue extends CommandOpMode {
         Pose2D pose = robot.pinpoint.getPosition();
         robotX = pose.getX(DistanceUnit.INCH);
         robotY = -pose.getY(DistanceUnit.INCH);
+        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
+
+        if(distance > 100.0){
+            goalX = 133.856315748;
+            goalY = 2.6317;
+        }
+        else{
+            goalX = 144;
+            goalY = 3;
+        }
 
         boolean useLimelight = robot.limelightOnlyAim;
         robot.turret.loop(
@@ -394,7 +403,6 @@ public class driveBlue extends CommandOpMode {
         );
 
 
-        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
         robot.hood.loop(distance);
 
         handleFlywheel();

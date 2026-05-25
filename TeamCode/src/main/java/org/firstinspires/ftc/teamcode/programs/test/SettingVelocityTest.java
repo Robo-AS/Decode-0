@@ -16,6 +16,7 @@ import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.programs.commandbase.DoesNothingCommand;
@@ -64,8 +65,8 @@ public class SettingVelocityTest extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        goalX = 141;
-        goalY = 3;
+        goalX = 133.856315748;
+        goalY = 1.6317;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
@@ -301,7 +302,7 @@ public class SettingVelocityTest extends CommandOpMode {
                             robot.intake.updateIntakeMotor(Intake.IntakeState.REVERSED_ON);
                         })
                 ),
-                new WaitCommand(10),
+                new WaitCommand(25),
                 new InstantCommand(() -> {
                     isReversing = false;
                     robot.intake.updateIntakeMotor(Intake.IntakeState.OFF);
@@ -314,7 +315,7 @@ public class SettingVelocityTest extends CommandOpMode {
         boolean currentlyActive = (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()) &&
                 !robot.frontArtefacts.isPressed() && zone3;
 
-        if (currentlyActive) {
+        if (currentlyActive || ((!robot.are3Artefacts_2.isPressed() || !robot.are3Artefacts_1.isPressed()) && !robot.frontArtefacts.isPressed())) {
             if (!sensorsWereActive) {
                 sensorTimer.reset();
                 sensorsWereActive = true;
@@ -333,18 +334,23 @@ public class SettingVelocityTest extends CommandOpMode {
         if (!robot.frontArtefacts.isPressed()) count++;
         if (!robot.proximitySensor.getState() || hue_green || hue_purple) count++;
 
+        boolean delayPassed = sensorTimer.milliseconds() > 500;
+
         if (count >= 3) {
-            robot.led.setPosition(0.611);
-        } else if (count == 2) {
+            if (delayPassed) robot.led.setPosition(0.611);
+        } else if (count == 2 && !robot.frontArtefacts.isPressed() && (!robot.proximitySensor.getState() || hue_green || hue_purple)) {
             robot.led.setPosition(0.388);
         } else if (count == 1) {
-            robot.led.setPosition(0.333);
-        } else {
-            robot.led.setPosition(0.277);
+            robot.led.setPosition(0.3);
         }
 
-        if(!robot.backArtefacts.isPressed() && (hue_purple || hue_green || !robot.proximitySensor.getState()) && sorterMoved)
+        if((!robot.are3Artefacts_2.isPressed() || !robot.are3Artefacts_1.isPressed()) && !robot.frontArtefacts.isPressed() && count != 3) {
+            if (delayPassed) robot.led.setPosition(0.475);
+        }
+
+        if(!robot.backArtefacts.isPressed() && (hue_purple || hue_green || !robot.proximitySensor.getState()) && sorterMoved) {
             robot.led.setPosition(0.611);
+        }
     }
 
     @Override
@@ -363,7 +369,10 @@ public class SettingVelocityTest extends CommandOpMode {
         double y_input = (Math.pow(ly, STICK_EXPONENT) + LINEAR_COEF * ly) * CONSTANT_TERM;
         double rx_final = (Math.pow(rx, STICK_EXPONENT) + LINEAR_COEF * rx) * CONSTANT_TERM;
 
-        robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
+        if(gamepad1.x){
+            robot.mecanum.set(new PoseRR(0, y_input, 0), 0);
+        }
+        else robot.mecanum.set(new PoseRR(-x_input, y_input, -rx_final), 0);
 
 
         if (gamepad1.left_bumper) {
@@ -374,6 +383,16 @@ public class SettingVelocityTest extends CommandOpMode {
         Pose2D pose = robot.pinpoint.getPosition();
         robotX = pose.getX(DistanceUnit.INCH);
         robotY = -pose.getY(DistanceUnit.INCH);
+        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
+
+        if(distance > 100.0){
+            goalX = 133.856315748;
+            goalY = 2.6317;
+        }
+        else{
+            goalX = 141;
+            goalY = 3;
+        }
 
         boolean useLimelight = robot.limelightOnlyAim;
         robot.turret.loop(
@@ -387,9 +406,8 @@ public class SettingVelocityTest extends CommandOpMode {
                 Robot.getInstance().driverOffset
         );
 
-        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
-        robot.hoodServo.setPosition(Range.clip(hoodPosition, 0, 0.85));
 
+        robot.hoodServo.setPosition(hoodPosition);
         robot.flywheel.loopAuto(targetVelocity);
 
         updateDriveTelemetry();
@@ -414,6 +432,13 @@ public class SettingVelocityTest extends CommandOpMode {
             telemetry.addData("kS", TurretCR.kS);
             telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
             telemetry.addData("Sorter Moved",sorterMoved);
+            telemetry.addData("X1", robot.pinpoint.getPosX(DistanceUnit.INCH));
+            telemetry.addData("Y1", robot.pinpoint.getPosY(DistanceUnit.INCH));
+            telemetry.addData("Heading 1", robot.pinpoint.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("X1", robot.pinpoint.getPosition().getX(DistanceUnit.INCH));
+            telemetry.addData("Y1", robot.pinpoint.getPosition().getY(DistanceUnit.INCH));
+            telemetry.addData("Heading 1", robot.pinpoint.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Offset", robot.turret.resetOffset);
         }
 
 

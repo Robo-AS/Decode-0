@@ -71,8 +71,6 @@ public class Robot {
             motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
-
-
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
         intakeFront = hardwareMap.get(DcMotorEx.class, "intakeFront");
@@ -184,13 +182,13 @@ public class Robot {
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
-        servoSorter.setPosition( 0.61);
+        servoSorter.setPosition( 0.59);
     }
 
     public void configurePinpoint() {
-        pinpoint.setOffsets(131.16, -6.717, DistanceUnit.MM);
+        pinpoint.setOffsets(186.7, -0.5393, DistanceUnit.MM);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         pinpoint.resetPosAndIMU();
     }
 

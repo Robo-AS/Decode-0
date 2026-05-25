@@ -23,7 +23,7 @@ public class Intake extends SubsystemBase {
     public IntakeState intakeState;
     public ServoIntakeState servoIntakeState;
     public static int UP = 0;
-    public static double DOWN = 0.3;
+    public static double DOWN = 0.25;
 
 
     public void updateIntakeMotor(IntakeState state){
@@ -32,14 +32,14 @@ public class Intake extends SubsystemBase {
         switch (intakeState){
             case ON:
                 robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(-1);
+                robot.intakeBack.setPower(1);
                 break;
             case OFF:
                 robot.intakeFront.setPower(0);
                 robot.intakeBack.setPower(0);
                 break;
             case REVERSED_ON:
-                robot.intakeFront.setPower(-1);
+                robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(0);
                 break;
         }

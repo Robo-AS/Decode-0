@@ -38,6 +38,8 @@ public class PinpointLocalizationTest extends CommandOpMode {
 
         robot.pinpoint.update();
 
+        robot.flywheel.loopAuto(2400);
+
         Pose2D pose = robot.pinpoint.getPosition();
 
         telemetry.addData("X",pose.getX(DistanceUnit.INCH));
