@@ -132,9 +132,9 @@ public class driveBlue extends CommandOpMode {
                                                 new DoesNothingCommand(),
                                                 new ParallelCommandGroup(
                                                         new SetBarrierState(Flywheel.BarrierState.FREE),
-                                                        new SetIntakeState(Intake.IntakeState.ON)
+                                                        new SetIntakeState(Intake.IntakeState.LAUNCHING)
                                                 ),
-                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.ON
+                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.LAUNCHING
                                         ),
                                         new ParallelCommandGroup(
                                                 new ConditionalCommand(
@@ -382,11 +382,13 @@ public class driveBlue extends CommandOpMode {
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
 
         if(distance > 100.0){
-            goalX = 133.856315748;
-            goalY = 2.6317;
+//            goalX = 133.856315748;
+//            goalY = 2.6317;
+            goalX = 141;
+            goalY = 6;
         }
         else{
-            goalX = 144;
+            goalX = 142;
             goalY = 3;
         }
 

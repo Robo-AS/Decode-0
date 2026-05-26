@@ -79,30 +79,7 @@ public class TurretCR extends SubsystemBase {
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
 
-        double interpolationOffset = 0.0;
-        double distanceToTarget = Math.hypot(dX, dY);
-
-        if (distanceToTarget > 100.0) {
-            double headingDegrees = Math.toDegrees(robotHeading);
-
-            double oldMath = 8.0 * Math.cos(robotHeading);
-
-            double fixedMath = -8.0 * Math.abs(Math.cos(robotHeading - (Math.PI / 4.0)));
-
-            if (headingDegrees >= -135.0 && headingDegrees <= 45.0) {
-                double center = -45.0;
-                double halfWidth = 90.0;
-
-                double distanceFromCenter = Math.abs(headingDegrees - center);
-                double blendFactor = Math.max(0.0, 1.0 - (distanceFromCenter / halfWidth));
-
-                interpolationOffset = (blendFactor * fixedMath) + ((1.0 - blendFactor) * oldMath);
-            } else {
-                interpolationOffset = oldMath;
-            }
-        }
-
-        targetTurretPosition = Math.toDegrees(diff) + driverOffset + interpolationOffset - resetOffset;
+        targetTurretPosition = Math.toDegrees(diff) + driverOffset - resetOffset;
     }
 
     public void loopAuto(boolean isBottomRed, Pose pedro, double gX, double gY) {

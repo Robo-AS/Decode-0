@@ -62,8 +62,8 @@ public class driveRed extends CommandOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        goalX = 144;//144
-        goalY = 144;
+        goalX = 133.856315748;
+        goalY = 133.856315748;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx = new GamepadEx(gamepad1);
         robot.initializeHardware(hardwareMap);
@@ -132,9 +132,9 @@ public class driveRed extends CommandOpMode {
                                                 new DoesNothingCommand(),
                                                 new ParallelCommandGroup(
                                                         new SetBarrierState(Flywheel.BarrierState.FREE),
-                                                        new SetIntakeState(Intake.IntakeState.ON)
+                                                        new SetIntakeState(Intake.IntakeState.LAUNCHING)
                                                 ),
-                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.ON
+                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.LAUNCHING
                                         ),
                                         new ParallelCommandGroup(
                                                 new ConditionalCommand(
@@ -172,9 +172,14 @@ public class driveRed extends CommandOpMode {
                         () -> CommandScheduler.getInstance().schedule(
                                 new ConditionalCommand(
                                         new DoesNothingCommand(),
-                                        new ParallelCommandGroup(
-                                                new SetBarrierState(Flywheel.BarrierState.BLOCK),
-                                                new SetIntakeState(Intake.IntakeState.OFF)
+//                                        new ParallelCommandGroup(
+//                                                new SetBarrierState(Flywheel.BarrierState.BLOCK),
+//                                                new SetIntakeState(Intake.IntakeState.OFF)
+//                                        ),
+                                        new SequentialCommandGroup(
+                                          new SetIntakeState(Intake.IntakeState.OFF),
+                                          new WaitCommand(250),
+                                          new SetBarrierState(Flywheel.BarrierState.BLOCK)
                                         ),
                                         () -> robot.flywheel.barrierState == Flywheel.BarrierState.BLOCK && robot.intake.intakeState == Intake.IntakeState.OFF
                                 )
@@ -374,6 +379,18 @@ public class driveRed extends CommandOpMode {
         Pose2D pose = robot.pinpoint.getPosition();
         robotX = pose.getX(DistanceUnit.INCH);
         robotY = -pose.getY(DistanceUnit.INCH);
+        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
+
+        if(distance > 100.0){
+//            goalX = 133.856315748;
+//            goalY = 2.6317;
+            goalX = 141;
+            goalY = 138;
+        }
+        else{
+            goalX = 142;
+            goalY = 141;
+        }
 
         boolean useLimelight = robot.limelightOnlyAim;
         robot.turret.loop(
@@ -387,7 +404,7 @@ public class driveRed extends CommandOpMode {
                 Robot.getInstance().driverOffset
         );
 
-        distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
+
         robot.hood.loop(distance);
 
         handleFlywheel();

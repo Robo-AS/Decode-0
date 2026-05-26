@@ -11,7 +11,8 @@ public class Intake extends SubsystemBase {
     public enum IntakeState{
         ON,
         OFF,
-        REVERSED_ON
+        REVERSED_ON,
+        LAUNCHING
     }
 
     public enum ServoIntakeState{
@@ -42,6 +43,10 @@ public class Intake extends SubsystemBase {
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(0);
                 break;
+            case LAUNCHING:
+                robot.intakeFront.setPower(1);
+                robot.intakeBack.setPower(1);
+                break;
         }
     }
 
@@ -57,17 +62,4 @@ public class Intake extends SubsystemBase {
                 break;
         }
     }
-
-//    public void loop(){
-//        if(targetPosition != previousPosition)
-//            intakeServo.setPosition(targetPosition);
-//
-//        if(targetPower != previousPower) {
-//            front.setPower(targetPower);
-//            back.setPower(-targetPower);
-//        }
-//
-//        previousPosition = targetPosition;
-//        previousPower = targetPower;
-//    }
 }

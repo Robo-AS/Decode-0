@@ -225,7 +225,6 @@ public class SettingVelocityTest extends CommandOpMode {
                         )
                 );
 
-
         Trigger intakeBack = new Trigger(() -> gamepadEx.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.8);
 
         intakeBack
@@ -386,12 +385,14 @@ public class SettingVelocityTest extends CommandOpMode {
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
 
         if(distance > 100.0){
-            goalX = 133.856315748;
-            goalY = 2.6317;
+//            goalX = 133.856315748;
+//            goalY = 2.6317;
+            goalX = 141;
+            goalY = 5;
         }
         else{
-            goalX = 141;
-            goalY = 3;
+            goalX = 142;
+            goalY = 4;
         }
 
         boolean useLimelight = robot.limelightOnlyAim;

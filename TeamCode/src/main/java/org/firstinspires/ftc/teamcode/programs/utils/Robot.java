@@ -182,11 +182,11 @@ public class Robot {
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
-        servoSorter.setPosition( 0.59);
+        servoSorter.setPosition(0.59);
     }
 
     public void configurePinpoint() {
-        pinpoint.setOffsets(186.7, -0.5393, DistanceUnit.MM);
+        pinpoint.setOffsets(-186.7, 0.5393, DistanceUnit.MM);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         pinpoint.resetPosAndIMU();
