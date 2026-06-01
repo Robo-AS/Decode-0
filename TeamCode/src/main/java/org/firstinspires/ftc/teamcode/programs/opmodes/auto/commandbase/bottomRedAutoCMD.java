@@ -243,7 +243,7 @@ public class bottomRedAutoCMD extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(2235);
+            robot.flywheel.loopAuto(2265);
             robot.hoodServo.setPosition(0.85);
             robot.turret.loopAuto(false, follower.getPose(), 144, 140);
             double loop = System.nanoTime();

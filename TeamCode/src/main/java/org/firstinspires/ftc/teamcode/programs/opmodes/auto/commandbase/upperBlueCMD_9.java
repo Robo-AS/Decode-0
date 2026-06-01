@@ -167,6 +167,7 @@ public class upperBlueCMD_9 extends CommandOpMode {
         Command auto = new SequentialCommandGroup(
                 new SetServoIntakeState(Intake.ServoIntakeState.UP),
                 followPath(launchPreload, false),
+                new WaitCommand(250),
                 shootingSequence(),
 
                 followPath(align2, false),
@@ -196,9 +197,9 @@ public class upperBlueCMD_9 extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.75);
-            robot.turret.loopAuto(false, follower.getPose(), -2.25, 144);
+            robot.flywheel.loopAuto(1800);
+            robot.hoodServo.setPosition(0.65);
+            robot.turret.loopAuto(false, follower.getPose(), -2.5, 142);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

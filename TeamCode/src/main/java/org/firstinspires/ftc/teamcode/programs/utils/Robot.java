@@ -93,8 +93,7 @@ public class Robot {
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
-        servoIntake.setDirection(Servo.Direction.REVERSE
-        );
+        servoIntake.setDirection(Servo.Direction.REVERSE);
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
@@ -132,7 +131,7 @@ public class Robot {
         if (servoIntake != null) servoIntake.setPosition(0);
         if (led != null) led.setPosition(0.475);
         hood.initialize();
-        servoSorter.setPosition( 0.61 );
+        servoSorter.setPosition(0.61);
     }
 
     public void initializeHardwareAuto(HardwareMap hardwareMap) {
@@ -146,8 +145,8 @@ public class Robot {
         turretServo = hardwareMap.get(CRServo.class, "servoX");
         sec_turretServo = hardwareMap.get(CRServo.class, "servoTurret");
         hoodServo = hardwareMap.get(Servo.class, "servoY");
-        turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
-        sec_turretServo.setDirection(DcMotorSimple.Direction.REVERSE);
+        turretServo.setDirection(DcMotorSimple.Direction.FORWARD);
+        sec_turretServo.setDirection(DcMotorSimple.Direction.FORWARD);
 
         launcher1 = hardwareMap.get(DcMotorEx.class, "launcher1");
         launcher2 = hardwareMap.get(DcMotorEx.class, "launcher2");
@@ -157,6 +156,7 @@ public class Robot {
 
         servoBarrier = hardwareMap.get(Servo.class, "servoBarrier");
         servoIntake = hardwareMap.get(Servo.class, "servoIntake");
+        servoIntake.setDirection(Servo.Direction.REVERSE);
 
         led = hardwareMap.get(Servo.class, "led");
 
@@ -182,7 +182,7 @@ public class Robot {
     public void initializeAuto() {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
-        servoSorter.setPosition(0.59);
+        servoSorter.setPosition(0.61);
     }
 
     public void configurePinpoint() {

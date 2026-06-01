@@ -24,7 +24,7 @@ public class Intake extends SubsystemBase {
     public IntakeState intakeState;
     public ServoIntakeState servoIntakeState;
     public static int UP = 0;
-    public static double DOWN = 0.25;
+    public static double DOWN = 0.175;
 
 
     public void updateIntakeMotor(IntakeState state){

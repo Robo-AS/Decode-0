@@ -232,8 +232,8 @@ public class upperRedCMD_12_GATE extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1850);
-            robot.hoodServo.setPosition(0.72);
+            robot.flywheel.loopAuto(1750);
+            robot.hoodServo.setPosition(0.575);
             robot.turret.loopAuto(false, follower.getPose(), 144, 140);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));

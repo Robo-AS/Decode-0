@@ -232,9 +232,9 @@ public class upperBlueCMD_12_GATE extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1850);
-            robot.hoodServo.setPosition(0.72);
-            robot.turret.loopAuto(false, follower.getPose(), -5, 144);
+            robot.flywheel.loopAuto(1800);
+            robot.hoodServo.setPosition(0.65);
+            robot.turret.loopAuto(false, follower.getPose(), -2.5, 142);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

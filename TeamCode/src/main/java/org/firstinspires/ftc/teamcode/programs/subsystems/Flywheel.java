@@ -114,10 +114,10 @@ public class Flywheel extends SubsystemBase {
         vel.add(72.5890, 1700);
         vel.add(94.1681, 1850);
         vel.add(110.6160, 2050);
-        vel.add(129.8455, 2265);
-        vel.add(140.4053, 2300);
-        vel.add(146.3112, 2400);
-        vel.add(156.7391, 2660);
+        vel.add(129.8455, 2295); //2265
+        vel.add(140.4053, 2330); //2300
+        vel.add(146.3112, 2430); // 2400
+        vel.add(156.7391, 2690); // 2660
         vel.add(10000, 2700);
         vel.createLUT();
     }

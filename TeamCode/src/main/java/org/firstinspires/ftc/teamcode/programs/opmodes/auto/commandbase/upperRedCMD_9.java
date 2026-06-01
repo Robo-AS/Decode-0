@@ -196,9 +196,9 @@ public class upperRedCMD_9 extends CommandOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             follower.update();
             run();
-            robot.flywheel.loopAuto(1700);
-            robot.hoodServo.setPosition(0.75);
-            robot.turret.loopAuto(false, follower.getPose(), 146, 144);
+            robot.flywheel.loopAuto(1850);
+            robot.hoodServo.setPosition(0.65);
+            robot.turret.loopAuto(false, follower.getPose(), 144, 142);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;
