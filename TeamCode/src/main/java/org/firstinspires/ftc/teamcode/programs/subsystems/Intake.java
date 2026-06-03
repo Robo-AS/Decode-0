@@ -17,7 +17,8 @@ public class Intake extends SubsystemBase {
 
     public enum ServoIntakeState{
         UP,
-        DOWN
+        DOWN,
+        AUTO_GATE
     }
 
 
@@ -25,6 +26,7 @@ public class Intake extends SubsystemBase {
     public ServoIntakeState servoIntakeState;
     public static int UP = 0;
     public static double DOWN = 0.175;
+    public static double AUTO_GATE = 0.1;
 
 
     public void updateIntakeMotor(IntakeState state){
@@ -59,6 +61,9 @@ public class Intake extends SubsystemBase {
                 break;
             case DOWN:
                 robot.servoIntake.setPosition(DOWN);
+                break;
+            case AUTO_GATE:
+                robot.servoIntake.setPosition(AUTO_GATE);
                 break;
         }
     }
