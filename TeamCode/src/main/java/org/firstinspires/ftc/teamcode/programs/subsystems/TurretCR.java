@@ -16,6 +16,8 @@ public class TurretCR extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
     private final PIDController turretPID;
 
+    public static boolean DefaultNormalizationLimits = true;
+
     public enum TurretState {
         GOAL_LOCK,
         LIMELIGHT_LOCK,
@@ -55,6 +57,18 @@ public class TurretCR extends SubsystemBase {
 
     @Override
     public void periodic() {
+
+        if(DefaultNormalizationLimits) {
+            MIN_ANGLE = -90;
+            MAX_ANGLE = 360;
+        }
+        else {
+            MIN_ANGLE = -15;
+            MAX_ANGLE = 360;
+
+        }
+
+
         currentTurretPosition = (robot.intakeBack.getCurrentPosition() / TICKS_PER_REV) * 360.0;
         applyToHardware();
     }

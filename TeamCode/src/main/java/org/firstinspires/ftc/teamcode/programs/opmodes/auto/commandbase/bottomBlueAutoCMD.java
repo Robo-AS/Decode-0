@@ -26,7 +26,7 @@ import org.firstinspires.ftc.teamcode.programs.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
-@Autonomous(name = "AUTO FAR BLUE FULL CMD🔵")
+@Autonomous(name = "AUTO FAR RED FULL CMD🔵")
 public class bottomBlueAutoCMD extends CommandOpMode {
 
     private final Robot robot = Robot.getInstance();
@@ -47,56 +47,67 @@ public class bottomBlueAutoCMD extends CommandOpMode {
         launchPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, outtake))
                 .setLinearHeadingInterpolation(startPose.getHeading(), outtake.getHeading())
+                .setBrakingStrength(2)
                 .build();
 
         get2 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake2))
                 .setConstantHeadingInterpolation(intake2.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         loading2 = follower.pathBuilder()
                 .addPath(new BezierLine(intake2, loaded2))
-                .setConstantHeadingInterpolation(intake2.getHeading()).
-                build();
+                .setConstantHeadingInterpolation(intake2.getHeading())
+                .setBrakingStrength(3)
+                .build();
         
         throw2 = follower.pathBuilder()
                 .addPath(new BezierLine(loaded2, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         get1 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake1))
                 .setConstantHeadingInterpolation(intake1.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         backFromIntake1 = follower.pathBuilder()
                 .addPath(new BezierLine(intake1, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         get3 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake3))
                 .setConstantHeadingInterpolation(intake3.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         backFromIntake3 = follower.pathBuilder()
                 .addPath(new BezierLine(intake3, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         get4 = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, intake4))
                 .setConstantHeadingInterpolation(intake4.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         backFromIntake4 = follower.pathBuilder()
                 .addPath(new BezierLine(intake4, outtake))
                 .setConstantHeadingInterpolation(outtake.getHeading())
+                .setBrakingStrength(3)
                 .build();
         
         leave = follower.pathBuilder()
                 .addPath(new BezierLine(outtake, leavePoint))
                 .setConstantHeadingInterpolation(leavePoint.getHeading())
+                .setBrakingStrength(2)
                 .build();
     }
 

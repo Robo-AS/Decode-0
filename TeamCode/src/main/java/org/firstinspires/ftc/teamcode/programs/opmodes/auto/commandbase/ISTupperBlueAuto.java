@@ -35,43 +35,54 @@ public class ISTupperBlueAuto extends CommandOpMode {
     private double loopTime = 0;
     private final Pose startPose = new Pose(21.010, 124.010, Math.toRadians(144));
 
-    private PathChain preload, spike2, outtake1, gate1, outtake2, spike1, outtake3, leave;
+    private PathChain preload, spike2, outtake1, gate1, outtake2, gate2, outtake2_bis, spike1, outtake3, leave;
 
     private void buildPaths() {
         preload = follower.pathBuilder().addPath(
                 new BezierLine(new Pose(21.010, 124.010), new Pose(60.000, 84.000))
-        ).setLinearHeadingInterpolation(Math.toRadians(144), Math.toRadians(225)).build();
+        ).setLinearHeadingInterpolation(Math.toRadians(144), Math.toRadians(225)).setBrakingStrength(3).build();
 
         spike2 = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(60.000, 84.000), new Pose(65.1637010676157, 60.604982206405694), new Pose(18, 59.44))
-        ).setTangentHeadingInterpolation().build();
+                new BezierCurve(new Pose(60.000, 84.000), new Pose(65.1637010676157, 60.604982206405694), new Pose(18, 58.5))
+        ).setTangentHeadingInterpolation().setBrakingStrength(2).build();
 
         outtake1 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(18, 59.44), new Pose(60.000, 84.000))
-        ).setTangentHeadingInterpolation().setReversed().build();
+                new BezierLine(new Pose(14, 57.25), new Pose(60.000, 84.000))
+        ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         gate1 = follower.pathBuilder()
                 .addPath(new BezierCurve(new Pose(60.000, 84.000), new Pose(55.74, 65.80), new Pose(31.66, 64.54)))
-                .setTangentHeadingInterpolation()
+                .setTangentHeadingInterpolation().setBrakingStrength(3)
                 .addPath(new BezierLine(new Pose(31.66, 64.54), new Pose(7.13, 57.25)))
-                .setConstantHeadingInterpolation(Math.toRadians(165.1))
+                .setConstantHeadingInterpolation(Math.toRadians(165.1)).setBrakingStrength(3)
                 .build();
 
         outtake2 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(7.13, 57.25), new Pose(60.000, 84.000))
-        ).setTangentHeadingInterpolation().setReversed().build();
+                new BezierCurve(new Pose(7.13, 57.25), new Pose(50.28, 67.74), new Pose(60.000, 84.000))
+        ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
+
+        gate2 = follower.pathBuilder()
+                .addPath(new BezierCurve(new Pose(60.000, 84.000), new Pose(55.74, 65.80), new Pose(31.66, 64.54)))
+                .setTangentHeadingInterpolation().setBrakingStrength(3)
+                .addPath(new BezierLine(new Pose(31.66, 64.54), new Pose(7.13, 57.25)))
+                .setConstantHeadingInterpolation(Math.toRadians(165.1)).setBrakingStrength(3)
+                .build();
+
+        outtake2_bis = follower.pathBuilder().addPath(
+                new BezierCurve(new Pose(7.13, 57.25), new Pose(50.28, 67.74), new Pose(60.000, 84.000))
+        ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         spike1 = follower.pathBuilder().addPath(
                 new BezierLine(new Pose(60.000, 84.000), new Pose(22.5, 84.000))
-        ).setTangentHeadingInterpolation().build();
+        ).setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(3).build();
 
         outtake3 = follower.pathBuilder().addPath(
                 new BezierLine(new Pose(22.5, 84.000), new Pose(60.000, 84.000))
-        ).setTangentHeadingInterpolation().setReversed().build();
+        ).setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(3).build();
 
         leave = follower.pathBuilder().addPath(
                 new BezierLine(new Pose(60.000, 84.000), new Pose(37.189, 83.669))
-        ).setConstantHeadingInterpolation(Math.toRadians(180)).build();
+        ).setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(3).build();
     }
 
     @Override
@@ -98,6 +109,18 @@ public class ISTupperBlueAuto extends CommandOpMode {
     private Command followPath(PathChain path, boolean holdEnd) {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> follower.followPath(path, holdEnd)),
+                new WaitUntilCommand(() -> !follower.isBusy())
+        );
+    }
+
+    private Command followPathWithEarlyIntake(PathChain path, boolean holdEnd) {
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> {
+                    follower.followPath(path, holdEnd);
+                }),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new WaitUntilCommand(() -> follower.getCurrentTValue() >= 0.3 || !follower.isBusy()),
+                new SetIntakeState(Intake.IntakeState.OFF),
                 new WaitUntilCommand(() -> !follower.isBusy())
         );
     }
@@ -131,7 +154,7 @@ public class ISTupperBlueAuto extends CommandOpMode {
 
     private Command shootingSequence() {
         return new SequentialCommandGroup(
-                new WaitCommand(450),
+                new WaitCommand(300),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetIntakeState(Intake.IntakeState.ON),
@@ -144,7 +167,7 @@ public class ISTupperBlueAuto extends CommandOpMode {
                                 () -> robot.flywheel.barrierState == Flywheel.BarrierState.BLOCK
                         )
                 ),
-                new WaitCommand(1500),
+                new WaitCommand(1200),
                 new ParallelCommandGroup(
                         new ConditionalCommand(
                                 new SetBarrierState(Flywheel.BarrierState.BLOCK),
@@ -172,26 +195,36 @@ public class ISTupperBlueAuto extends CommandOpMode {
                 followPathWithMidpointIntake(spike2),
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
-                new WaitCommand(100),
-                new SetIntakeState(Intake.IntakeState.OFF),
-                followPath(outtake1, false),
+                new WaitCommand(5),
+            //    new SetIntakeState(Intake.IntakeState.OFF),
+                followPathWithEarlyIntake(outtake1, false),
                 shootingSequence(),
 
                 new SetIntakeState(Intake.IntakeState.ON),
                 followPathWithMidpointIntake(gate1),
                 new SetIntakeState(Intake.IntakeState.ON),
                 new SetServoIntakeState(Intake.ServoIntakeState.AUTO_GATE),
-                new WaitCommand(2000),
-                new SetIntakeState(Intake.IntakeState.OFF),
+                new WaitCommand(1000),
+           //     new SetIntakeState(Intake.IntakeState.OFF),
                 new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
-                followPath(outtake2, false),
+                followPathWithEarlyIntake(outtake2, false),
+                shootingSequence(),
+
+                new SetIntakeState(Intake.IntakeState.ON),
+                followPathWithMidpointIntake(gate2),
+                new SetIntakeState(Intake.IntakeState.ON),
+                new SetServoIntakeState(Intake.ServoIntakeState.AUTO_GATE),
+                new WaitCommand(1000),
+           //     new SetIntakeState(Intake.IntakeState.OFF),
+                new SetServoIntakeState(Intake.ServoIntakeState.DOWN),
+                followPathWithEarlyIntake(outtake2_bis, false),
                 shootingSequence(),
 
                 followPathWithMidpointIntake(spike1),
                 new SetIntakeState(Intake.IntakeState.ON),
-                new WaitCommand(100),
-                new SetIntakeState(Intake.IntakeState.OFF),
-                followPath(outtake3, false),
+                new WaitCommand(5),
+           //     new SetIntakeState(Intake.IntakeState.OFF),
+                followPathWithEarlyIntake(outtake3, false),
                 shootingSequence(),
 
                 followPath(leave, false),
@@ -209,7 +242,7 @@ public class ISTupperBlueAuto extends CommandOpMode {
             run();
             robot.flywheel.loopAuto(1800);
             robot.hoodServo.setPosition(0.65);
-            robot.turret.loopAuto(false, follower.getPose(), -2.5, 142);
+            robot.turret.loopAuto(false, follower.getPose(), -8, 142);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;
