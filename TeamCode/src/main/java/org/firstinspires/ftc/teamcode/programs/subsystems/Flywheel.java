@@ -15,6 +15,9 @@ public class Flywheel extends SubsystemBase {
     public static double kS = 0.05;
     public static double kV = 0.0003;
 
+    public static double TICKS_PER_REV=28;
+
+    public static double exitVelocity;
     public InterpLUT vel = new InterpLUT();
     private DcMotorEx flyWheel1, flyWheel2;
     private PIDFController pid_Flywheel;
@@ -69,6 +72,7 @@ public class Flywheel extends SubsystemBase {
         flyWheel2.setPower(power);
 
 
+        exitVelocity = currentVelocity/28*(1.237/(1.237+6.037))*(2.4+1.237)*3*Math.PI;
 
         if(targetBarrier != previousBarrier)
             robot.servoBarrier.setPosition(targetBarrier);

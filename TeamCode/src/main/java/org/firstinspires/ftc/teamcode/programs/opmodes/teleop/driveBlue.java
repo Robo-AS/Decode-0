@@ -421,6 +421,9 @@ public class driveBlue extends CommandOpMode {
 
     private void updateDriveTelemetry() {
         if (robot.pinpoint != null) {
+            telemetry.addData ("ExitVelocity", Flywheel.exitVelocity);
+            telemetry.addData ("Robot Vel X", robot.pinpoint.getVelX(DistanceUnit.INCH));
+            telemetry.addData ("Robot Vel Y", robot.pinpoint.getVelY(DistanceUnit.INCH));
             telemetry.addData("Distance", distance);
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
             telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
