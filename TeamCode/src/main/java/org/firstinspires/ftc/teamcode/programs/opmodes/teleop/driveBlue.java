@@ -41,7 +41,7 @@ public class driveBlue extends CommandOpMode {
     private static final double STICK_EXPONENT = 3.0;
     private static final double CONSTANT_TERM = 0.6;
     private static final double LINEAR_COEF = 0.7;
-    public double downY = 0, upY = 0.85, maxDistance = 140, minDistance = 20, robotX, robotY, distance;
+    public double downY = 0, upY = 0.85, maxDistance = 140, minDistance = 20, robotX, robotY, distance, relativeAngleToGoal;
 
     public boolean hue_green, hue_purple;
     private ElapsedTime sensorTimer = new ElapsedTime();
@@ -380,10 +380,8 @@ public class driveBlue extends CommandOpMode {
         robotX = pose.getX(DistanceUnit.INCH);
         robotY = -pose.getY(DistanceUnit.INCH);
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
-
+        relativeAngleToGoal = Math.atan2 (goalY - TurretCR.staticLastAutoY - robotY, goalX - TurretCR.staticLastAutoX - robotX);
         if(distance > 100.0){
-//            goalX = 133.856315748;
-//            goalY = 2.6317;
             goalX = 141;
             goalY = 6;
         }
@@ -405,7 +403,7 @@ public class driveBlue extends CommandOpMode {
         );
 
 
-        robot.hood.loop(distance);
+        robot.hood.loop(distance, relativeAngleToGoal);
 
         handleFlywheel();
         updateDriveTelemetry();
@@ -415,15 +413,17 @@ public class driveBlue extends CommandOpMode {
         if (robot.shootFar) {
             robot.flywheel.loopAuto(2250);
         } else {
-            robot.flywheel.loop(distance);
+            robot.flywheel.loop(distance, relativeAngleToGoal);
         }
     }
 
     private void updateDriveTelemetry() {
         if (robot.pinpoint != null) {
+            telemetry.addData ("Exit Velocity Magnitude", TurretCR.exitVelocityMagnitude);
+            telemetry.addData("Turret Movement Offset", Math.toDegrees(robot.turret.getTurretMovementOffset()));
             telemetry.addData ("ExitVelocity", Flywheel.exitVelocity);
-            telemetry.addData ("Robot Vel X", robot.pinpoint.getVelX(DistanceUnit.INCH));
-            telemetry.addData ("Robot Vel Y", robot.pinpoint.getVelY(DistanceUnit.INCH));
+            telemetry.addData ("Robot Vel X", robot.turret.getRobotVx());
+            telemetry.addData ("Robot Vel Y", robot.turret.getRobotVy());
             telemetry.addData("Distance", distance);
             telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
             telemetry.addData("Current Angle", TurretCR.currentTurretPosition);

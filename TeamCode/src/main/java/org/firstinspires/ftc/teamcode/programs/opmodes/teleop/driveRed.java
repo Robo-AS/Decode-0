@@ -41,7 +41,7 @@ public class driveRed extends CommandOpMode {
     private static final double STICK_EXPONENT = 3.0;
     private static final double CONSTANT_TERM = 0.6;
     private static final double LINEAR_COEF = 0.7;
-    public double downY = 0, upY = 0.85, maxDistance = 140, minDistance = 20, robotX, robotY, distance;
+    public double downY = 0, upY = 0.85, maxDistance = 140, minDistance = 20, robotX, robotY, distance, relativeAngleToGoal;
 
     public boolean hue_green, hue_purple;
     private ElapsedTime sensorTimer = new ElapsedTime();
@@ -380,7 +380,7 @@ public class driveRed extends CommandOpMode {
         robotX = pose.getX(DistanceUnit.INCH);
         robotY = -pose.getY(DistanceUnit.INCH);
         distance = Math.hypot(goalX - TurretCR.staticLastAutoX - robotX, goalY - TurretCR.staticLastAutoY - robotY);
-
+        relativeAngleToGoal = Math.atan2 (goalY - TurretCR.staticLastAutoY - robotY, goalX - TurretCR.staticLastAutoX - robotX);
         if(distance > 100.0){
 //            goalX = 133.856315748;
 //            goalY = 2.6317;
@@ -405,7 +405,7 @@ public class driveRed extends CommandOpMode {
         );
 
 
-        robot.hood.loop(distance);
+        robot.hood.loop(distance, relativeAngleToGoal);
 
         handleFlywheel();
         updateDriveTelemetry();
@@ -415,7 +415,7 @@ public class driveRed extends CommandOpMode {
         if (robot.shootFar) {
             robot.flywheel.loopAuto(2250);
         } else {
-            robot.flywheel.loop(distance);
+            robot.flywheel.loop(distance, relativeAngleToGoal);
         }
     }
 

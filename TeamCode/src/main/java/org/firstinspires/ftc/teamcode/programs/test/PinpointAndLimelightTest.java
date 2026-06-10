@@ -25,7 +25,7 @@ public class PinpointAndLimelightTest extends CommandOpMode {
     double exponentialJoystickCoord_X_TURN, exponentialJoystickCoord_X_FORWARD, exponentialJoystickCoord_Y;
     public static double constantTerm = 0.6, liniarCoefTerm = 0.7;
 
-    public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle;
+    public double distance, ta, tx, ty, pos, x_distance, y_distance, targetAngle, relativeAngleToGoal;
     public Pose3D botpose;
     public double downY = 1, upY = 0, maxDistance = 0.004, minDistance = 0.2704;
 
@@ -85,6 +85,7 @@ public class PinpointAndLimelightTest extends CommandOpMode {
             y_distance = CAMERA_HEIGHT * Math.tan(Math.toRadians(ty + CAMERA_ANGLE));
             x_distance = Math.sqrt(y_distance * y_distance + CAMERA_HEIGHT * CAMERA_HEIGHT) * Math.tan(Math.toRadians(tx));
             distance = Math.sqrt(x_distance*x_distance + y_distance*y_distance);
+            relativeAngleToGoal = Math.atan2 (y_distance*y_distance, x_distance*x_distance);
             targetAngle = tx;
 
             boolean seesTargetID = false;
@@ -97,12 +98,12 @@ public class PinpointAndLimelightTest extends CommandOpMode {
             }
 
             if(seesTargetID){
-                robot.flywheel.loop(distance);
+                robot.flywheel.loop(distance, relativeAngleToGoal);
                 pos = getServoYPositionFromDistance(y_distance);
                 robot.hoodServo.setPosition(pos);
             }
             else{
-                robot.flywheel.loop(0.0627);
+                robot.flywheel.loopAuto (2000);
             }
 
             telemetry.addData("Distance", distance);

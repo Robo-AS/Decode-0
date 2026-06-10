@@ -27,7 +27,7 @@ public class TurretCR extends SubsystemBase {
     }
 
     public TurretState currentState = TurretState.GOAL_LOCK;
-    public final double exitVelocity = Flywheel.exitVelocity;
+    public double exitVelocity = Flywheel.exitVelocity;
     public static double kP = 0.0125, kI = 0, kD = 0.0005, kS = 0.075;
     public static double targetTurretPosition = 0;
     public static double currentTurretPosition = 0;
@@ -41,11 +41,13 @@ public class TurretCR extends SubsystemBase {
     public static double staticLastAutoX = 7.874015748, staticLastAutoY = 8.661417323;
     public double resetOffset = 0;
     private double angleToGoalField;
-
+    public static double exitVelocityMagnitude;
     private boolean isNormalized = false;
     private double robotVx = robot.pinpoint.getVelX(DistanceUnit.INCH);
     private double robotVy = -robot.pinpoint.getVelY(DistanceUnit.INCH);
     public static double ANGLE_DIFFERENCE = 5;
+
+    private double turretMovementOffset = 0.0;
 
     public TurretCR() {
         turretPID = new PIDController(kP, kI, kD);
@@ -71,6 +73,10 @@ public class TurretCR extends SubsystemBase {
 
         }
 
+        robotVx = robot.pinpoint.getVelX(DistanceUnit.INCH);
+        robotVy = -robot.pinpoint.getVelY(DistanceUnit.INCH);
+
+        exitVelocity = Flywheel.exitVelocity;
 
         currentTurretPosition = (robot.intakeBack.getCurrentPosition() / TICKS_PER_REV) * 360.0;
         applyToHardware();
@@ -91,27 +97,29 @@ public class TurretCR extends SubsystemBase {
         double dY = (goalY - staticLastAutoY) - turretY;
 
         angleToGoalField = (dX != 0) ? Math.atan2(dY, dX) : 0;
-        double turretMovementOffset = 0.0;
-        // --- SHOOT ON THE MOVE MATH START ---
+
+        //SHOOT ON THE MOVE
+        turretMovementOffset = 0.0;
+
+        if (exitVelocity > 5.0)
         {
-            // Calculate the absolute direction the robot is traveling on the field
             double robotVelocityAngle = Math.atan2(robotVy, robotVx);
             double robotVelocityMagnitude = Math.hypot(robotVx, robotVy);
-
-            // Difference between the robot's traveling angle and the straight line to the goal [cite: 82, 83]
             double deltaTheta = robotVelocityAngle - angleToGoalField;
 
-            // Isolate the tangential velocity vector pushing sideways relative to the goal line [cite: 85, 86]
-            double Vrt = Math.sin(deltaTheta) * robotVelocityMagnitude;
+            double Vrt = Math.cos(deltaTheta) * robotVelocityMagnitude;
+            double Vrr = Math.sin(deltaTheta) * robotVelocityMagnitude;
 
-            // Compensate the turret direction using the artifact's forward velocity
-            // If Vrt pushes left, the offset points right to counteract it.
-            turretMovementOffset = Math.atan2(Vrt, exitVelocity);
+            double Vx_compensated = exitVelocity + Vrt;
+
+            turretMovementOffset = Math.atan2(Vrr, Vx_compensated);
         }
-        double diff = angleToGoalField + robotHeading + turretMovementOffset;
+
+        double diff = angleToGoalField + robotHeading - turretMovementOffset;
+
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
-        // --- SHOOT ON THE MOVE MATH END ---
+
         targetTurretPosition = Math.toDegrees(diff) + driverOffset - resetOffset;
     }
 
@@ -323,7 +331,22 @@ public class TurretCR extends SubsystemBase {
             }
         }
     }
+
+    public double getRobotVx() {
+        return robotVx;
+    }
+
+    public double getRobotVy(){
+        return robotVy;
+    }
+
+    public double getTurretMovementOffset(){
+        return turretMovementOffset;
+    }
 }
+
+
+
 
 //    public void updatePIDCoefficients() {
 //        kP = 0.015;

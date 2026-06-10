@@ -5,7 +5,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.solverslib.controller.PIDFController;
 import com.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.solverslib.util.InterpLUT;
+
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.programs.utils.Robot;
+import org.firstinspires.ftc.teamcode.programs.subsystems.TurretCR;
 
 public class Flywheel extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
@@ -16,15 +19,16 @@ public class Flywheel extends SubsystemBase {
     public static double kV = 0.0003;
 
     public static double TICKS_PER_REV=28;
+    private final double  aggresivityCoeff = 0.8;
 
     public static double exitVelocity;
     public InterpLUT vel = new InterpLUT();
     private DcMotorEx flyWheel1, flyWheel2;
     private PIDFController pid_Flywheel;
     private SimpleMotorFeedforward feedforward;
-
+    public double exitVelocityMagnitude = TurretCR.exitVelocityMagnitude;
     public static double targetVelocity = 0, currentVelocity = 0;
-    public double previousBarrier = 0.0, previousLauncher = 0.0, targetBarrier = 0.35;
+    public double previousBarrier = 0.0, targetBarrier = 0.35;
 
     public enum BarrierState{
         FREE,
@@ -57,8 +61,14 @@ public class Flywheel extends SubsystemBase {
         initializeVelInterpLUT();
     }
 
-    public void loop(double distance) {
+    public void loop(double distance, double angleToGoal) {
         currentVelocity = flyWheel1.getVelocity();
+        double velX=-Robot.getInstance().turret.getRobotVx();
+        double velY=Robot.getInstance().turret.getRobotVy();
+        double robotVelocityAngle = Math.atan2(velY, velX);
+        double robotVelocityMagnitude = Math.hypot(velX, velY);
+        double alpha=Math.abs (angleToGoal-robotVelocityAngle);
+        double finalMagnitude=Math.sqrt (robotVelocityMagnitude*robotVelocityMagnitude+distance*distance+2*robotVelocityMagnitude*distance*Math.cos (alpha));
         targetVelocity = vel.get(distance);
 
         pid_Flywheel.setPIDF(kP, kI, kD, 0);
@@ -72,7 +82,7 @@ public class Flywheel extends SubsystemBase {
         flyWheel2.setPower(power);
 
 
-        exitVelocity = currentVelocity/28*(1.237/(1.237+6.037))*(2.4+1.237)*3*Math.PI;
+        exitVelocity = currentVelocity/28*(1.237/(1.237+6.037))*(2.4+1.237)*2*Math.PI*aggresivityCoeff;
 
         if(targetBarrier != previousBarrier)
             robot.servoBarrier.setPosition(targetBarrier);

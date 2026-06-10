@@ -26,8 +26,14 @@ public class Hood extends SubsystemBase {
         distance = 144;
     }
 
-    public void loop(double distance) {
+    public void loop(double distance, double angleToGoal) {
         this.distance = distance;
+        double velX=-Robot.getInstance().turret.getRobotVx();
+        double velY=Robot.getInstance().turret.getRobotVy();
+        double robotVelocityAngle = Math.atan2(velY, velX);
+        double robotVelocityMagnitude = Math.hypot(velX, velY);
+        double alpha=Math.abs (angleToGoal-robotVelocityAngle);
+        double finalMagnitude=Math.sqrt (robotVelocityMagnitude*robotVelocityMagnitude+distance*distance+2*robotVelocityMagnitude*distance*Math.cos (alpha));
 
         if (hoodServoState == HoodServoState.AUTOMATED) {
             double targetPosition = hd.get(distance);
