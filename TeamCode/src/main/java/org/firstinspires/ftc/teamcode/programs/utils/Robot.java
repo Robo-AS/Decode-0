@@ -35,7 +35,7 @@ public class Robot {
     public CRServo turretServo, sec_turretServo;
     public List<DcMotorEx> motors;
     public GoBildaPinpointDriver pinpoint;
-    public TouchSensor backArtefacts, frontArtefacts, are3Artefacts_1, are3Artefacts_2;
+    public TouchSensor backArtefacts, frontArtefacts, are3Artefacts_1, are3Artefacts_2, sorterArtefact;
     public DigitalChannel proximitySensor, pin0, pin1;
     public Servo led;
     public Intake intake;
@@ -103,6 +103,7 @@ public class Robot {
         are3Artefacts_2 = hardwareMap.get(TouchSensor.class, "artefact2");
         backArtefacts = hardwareMap.get(TouchSensor.class, "backArtefacts");
         frontArtefacts = hardwareMap.get(TouchSensor.class, "frontArtefacts");
+        sorterArtefact = hardwareMap.get(TouchSensor.class, "sorterArtefact");
 
         proximitySensor = hardwareMap.get(DigitalChannel.class, "proximitySensor");
         proximitySensor.setMode(DigitalChannel.Mode.INPUT);
@@ -128,7 +129,7 @@ public class Robot {
         if (flywheel != null) flywheel.initialize();
         if (turret != null) turret.initialize();
         if (servoBarrier != null) servoBarrier.setPosition(0.35);
-        if (servoIntake != null) servoIntake.setPosition(0);
+      //  if (servoIntake != null) servoIntake.setPosition(0);
         if (led != null) led.setPosition(0.475);
         hood.initialize();
         servoSorter.setPosition(0.61);

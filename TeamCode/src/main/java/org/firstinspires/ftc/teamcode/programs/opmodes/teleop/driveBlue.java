@@ -132,9 +132,9 @@ public class driveBlue extends CommandOpMode {
                                                 new DoesNothingCommand(),
                                                 new ParallelCommandGroup(
                                                         new SetBarrierState(Flywheel.BarrierState.FREE),
-                                                        new SetIntakeState(Intake.IntakeState.LAUNCHING)
+                                                        new SetIntakeState(Intake.IntakeState.ON)
                                                 ),
-                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.LAUNCHING
+                                                () -> robot.flywheel.barrierState == Flywheel.BarrierState.FREE && robot.intake.intakeState == Intake.IntakeState.ON
                                         ),
                                         new ParallelCommandGroup(
                                                 new ConditionalCommand(
@@ -307,7 +307,7 @@ public class driveBlue extends CommandOpMode {
     }
 
     private void handleFrontIntakeLogic() {
-        boolean zone3 = !robot.proximitySensor.getState() || hue_green || hue_purple;
+        boolean zone3 = robot.sorterArtefact.isPressed();
         boolean currentlyActive = (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()) &&
                 !robot.frontArtefacts.isPressed() && zone3;
 
@@ -328,13 +328,13 @@ public class driveBlue extends CommandOpMode {
         int count = 0;
         if (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()) count++;
         if (!robot.frontArtefacts.isPressed()) count++;
-        if (!robot.proximitySensor.getState() || hue_green || hue_purple) count++;
+        if (robot.sorterArtefact.isPressed()) count++;
 
         boolean delayPassed = sensorTimer.milliseconds() > 500;
 
         if (count >= 3) {
             if (delayPassed) robot.led.setPosition(0.611);
-        } else if (count == 2 && !robot.frontArtefacts.isPressed() && (!robot.proximitySensor.getState() || hue_green || hue_purple)) {
+        } else if (count == 2 && !robot.frontArtefacts.isPressed() && (robot.sorterArtefact.isPressed())) {
             robot.led.setPosition(0.388);
         } else if (count == 1) {
             robot.led.setPosition(0.3);
@@ -344,7 +344,7 @@ public class driveBlue extends CommandOpMode {
             if (delayPassed) robot.led.setPosition(0.475);
         }
 
-        if(!robot.backArtefacts.isPressed() && (hue_purple || hue_green || !robot.proximitySensor.getState()) && sorterMoved) {
+        if(robot.sorterArtefact.isPressed() && sorterMoved) {
             robot.led.setPosition(0.611);
         }
     }
@@ -422,22 +422,14 @@ public class driveBlue extends CommandOpMode {
             telemetry.addData ("Exit Velocity Magnitude", TurretCR.exitVelocityMagnitude);
             telemetry.addData("Turret Movement Offset", Math.toDegrees(robot.turret.getTurretMovementOffset()));
             telemetry.addData ("ExitVelocity", Flywheel.exitVelocity);
-            telemetry.addData ("Robot Vel X", robot.turret.getRobotVx());
-            telemetry.addData ("Robot Vel Y", robot.turret.getRobotVy());
             telemetry.addData("Distance", distance);
-            telemetry.addData("ZONE 3", (hue_green || hue_purple || !robot.proximitySensor.getState()));
+            telemetry.addData("ZONE 1", (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()));
+            telemetry.addData("ZONE 3", (robot.sorterArtefact.isPressed()));
             telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
             telemetry.addData("Target Angle", robot.turret.getTargetAngle());
             telemetry.addData("Current Velocity", robot.flywheel.getCurrentVelocity());
             telemetry.addData("Target Velocity", robot.flywheel.getTargetVelocity());
             telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
-            telemetry.addData("Sorter Moved",sorterMoved);
-            telemetry.addData("X1", robot.pinpoint.getPosX(DistanceUnit.INCH));
-            telemetry.addData("Y1", robot.pinpoint.getPosY(DistanceUnit.INCH));
-            telemetry.addData("Heading 1", robot.pinpoint.getHeading(AngleUnit.DEGREES));
-            telemetry.addData("X1", robot.pinpoint.getPosition().getX(DistanceUnit.INCH));
-            telemetry.addData("Y1", robot.pinpoint.getPosition().getY(DistanceUnit.INCH));
-            telemetry.addData("Heading 1", robot.pinpoint.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Offset", robot.turret.resetOffset);
         }
 

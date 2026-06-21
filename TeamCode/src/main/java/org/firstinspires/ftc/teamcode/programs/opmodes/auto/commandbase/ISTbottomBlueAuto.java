@@ -39,7 +39,7 @@ public class ISTbottomBlueAuto extends CommandOpMode {
 
     private void buildPaths() {
         spike3 = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(56.000, 8.000), new Pose(56.178, 36.580), new Pose(15.340, 36.340))
+                new BezierCurve(new Pose(56.000, 8.000), new Pose(53, 31.653), new Pose(15.340, 36.340))
         ).setTangentHeadingInterpolation().setBrakingStrength(3.5).build();
 
         outtake1 = follower.pathBuilder().addPath(
@@ -47,47 +47,47 @@ public class ISTbottomBlueAuto extends CommandOpMode {
         ).setTangentHeadingInterpolation().setBrakingStrength(3.5).setReversed().build();
 
         cycleLOW1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(56.000, 12.000), new Pose(22, 10.566)))
+                .addPath(new BezierLine(new Pose(56.000, 12.000), new Pose(15, 10.566)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(22, 10.566), new Pose(11, 8.500)))
+                .addPath(new BezierLine(new Pose(15, 10.566), new Pose(7.5, 8.500)))
                 .setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(0.5)
                 .build();
 
         outtake2 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(11, 8.500), new Pose(53.000, 12.000))
+                new BezierLine(new Pose(7.5, 8.500), new Pose(53.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(184.3)).setBrakingStrength(3.5).build();
 
         cycleHIGH1 = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(56.000, 12.000), new Pose(26.000, 25.500)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(26.000, 25.500), new Pose(16, 25.500)))
+                .addPath(new BezierLine(new Pose(26.000, 25.500), new Pose(10, 25.500)))
                 .setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(0.5)
                 .build();
 
         outtake3 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(16, 25.500), new Pose(53.000, 12.000))
+                new BezierLine(new Pose(10, 25.500), new Pose(53.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(163.9)).setBrakingStrength(3.5).build();
 
         cycleLOW2 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(56.000, 12.000), new Pose(22, 10.566)))
+                .addPath(new BezierLine(new Pose(56.000, 12.000), new Pose(15, 10.566)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(22, 10.566), new Pose(11, 8.500)))
+                .addPath(new BezierLine(new Pose(15, 10.566), new Pose(7.5, 8.500)))
                 .setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(0.5)
                 .build();
 
         outtake4 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(11, 8.500), new Pose(53.000, 12.000))
+                new BezierLine(new Pose(7.5, 8.500), new Pose(53.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(184.3)).setBrakingStrength(3.5).build();
 
         cycleHIGH2 = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(56.000, 12.000), new Pose(26, 25.500)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(26, 25.500), new Pose(16, 25.500)))
+                .addPath(new BezierLine(new Pose(26, 25.500), new Pose(10, 25.500)))
                 .setConstantHeadingInterpolation(Math.toRadians(180)).setBrakingStrength(0.5)
                 .build();
 
         outtake5 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(16, 25.500), new Pose(53.000, 12.000))
+                new BezierLine(new Pose(10, 25.500), new Pose(53.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(163.9)).setBrakingStrength(3.5).build();
 
         leave = follower.pathBuilder().addPath(

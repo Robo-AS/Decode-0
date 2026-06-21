@@ -7,12 +7,13 @@ import org.firstinspires.ftc.teamcode.programs.utils.Robot;
 
 public class Intake extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
+    private final static double JAM_CURRENT_THRESHOLD = 7.5;
 
     public enum IntakeState{
         ON,
         OFF,
         REVERSED_ON,
-        LAUNCHING
+        AUTO_REVERSED_ON
     }
 
     public enum ServoIntakeState{
@@ -45,9 +46,9 @@ public class Intake extends SubsystemBase {
                 robot.intakeFront.setPower(1);
                 robot.intakeBack.setPower(0);
                 break;
-            case LAUNCHING:
-                robot.intakeFront.setPower(1);
-                robot.intakeBack.setPower(1);
+            case AUTO_REVERSED_ON:
+                robot.intakeFront.setPower(-1);
+                robot.intakeBack.setPower(-1);
                 break;
         }
     }
@@ -66,5 +67,9 @@ public class Intake extends SubsystemBase {
                 robot.servoIntake.setPosition(AUTO_GATE);
                 break;
         }
+    }
+
+    public boolean isJammed() {
+        return robot.intakeBack.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS) > JAM_CURRENT_THRESHOLD;
     }
 }

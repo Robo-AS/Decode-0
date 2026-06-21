@@ -39,59 +39,59 @@ public class ISTbottomRedAuto extends CommandOpMode {
 
     private void buildPaths() {
         spike3 = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(88.000, 8.000), new Pose(87.822, 36.580), new Pose(128.660, 36.340))
+                new BezierCurve(new Pose(88.000, 8.000), new Pose(91, 31.653), new Pose(128.660, 36.340))
         ).setTangentHeadingInterpolation().setBrakingStrength(3.5).build();
 
         outtake1 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(128.660, 36.340), new Pose(91.000, 12.000))
+                new BezierLine(new Pose(130.660, 36.340), new Pose(91.000, 12.000))
         ).setTangentHeadingInterpolation().setBrakingStrength(3.5).setReversed().build();
 
         cycleLOW1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(88.000, 12.000), new Pose(122.000, 10.566)))
+                .addPath(new BezierLine(new Pose(91.000, 12.000), new Pose(129.000, 10.566)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(122.000, 10.566), new Pose(133.000, 8.500)))
+                .addPath(new BezierLine(new Pose(129.000, 10.566), new Pose(136.500, 8.500)))
                 .setConstantHeadingInterpolation(Math.toRadians(0)).setBrakingStrength(0.75)
                 .build();
 
         outtake2 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(133.000, 8.500), new Pose(91.000, 12.000))
+                new BezierLine(new Pose(136.500, 8.500), new Pose(91.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(-4.3)).setBrakingStrength(3.5).build();
 
         cycleHIGH1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(88.000, 12.000), new Pose(118.000, 25.000)))
+                .addPath(new BezierLine(new Pose(91.000, 12.000), new Pose(118.000, 25.000)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(118.000, 25.000), new Pose(128.000, 25.000)))
+                .addPath(new BezierLine(new Pose(118.000, 25.000), new Pose(134.000, 25.000)))
                 .setConstantHeadingInterpolation(Math.toRadians(0)).setBrakingStrength(1)
                 .build();
 
         outtake3 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(128.000, 25.000), new Pose(91.000, 12.000))
+                new BezierLine(new Pose(134.000, 25.000), new Pose(91.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(16.1)).setBrakingStrength(3.5).build();
 
         cycleLOW2 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(88.000, 12.000), new Pose(122.000, 10.566)))
+                .addPath(new BezierLine(new Pose(91, 12.000), new Pose(129.000, 10.566)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(122.000, 10.566), new Pose(133.000, 8.500)))
+                .addPath(new BezierLine(new Pose(129.000, 10.566), new Pose(136.500, 8.500)))
                 .setConstantHeadingInterpolation(Math.toRadians(0)).setBrakingStrength(0.75)
                 .build();
 
         outtake4 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(133.000, 8.500), new Pose(91.000, 12.000))
+                new BezierLine(new Pose(136.500, 8.500), new Pose(91.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(-4.3)).setBrakingStrength(3.5).build();
 
         cycleHIGH2 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(88.000, 12.000), new Pose(118.000, 25.000)))
+                .addPath(new BezierLine(new Pose(91, 12.000), new Pose(118.000, 25.000)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3.5)
-                .addPath(new BezierLine(new Pose(118.000, 25.000), new Pose(128.000, 25.000)))
+                .addPath(new BezierLine(new Pose(118.000, 25.000), new Pose(134.000, 25.000)))
                 .setConstantHeadingInterpolation(Math.toRadians(0)).setBrakingStrength(1)
                 .build();
 
         outtake5 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(128.000, 25.000), new Pose(91.000, 12.000))
+                new BezierLine(new Pose(134.000, 25.000), new Pose(91.000, 12.000))
         ).setConstantHeadingInterpolation(Math.toRadians(16.1)).setBrakingStrength(3.5).build();
 
         leave = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(88.000, 12.000), new Pose(96.000, 17.000))
+                new BezierLine(new Pose(91, 12.000), new Pose(96.000, 17.000))
         ).setConstantHeadingInterpolation(Math.toRadians(90)).setBrakingStrength(3.5).build();
     }
 
@@ -269,7 +269,7 @@ public class ISTbottomRedAuto extends CommandOpMode {
             run();
             robot.flywheel.loopAuto(2300);
             robot.hoodServo.setPosition(0.825);
-            robot.turret.loopAuto(false, follower.getPose(), 143, 142);
+            robot.turret.loopAuto(false, follower.getPose(), 140, 142);
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

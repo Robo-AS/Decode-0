@@ -53,23 +53,23 @@ public class ISTupperBlueAuto extends CommandOpMode {
         gate1 = follower.pathBuilder()
                 .addPath(new BezierCurve(new Pose(60.000, 84.000), new Pose(55.74, 65.80), new Pose(31.66, 64.54)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3)
-                .addPath(new BezierLine(new Pose(31.66, 64.54), new Pose(7.13, 57.25)))
-                .setConstantHeadingInterpolation(Math.toRadians(165.1)).setBrakingStrength(3)
+                .addPath(new BezierLine(new Pose(31.66, 64.54), new Pose(7.13, 55.25)))
+                .setConstantHeadingInterpolation(Math.toRadians(162.51)).setBrakingStrength(3)
                 .build();
 
         outtake2 = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(7.13, 57.25), new Pose(50.28, 67.74), new Pose(60.000, 84.000))
+                new BezierCurve(new Pose(7.13, 55.25), new Pose(50.28, 67.74), new Pose(60.000, 84.000))
         ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         gate2 = follower.pathBuilder()
                 .addPath(new BezierCurve(new Pose(60.000, 84.000), new Pose(55.74, 65.80), new Pose(31.66, 64.54)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3)
-                .addPath(new BezierLine(new Pose(31.66, 64.54), new Pose(7.13, 57.25)))
-                .setConstantHeadingInterpolation(Math.toRadians(165.1)).setBrakingStrength(3)
+                .addPath(new BezierLine(new Pose(31.66, 64.54), new Pose(7.13, 55.25)))
+                .setConstantHeadingInterpolation(Math.toRadians(162.51)).setBrakingStrength(3)
                 .build();
 
         outtake2_bis = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(7.13, 57.25), new Pose(50.28, 67.74), new Pose(60.000, 84.000))
+                new BezierCurve(new Pose(7.13, 55.25), new Pose(50.28, 67.74), new Pose(60.000, 84.000))
         ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         spike1 = follower.pathBuilder().addPath(

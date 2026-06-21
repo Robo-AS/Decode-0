@@ -43,33 +43,33 @@ public class ISTupperRedAuto extends CommandOpMode {
         ).setLinearHeadingInterpolation(Math.toRadians(36), Math.toRadians(-45)).setBrakingStrength(3).build();
 
         spike2 = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(84.000, 84.000), new Pose(78.84, 60.604982206405694), new Pose(126, 58.5))
+                new BezierCurve(new Pose(84.000, 84.000), new Pose(89.14, 57.77), new Pose(127, 57))
         ).setTangentHeadingInterpolation().setBrakingStrength(2).build();
 
         outtake1 = follower.pathBuilder().addPath(
-                new BezierLine(new Pose(130, 57.25), new Pose(84.000, 84.000))
+                new BezierLine(new Pose(127, 57.25), new Pose(84.000, 84.000))
         ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         gate1 = follower.pathBuilder()
                 .addPath(new BezierCurve(new Pose(84.000, 84.000), new Pose(88.26, 65.80), new Pose(112.34, 64.54)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3)
-                .addPath(new BezierLine(new Pose(112.34, 64.54), new Pose(136.87, 57.25)))
-                .setConstantHeadingInterpolation(Math.toRadians(14.9)).setBrakingStrength(3)
+                .addPath(new BezierLine(new Pose(112.34, 64.54), new Pose(139.87, 55.75)))
+                .setConstantHeadingInterpolation(Math.toRadians(14)).setBrakingStrength(3)
                 .build();
 
         outtake2 = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(136.87, 57.25), new Pose(93.13, 67.74), new Pose(84.000, 84.000))
+                new BezierCurve(new Pose(139.87, 55.75), new Pose(93.13, 67.74), new Pose(84.000, 84.000))
         ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         gate2 = follower.pathBuilder()
                 .addPath(new BezierCurve(new Pose(84.000, 84.000), new Pose(88.26, 65.80), new Pose(112.34, 64.54)))
                 .setTangentHeadingInterpolation().setBrakingStrength(3)
-                .addPath(new BezierLine(new Pose(112.34, 64.54), new Pose(136.87, 57.25)))
-                .setConstantHeadingInterpolation(Math.toRadians(14.9)).setBrakingStrength(3)
+                .addPath(new BezierLine(new Pose(112.34, 64.54), new Pose(139.87, 55.75)))
+                .setConstantHeadingInterpolation(Math.toRadians(14)).setBrakingStrength(3)
                 .build();
 
         outtake2_bis = follower.pathBuilder().addPath(
-                new BezierCurve(new Pose(136.87, 57.25), new Pose(93.72, 67.74), new Pose(84.000, 84.000))
+                new BezierCurve(new Pose(139.87, 55.75), new Pose(93.72, 67.74), new Pose(84.000, 84.000))
         ).setTangentHeadingInterpolation().setReversed().setBrakingStrength(3).build();
 
         spike1 = follower.pathBuilder().addPath(

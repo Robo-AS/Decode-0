@@ -43,8 +43,8 @@ public class TurretCR extends SubsystemBase {
     private double angleToGoalField;
     public static double exitVelocityMagnitude;
     private boolean isNormalized = false;
-    private double robotVx = robot.pinpoint.getVelX(DistanceUnit.INCH);
-    private double robotVy = -robot.pinpoint.getVelY(DistanceUnit.INCH);
+    private double robotVx = 0.0;
+    private double robotVy = 0.0;
     public static double ANGLE_DIFFERENCE = 5;
 
     private double turretMovementOffset = 0.0;
@@ -73,9 +73,6 @@ public class TurretCR extends SubsystemBase {
 
         }
 
-        robotVx = robot.pinpoint.getVelX(DistanceUnit.INCH);
-        robotVy = -robot.pinpoint.getVelY(DistanceUnit.INCH);
-
         exitVelocity = Flywheel.exitVelocity;
 
         currentTurretPosition = (robot.intakeBack.getCurrentPosition() / TICKS_PER_REV) * 360.0;
@@ -83,6 +80,9 @@ public class TurretCR extends SubsystemBase {
     }
 
     private void updateGoalLock(double goalX, double goalY, double robotX, double robotY, double driverOffset) {
+        robotVx = robot.pinpoint.getVelX(DistanceUnit.INCH);
+        robotVy = -robot.pinpoint.getVelY(DistanceUnit.INCH);
+
         double robotHeading = robot.pinpoint.getHeading(AngleUnit.RADIANS);
 
         double distance = 3.2677165354;
