@@ -106,6 +106,7 @@ public class ISTbottomRedAuto extends CommandOpMode {
         robot.intake.intakeState = Intake.IntakeState.OFF;
         robot.intake.servoIntakeState = Intake.ServoIntakeState.DOWN;
         robot.flywheel.barrierState = Flywheel.BarrierState.BLOCK;
+        robot.turret.normalizationLimits = TurretCR.NormalizationLimits.FAR_RED;
     }
 
     private boolean isRobotFull() {
@@ -253,6 +254,9 @@ public class ISTbottomRedAuto extends CommandOpMode {
 
                 followPathWithEarlyIntake(outtake5, false),
                 shootingSequence(),
+                new InstantCommand(
+                        () -> robot.turret.normalizationLimits = TurretCR.NormalizationLimits.DEFAULT
+                ),
 
                 followPath(leave, false),
                 new InstantCommand(() -> {
@@ -269,7 +273,7 @@ public class ISTbottomRedAuto extends CommandOpMode {
             run();
             robot.flywheel.loopAuto(2300);
             robot.hoodServo.setPosition(0.825);
-            robot.turret.loopAuto(false, follower.getPose(), 140, 142);
+            robot.turret.loopAuto(false, follower.getPose(), 140, 146); // 152
             double loop = System.nanoTime();
             telemetry.addData("Hz", 1000000000 / (loop - loopTime));
             loopTime = loop;

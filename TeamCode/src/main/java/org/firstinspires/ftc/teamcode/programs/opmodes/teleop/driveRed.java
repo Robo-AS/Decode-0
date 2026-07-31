@@ -411,7 +411,7 @@ public class driveRed extends CommandOpMode {
 
     private void handleFlywheel() {
         if (robot.shootFar) {
-            robot.flywheel.loopAuto(2250);
+            robot.flywheel.loopAuto(2350);
         } else {
             robot.flywheel.loop(distance, relativeAngleToGoal);
         }
@@ -423,6 +423,8 @@ public class driveRed extends CommandOpMode {
             telemetry.addData("Turret Movement Offset", Math.toDegrees(robot.turret.getTurretMovementOffset()));
             telemetry.addData ("ExitVelocity", Flywheel.exitVelocity);
             telemetry.addData("Distance", distance);
+            telemetry.addData("X", robotX);
+            telemetry.addData("Y", robotY);
             telemetry.addData("ZONE 1", (!robot.are3Artefacts_1.isPressed() || !robot.are3Artefacts_2.isPressed()));
             telemetry.addData("ZONE 3", (robot.sorterArtefact.isPressed()));
             telemetry.addData("Current Angle", TurretCR.currentTurretPosition);
@@ -430,6 +432,9 @@ public class driveRed extends CommandOpMode {
             telemetry.addData("Current Velocity", robot.flywheel.getCurrentVelocity());
             telemetry.addData("Target Velocity", robot.flywheel.getTargetVelocity());
             telemetry.addData("Back Intake Timer", backSensorTimer.getElapsedTime());
+            telemetry.addData("X", robot.pinpoint.getPosX(DistanceUnit.INCH));
+            telemetry.addData("Y", robot.pinpoint.getPosY(DistanceUnit.INCH));
+            telemetry.addData("Heading", robot.pinpoint.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Offset", robot.turret.resetOffset);
         }
 

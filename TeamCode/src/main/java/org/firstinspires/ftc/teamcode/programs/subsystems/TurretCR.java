@@ -18,7 +18,13 @@ public class TurretCR extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
     private final PIDController turretPID;
 
-    public static boolean DefaultNormalizationLimits = true;
+    public enum NormalizationLimits{
+        DEFAULT,
+        UPPER_RED,
+        FAR_RED
+    }
+
+    public NormalizationLimits normalizationLimits = NormalizationLimits.DEFAULT;
 
     public enum TurretState {
         GOAL_LOCK,
@@ -63,14 +69,18 @@ public class TurretCR extends SubsystemBase {
     @Override
     public void periodic() {
 
-        if(DefaultNormalizationLimits) {
+        if(normalizationLimits == NormalizationLimits.DEFAULT) {
             MIN_ANGLE = -90;
             MAX_ANGLE = 360;
         }
-        else {
+        else if (normalizationLimits == NormalizationLimits.UPPER_RED){
             MIN_ANGLE = -15;
             MAX_ANGLE = 360;
-
+        }
+        else if(normalizationLimits == NormalizationLimits.FAR_RED)
+        {
+            MIN_ANGLE = -90;
+            MAX_ANGLE = 270;
         }
 
         exitVelocity = Flywheel.exitVelocity;

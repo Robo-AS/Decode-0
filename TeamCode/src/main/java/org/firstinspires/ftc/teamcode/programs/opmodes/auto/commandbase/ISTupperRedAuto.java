@@ -96,7 +96,7 @@ public class ISTupperRedAuto extends CommandOpMode {
         robot.intake.intakeState = Intake.IntakeState.OFF;
         robot.intake.servoIntakeState = Intake.ServoIntakeState.DOWN;
         robot.flywheel.barrierState = Flywheel.BarrierState.BLOCK;
-        TurretCR.DefaultNormalizationLimits = false;
+        robot.turret.normalizationLimits = TurretCR.NormalizationLimits.UPPER_RED;
     }
 
     private boolean isRobotFull() {
@@ -228,7 +228,7 @@ public class ISTupperRedAuto extends CommandOpMode {
                 followPathWithEarlyIntake(outtake3, false),
                 shootingSequence(),
                 new InstantCommand(
-                        () -> TurretCR.DefaultNormalizationLimits = true
+                        () -> robot.turret.normalizationLimits = TurretCR.NormalizationLimits.DEFAULT
                 ),
 
                 followPath(leave, false),
