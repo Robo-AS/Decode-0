@@ -70,7 +70,7 @@ public class TurretCR extends SubsystemBase {
     public void periodic() {
 
         if(normalizationLimits == NormalizationLimits.DEFAULT) {
-            MIN_ANGLE = -90;
+            MIN_ANGLE = -40;
             MAX_ANGLE = 360;
         }
         else if (normalizationLimits == NormalizationLimits.UPPER_RED){
